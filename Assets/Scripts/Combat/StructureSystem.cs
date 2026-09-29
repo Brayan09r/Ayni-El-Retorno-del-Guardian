@@ -14,13 +14,15 @@ namespace Ayni.Combat
         [SerializeField] private float currentStructure = 0f;
         [SerializeField] private float recoveryRate = 18f; // Tasa de recuperación de estructura por segundo
         [SerializeField] private float recoveryDelay = 1.2f;
+        [SerializeField] private float brokenStunDuration = 4.0f; // Tiempo de aturdimiento antes de recuperar postura
 
         private float lastDamageTime;
+        private float breakTime;
         public bool IsBroken { get; private set; }
 
         public float CurrentStructure => currentStructure;
         public float MaxStructure => maxStructure;
-        public float StructureRatio => currentStructure / maxStructure;
+        public float StructureRatio => maxStructure > 0f ? currentStructure / maxStructure : 0f;
 
         public event Action OnStructureBroken;
         public event Action OnStructureRecovered;
@@ -28,7 +30,15 @@ namespace Ayni.Combat
 
         private void Update()
         {
-            if (IsBroken) return;
+            if (IsBroken)
+            {
+                // Auto-recuperación si expira el tiempo de aturdimiento sin que haya ejecución
+                if (Time.time - breakTime >= brokenStunDuration)
+                {
+                    ResetStructure();
+                }
+                return;
+            }
 
             if (Time.time - lastDamageTime >= recoveryDelay && currentStructure > 0f)
             {
@@ -58,8 +68,10 @@ namespace Ayni.Combat
         {
             currentStructure = maxStructure;
             IsBroken = true;
+            breakTime = Time.time;
             Debug.Log($"[StructureSystem] ¡Estructura Rota en {gameObject.name}! Estado de aturdimiento.");
             OnStructureBroken?.Invoke();
+            OnStructureChanged?.Invoke(currentStructure, maxStructure);
         }
 
         public void ResetStructure()

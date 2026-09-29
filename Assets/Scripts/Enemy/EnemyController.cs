@@ -28,30 +28,81 @@ namespace Ayni.Enemy
         public string CharacterName => characterName;
         public bool IsBoss => isBoss;
         public bool IsDead => isDead;
-        public StructureSystem Structure => structure;
+        public StructureSystem Structure => structure != null ? structure : (structure = GetComponent<StructureSystem>());
 
         private void Awake()
         {
-            structure = GetComponent<StructureSystem>();
-            animator = GetComponentInChildren<Animator>();
-            currentHealth = maxHealth;
+            EnsureReferences();
         }
 
-        private void Start()
+        private void OnEnable()
+        {
+            EnsureReferences();
+            if (structure != null)
+            {
+                structure.OnStructureBroken -= HandleStructureBroken;
+                structure.OnStructureRecovered -= HandleStructureRecovered;
+                structure.OnStructureBroken += HandleStructureBroken;
+                structure.OnStructureRecovered += HandleStructureRecovered;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (structure != null)
+            {
+                structure.OnStructureBroken -= HandleStructureBroken;
+                structure.OnStructureRecovered -= HandleStructureRecovered;
+            }
+        }
+
+        public void EnsureReferences()
+        {
+            if (structure == null) structure = GetComponent<StructureSystem>();
+            if (animator == null) animator = GetComponentInChildren<Animator>();
+            if (currentHealth <= 0f) currentHealth = maxHealth;
+        }
+
+        public void FindPlayerTarget()
         {
             var playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj == null) playerObj = GameObject.Find("Yari_Hero");
             if (playerObj != null)
             {
                 playerTarget = playerObj.transform;
             }
+        }
 
-            structure.OnStructureBroken += HandleStructureBroken;
-            structure.OnStructureRecovered += HandleStructureRecovered;
+        private void Start()
+        {
+            EnsureReferences();
+            FindPlayerTarget();
+        }
+
+        private void OnDestroy()
+        {
+            if (structure != null)
+            {
+                structure.OnStructureBroken -= HandleStructureBroken;
+                structure.OnStructureRecovered -= HandleStructureRecovered;
+            }
         }
 
         private void Update()
         {
-            if (isDead || structure.IsBroken || playerTarget == null) return;
+            if (isDead || structure == null || structure.IsBroken) return;
+
+            if (playerTarget == null)
+            {
+                FindPlayerTarget();
+                if (playerTarget == null) return;
+            }
+
+            // No atacar a Yari si ha sido derrotado definitivamente
+            if (playerTarget.TryGetComponent<Player.YariCombatController>(out var playerCtrl) && (playerCtrl.IsDead || !playerCtrl.enabled))
+            {
+                return;
+            }
 
             float dist = Vector3.Distance(transform.position, playerTarget.position);
             if (dist <= attackRange && Time.time >= nextAttackTime)
@@ -62,12 +113,15 @@ namespace Ayni.Enemy
 
         private void AttackPlayer()
         {
-            nextAttackTime = Time.time + attackCooldown;
-            if (animator) animator.SetTrigger("Attack");
+            if (playerTarget == null) return;
 
             // Comprobar si el jugador bloquea o hace parry
             if (playerTarget.TryGetComponent<Player.YariCombatController>(out var player))
             {
+                if (player.IsDead || !player.enabled) return;
+
+                nextAttackTime = Time.time + attackCooldown;
+                if (animator) animator.SetTrigger("Attack");
                 if (player.TryParry())
                 {
                     Debug.Log($"[Parry Exitoso] ¡Yari desvió el golpe de {characterName}! Estructura de {characterName} dañada.");
@@ -87,12 +141,7 @@ namespace Ayni.Enemy
 
                 // Golpe directo recibido por Yari
                 Debug.Log($"[Impacto] {characterName} conectó un golpe directo a Yari.");
-                player.PlayHitReaction(); // animación Impact_Hit en Yari
-                // Si Yari cae a 0 de vida, el talismán resucita y envejece
-                if (player.TryGetComponent<Core.IllaTalismanSystem>(out var talisman))
-                {
-                    // Lógica de daño
-                }
+                player.TakeDamage(attackDamage, structureDamageOnPlayer * 0.5f);
             }
         }
 
@@ -101,7 +150,7 @@ namespace Ayni.Enemy
             if (isDead) return;
 
             currentHealth = Mathf.Max(0, currentHealth - healthDmg);
-            structure.AddStructureDamage(structDmg);
+            if (structure != null) structure.AddStructureDamage(structDmg);
 
             if (animator) animator.SetTrigger("Hit");
 
@@ -113,20 +162,61 @@ namespace Ayni.Enemy
 
         private void HandleStructureBroken()
         {
+            if (isDead) return;
             if (animator) animator.SetBool("IsStunned", true);
             Debug.Log($"[VULNERABLE] ¡La postura de {characterName} está ROTA! Presiona [F] para Golpe Letal o [X] para Desarme y Perdón (Ayni).");
         }
 
         private void HandleStructureRecovered()
         {
+            if (isDead) return;
             if (animator) animator.SetBool("IsStunned", false);
         }
 
         public void Defeat(bool killed)
         {
+            if (isDead) return;
             isDead = true;
-            if (animator) animator.SetTrigger(killed ? "Die" : "MercyKneel");
+
+            // Desactivar colisionador para permitir libre paso al jugador tras derrotarlo
+            var col = GetComponent<Collider>();
+            if (col != null) col.enabled = false;
+            var cc = GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+
+            if (structure != null)
+            {
+                structure.OnStructureBroken -= HandleStructureBroken;
+                structure.OnStructureRecovered -= HandleStructureRecovered;
+            }
+
+            if (animator)
+            {
+                animator.SetBool("IsStunned", false);
+                animator.SetTrigger(killed ? "Die" : "MercyKneel");
+            }
             Debug.Log($"[Resultado] {characterName} ha sido {(killed ? "ejecutado (Venganza)" : "purificado y desarmado (Ayni)")}.");
+        }
+
+        public void ResetEnemy(Vector3? position = null)
+        {
+            isDead = false;
+            currentHealth = maxHealth;
+            if (position.HasValue) transform.position = position.Value;
+            var col = GetComponent<Collider>();
+            if (col != null) col.enabled = true;
+            if (structure != null)
+            {
+                structure.ResetStructure();
+                structure.OnStructureBroken -= HandleStructureBroken;
+                structure.OnStructureRecovered -= HandleStructureRecovered;
+                structure.OnStructureBroken += HandleStructureBroken;
+                structure.OnStructureRecovered += HandleStructureRecovered;
+            }
+            if (animator)
+            {
+                animator.SetBool("IsStunned", false);
+            }
         }
     }
 }

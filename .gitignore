@@ -37,6 +37,8 @@ ExportedObj/
 *.slnx
 .vsconfig
 DebugCaptures/
+.agents/
+*.log
 *.suo
 *.tmp
 *.user
