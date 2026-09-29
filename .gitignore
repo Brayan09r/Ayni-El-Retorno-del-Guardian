@@ -34,6 +34,9 @@ ExportedObj/
 *.csproj
 *.unityproj
 *.sln
+*.slnx
+.vsconfig
+DebugCaptures/
 *.suo
 *.tmp
 *.user

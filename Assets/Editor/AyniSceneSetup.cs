@@ -18,7 +18,7 @@ namespace Ayni.Editor
         // Clave por proyecto: la configuración automática corre UNA sola vez (no en cada arranque de Unity),
         // así no se sobrescribe el Animator Controller ni la escena cada vez que abres el editor.
         // Para volver a ejecutarla usa el menú Ayni/2.
-        private static string AutoSetupKey => "AyniAutoSetupDone_v11_" + Application.dataPath.GetHashCode();
+        private static string AutoSetupKey => "AyniAutoSetupDone_v12_" + Application.dataPath.GetHashCode();
 
         // Altura real deseada para Yari en metros (1 unidad de Unity = 1 metro)
         private const float YariTargetHeight = 1.75f;
@@ -369,10 +369,14 @@ namespace Ayni.Editor
             string controllerPath = $"{folderPath}/Yari_AnimatorController.controller";
             var controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
 
-            // Parámetros de animación estilo Sifu
+            // Parámetros de animación estilo Sifu / Ayni
             controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
+            controller.AddParameter("InCombatStance", AnimatorControllerParameterType.Bool);
+            controller.AddParameter("IsCrouching", AnimatorControllerParameterType.Bool);
             controller.AddParameter("IsGuarding", AnimatorControllerParameterType.Bool);
+            controller.AddParameter("IsGrounded", AnimatorControllerParameterType.Bool);
             controller.AddParameter("IsStunned", AnimatorControllerParameterType.Bool);
+            controller.AddParameter("Jump", AnimatorControllerParameterType.Trigger);
             controller.AddParameter("LightAttack", AnimatorControllerParameterType.Trigger);
             controller.AddParameter("HeavyAttack", AnimatorControllerParameterType.Trigger);
             controller.AddParameter("DuckAvoid", AnimatorControllerParameterType.Trigger);
@@ -382,38 +386,69 @@ namespace Ayni.Editor
 
             // Cargar Clips de Animación descargados de Mixamo
             string animFolder = "Assets/Art/Characters/Animations";
-            AnimationClip idleClip = LoadClipFromFBX($"{animFolder}/Combat_Idle.fbx");
+            AnimationClip neutralIdleClip = LoadClipFromFBX($"{animFolder}/Neutral_Idle.fbx");
+            AnimationClip combatIdleClip = LoadClipFromFBX($"{animFolder}/Combat_Idle.fbx");
             AnimationClip jogClip = LoadClipFromFBX($"{animFolder}/Jog_Forward_InPlace.fbx");
+            AnimationClip sprintClip = LoadClipFromFBX($"{animFolder}/Sprint_Run_InPlace.fbx");
+            AnimationClip crouchIdleClip = LoadClipFromFBX($"{animFolder}/Crouch_Idle.fbx");
+            AnimationClip crouchWalkClip = LoadClipFromFBX($"{animFolder}/Crouch_Walk_InPlace.fbx");
+            AnimationClip jumpClip = LoadClipFromFBX($"{animFolder}/Jump.fbx");
             AnimationClip punchClip = LoadClipFromFBX($"{animFolder}/RumiMaki_LightPunch.fbx");
             AnimationClip kickClip = LoadClipFromFBX($"{animFolder}/RumiMaki_HeavyKick.fbx");
             AnimationClip dodgeClip = LoadClipFromFBX($"{animFolder}/Sifu_DuckAvoid.fbx");
             AnimationClip hitClip = LoadClipFromFBX($"{animFolder}/Impact_Hit.fbx");
             AnimationClip deathClip = LoadClipFromFBX($"{animFolder}/Defeat_Death.fbx");
 
-            if (idleClip == null || jogClip == null || punchClip == null || kickClip == null ||
-                dodgeClip == null || hitClip == null || deathClip == null)
-            {
-                Debug.LogWarning("[Ayni] Falta algún clip en Assets/Art/Characters/Animations. Nombres esperados: " +
-                                 "Combat_Idle, Jog_Forward_InPlace, RumiMaki_LightPunch, RumiMaki_HeavyKick, " +
-                                 "Sifu_DuckAvoid, Impact_Hit, Defeat_Death (.fbx)");
-            }
+            // Respaldo por si falta alguno
+            if (neutralIdleClip == null) neutralIdleClip = combatIdleClip;
+            if (sprintClip == null) sprintClip = jogClip;
+            if (crouchIdleClip == null) crouchIdleClip = neutralIdleClip;
+            if (crouchWalkClip == null) crouchWalkClip = jogClip;
 
             var rootStateMachine = controller.layers[0].stateMachine;
 
-            // 1. Estado Locomoción: Blend Tree (Combat Idle <-> Jog Forward)
-            //    CreateBlendTreeInController crea el estado + el árbol y lo guarda dentro del .controller
-            BlendTree blendTree;
-            var idleState = controller.CreateBlendTreeInController("Idle_Walk_Run", out blendTree, 0);
-            blendTree.name = "Locomotion_BlendTree";
-            blendTree.blendType = BlendTreeType.Simple1D;
-            blendTree.blendParameter = "Speed";
-            blendTree.useAutomaticThresholds = false;
-            if (idleClip != null) blendTree.AddChild(idleClip, 0f);
-            if (jogClip != null) blendTree.AddChild(jogClip, 1f);
+            // 1. Locomoción Relajada (Neutral Idle <-> Jog <-> Sprint)
+            BlendTree relaxedBlendTree;
+            var relaxedState = controller.CreateBlendTreeInController("Relaxed_Locomotion", out relaxedBlendTree, 0);
+            relaxedBlendTree.name = "Relaxed_BlendTree";
+            relaxedBlendTree.blendType = BlendTreeType.Simple1D;
+            relaxedBlendTree.blendParameter = "Speed";
+            relaxedBlendTree.useAutomaticThresholds = false;
+            if (neutralIdleClip != null) relaxedBlendTree.AddChild(neutralIdleClip, 0f);
+            if (jogClip != null) relaxedBlendTree.AddChild(jogClip, 1f);
+            if (sprintClip != null) relaxedBlendTree.AddChild(sprintClip, 2f);
 
-            // 2. Guardia y Combate
+            // 2. Locomoción de Combate (Combat Idle <-> Jog <-> Sprint)
+            BlendTree combatBlendTree;
+            var combatState = controller.CreateBlendTreeInController("Combat_Locomotion", out combatBlendTree, 0);
+            combatBlendTree.name = "Combat_BlendTree";
+            combatBlendTree.blendType = BlendTreeType.Simple1D;
+            combatBlendTree.blendParameter = "Speed";
+            combatBlendTree.useAutomaticThresholds = false;
+            if (combatIdleClip != null) combatBlendTree.AddChild(combatIdleClip, 0f);
+            if (jogClip != null) combatBlendTree.AddChild(jogClip, 1f);
+            if (sprintClip != null) combatBlendTree.AddChild(sprintClip, 2f);
+
+            // 3. Locomoción Agachado / Cuclillas (Crouch Idle <-> Crouch Walk)
+            BlendTree crouchBlendTree;
+            var crouchState = controller.CreateBlendTreeInController("Crouch_Locomotion", out crouchBlendTree, 0);
+            crouchBlendTree.name = "Crouch_BlendTree";
+            crouchBlendTree.blendType = BlendTreeType.Simple1D;
+            crouchBlendTree.blendParameter = "Speed";
+            crouchBlendTree.useAutomaticThresholds = false;
+            if (crouchIdleClip != null) crouchBlendTree.AddChild(crouchIdleClip, 0f);
+            if (crouchWalkClip != null) crouchBlendTree.AddChild(crouchWalkClip, 1f);
+            if (crouchWalkClip != null) crouchBlendTree.AddChild(crouchWalkClip, 2f);
+
+            // El estado por defecto es la postura natural relajada
+            rootStateMachine.defaultState = relaxedState;
+
+            // 4. Estados de Acciones de Combate, Guardia y Salto
             var guardState = rootStateMachine.AddState("Guard_Stance");
-            if (idleClip != null) guardState.motion = idleClip;
+            if (combatIdleClip != null) guardState.motion = combatIdleClip;
+
+            var jumpState = rootStateMachine.AddState("Jump");
+            if (jumpClip != null) jumpState.motion = jumpClip;
 
             var lightAttackState = rootStateMachine.AddState("RumiMaki_LightStrike");
             if (punchClip != null) lightAttackState.motion = punchClip;
@@ -436,9 +471,78 @@ namespace Ayni.Editor
             var dieState = rootStateMachine.AddState("Defeat_Death");
             if (deathClip != null) dieState.motion = deathClip;
 
-            rootStateMachine.defaultState = idleState;
+            // Transiciones entre Locomoción Relajada y de Combate
+            var relaxedToCombat = relaxedState.AddTransition(combatState);
+            relaxedToCombat.AddCondition(AnimatorConditionMode.If, 0, "InCombatStance");
+            relaxedToCombat.AddCondition(AnimatorConditionMode.IfNot, 0, "IsCrouching");
+            relaxedToCombat.hasExitTime = false;
+            relaxedToCombat.duration = 0.2f;
 
-            // Transiciones desde AnyState
+            var combatToRelaxed = combatState.AddTransition(relaxedState);
+            combatToRelaxed.AddCondition(AnimatorConditionMode.IfNot, 0, "InCombatStance");
+            combatToRelaxed.AddCondition(AnimatorConditionMode.IfNot, 0, "IsCrouching");
+            combatToRelaxed.hasExitTime = false;
+            combatToRelaxed.duration = 0.25f;
+
+            // Transiciones a Agachado
+            var relaxedToCrouch = relaxedState.AddTransition(crouchState);
+            relaxedToCrouch.AddCondition(AnimatorConditionMode.If, 0, "IsCrouching");
+            relaxedToCrouch.hasExitTime = false;
+            relaxedToCrouch.duration = 0.15f;
+
+            var combatToCrouch = combatState.AddTransition(crouchState);
+            combatToCrouch.AddCondition(AnimatorConditionMode.If, 0, "IsCrouching");
+            combatToCrouch.hasExitTime = false;
+            combatToCrouch.duration = 0.15f;
+
+            var crouchToRelaxed = crouchState.AddTransition(relaxedState);
+            crouchToRelaxed.AddCondition(AnimatorConditionMode.IfNot, 0, "IsCrouching");
+            crouchToRelaxed.AddCondition(AnimatorConditionMode.IfNot, 0, "InCombatStance");
+            crouchToRelaxed.hasExitTime = false;
+            crouchToRelaxed.duration = 0.2f;
+
+            var crouchToCombat = crouchState.AddTransition(combatState);
+            crouchToCombat.AddCondition(AnimatorConditionMode.IfNot, 0, "IsCrouching");
+            crouchToCombat.AddCondition(AnimatorConditionMode.If, 0, "InCombatStance");
+            crouchToCombat.hasExitTime = false;
+            crouchToCombat.duration = 0.2f;
+
+            // Transiciones a Guardia
+            var relaxedToGuard = relaxedState.AddTransition(guardState);
+            relaxedToGuard.AddCondition(AnimatorConditionMode.If, 0, "IsGuarding");
+            relaxedToGuard.hasExitTime = false;
+            relaxedToGuard.duration = 0.1f;
+
+            var combatToGuard = combatState.AddTransition(guardState);
+            combatToGuard.AddCondition(AnimatorConditionMode.If, 0, "IsGuarding");
+            combatToGuard.hasExitTime = false;
+            combatToGuard.duration = 0.1f;
+
+            var crouchToGuard = crouchState.AddTransition(guardState);
+            crouchToGuard.AddCondition(AnimatorConditionMode.If, 0, "IsGuarding");
+            crouchToGuard.hasExitTime = false;
+            crouchToGuard.duration = 0.1f;
+
+            var fromGuard = guardState.AddTransition(combatState);
+            fromGuard.AddCondition(AnimatorConditionMode.IfNot, 0, "IsGuarding");
+            fromGuard.hasExitTime = false;
+            fromGuard.duration = 0.15f;
+
+            // Salto y Regreso
+            AddTriggerTransition(rootStateMachine, jumpState, "Jump");
+            var jumpToRelaxed = jumpState.AddTransition(relaxedState);
+            jumpToRelaxed.AddCondition(AnimatorConditionMode.IfNot, 0, "InCombatStance");
+            jumpToRelaxed.hasExitTime = true;
+            jumpToRelaxed.exitTime = 0.85f;
+            jumpToRelaxed.duration = 0.15f;
+
+            var jumpToCombat = jumpState.AddTransition(combatState);
+            jumpToCombat.AddCondition(AnimatorConditionMode.If, 0, "InCombatStance");
+            jumpToCombat.hasExitTime = true;
+            jumpToCombat.exitTime = 0.85f;
+            jumpToCombat.duration = 0.15f;
+
+            // Transiciones desde AnyState para Combate
             AddTriggerTransition(rootStateMachine, lightAttackState, "LightAttack");
             AddTriggerTransition(rootStateMachine, heavyAttackState, "HeavyAttack");
             AddTriggerTransition(rootStateMachine, duckAvoidState, "DuckAvoid");
@@ -446,24 +550,34 @@ namespace Ayni.Editor
             AddTriggerTransition(rootStateMachine, hitState, "Hit");
             AddTriggerTransition(rootStateMachine, dieState, "Die");
 
-            // Transición a guardia
-            var toGuard = idleState.AddTransition(guardState);
-            toGuard.AddCondition(AnimatorConditionMode.If, 0, "IsGuarding");
-            toGuard.hasExitTime = false;
+            // Retorno de ataques y reacciones a combate
+            var lightToCombat = lightAttackState.AddTransition(combatState);
+            lightToCombat.hasExitTime = true;
+            lightToCombat.exitTime = 0.88f;
+            lightToCombat.duration = 0.1f;
 
-            var fromGuard = guardState.AddTransition(idleState);
-            fromGuard.AddCondition(AnimatorConditionMode.IfNot, 0, "IsGuarding");
-            fromGuard.hasExitTime = false;
+            var heavyToCombat = heavyAttackState.AddTransition(combatState);
+            heavyToCombat.hasExitTime = true;
+            heavyToCombat.exitTime = 0.88f;
+            heavyToCombat.duration = 0.1f;
 
-            // Transición de ataques de regreso a Idle
-            lightAttackState.AddTransition(idleState).hasExitTime = true;
-            heavyAttackState.AddTransition(idleState).hasExitTime = true;
-            duckAvoidState.AddTransition(guardState).hasExitTime = true;
-            jumpAvoidState.AddTransition(guardState).hasExitTime = true;
-            hitState.AddTransition(idleState).hasExitTime = true;
+            var duckToGuard = duckAvoidState.AddTransition(guardState);
+            duckToGuard.hasExitTime = true;
+            duckToGuard.exitTime = 0.85f;
+            duckToGuard.duration = 0.1f;
+
+            var jumpAvoidToGuard = jumpAvoidState.AddTransition(guardState);
+            jumpAvoidToGuard.hasExitTime = true;
+            jumpAvoidToGuard.exitTime = 0.85f;
+            jumpAvoidToGuard.duration = 0.1f;
+
+            var hitToCombat = hitState.AddTransition(combatState);
+            hitToCombat.hasExitTime = true;
+            hitToCombat.exitTime = 0.85f;
+            hitToCombat.duration = 0.12f;
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"<color=green>[Ayni]</color> Animator Controller generado y clips de combate asignados en: {controllerPath}");
+            Debug.Log($"<color=green>[Ayni]</color> Animator Controller generado con 12 animaciones (Neutral, Combate, Agachado, Sprint, Salto) en: {controllerPath}");
         }
 
         private static void AddTriggerTransition(AnimatorStateMachine sm, AnimatorState targetState, string triggerName)

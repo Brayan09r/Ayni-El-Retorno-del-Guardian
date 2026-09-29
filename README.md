@@ -24,17 +24,21 @@
 
 ---
 
-## 🕹️ Controles
+## 🕹️ Controles del Jugador (Yari)
 
-| Acción | Teclado & Ratón | Mando (Xbox / PS) |
+| Acción | Teclado & Ratón | Descripción |
 | :--- | :--- | :--- |
-| **Moverse** | `W` `A` `S` `D` | Stick Izquierdo |
-| **Cámara** | Ratón | Stick Derecho |
-| **Ataque Ligero (Jab / Cross)** | Clic Izquierdo | `X` / `Cuadrado` |
-| **Ataque Pesado (Kick)** | Clic Derecho | `Y` / `Triángulo` |
-| **Guardia / Parada** | `Shift Izquierdo` / `Espacio` | `LB` / `L1` |
-| **Esquiva (Evadir / Duck)** | `Q` o `E` durante guardia | `LB` + Stick Abajo |
-| **Cámara Libre / Cursor** | `Escape` | `Start` |
+| **Moverse (Trotar)** | `W` `A` `S` `D` | Movimiento en 3ª persona relativo a la cámara |
+| **Correr / Sprint** | `Shift Izquierdo` (mantener) | Aumenta la velocidad y pasa a animación de carrera rápida |
+| **Agacharse / Cuclillas** | `C` (alternar) o `Ctrl Izq` (mantener) | Reduce el perfil de colisión y permite avanzar sigilosamente |
+| **Saltar** | `Espacio` | Salto vertical dinámico con impulso y gravedad |
+| **Postura Relajada / Combate** | Automático | Brazos abajo en descanso; al combatir o defender levanta la guardia |
+| **Guardia / Bloqueo** | `Clic Derecho` o `G` | Posición defensiva activa; desvío perfecto (parry) si es en el último instante |
+| **Esquivas Estilo Sifu** | En Guardia + `S` / `Espacio` / `W` | Esquivar ataques altos agachándose o saltar sobre barridos |
+| **Ataque Ligero Rumi Maki** | `Clic Izquierdo` | Combinación fluida de puñetazos rápidos |
+| **Ataque Pesado Rumi Maki** | `Q` o `E` | Patada circular contundente con alto daño a la postura |
+| **Juicio Ayni (Venganza / Perdón)** | `F` (Ejecutar) / `X` (Perdonar) | Acciones morales cuando la estructura del rival está rota |
+| **Liberar Cursor** | `Escape` | Muestra el puntero del ratón |
 
 ---
 
