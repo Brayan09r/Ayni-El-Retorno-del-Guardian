@@ -131,6 +131,7 @@ namespace Ayni.Editor
             // 2. Configurar todas las animaciones como Humanoid (Copy From Other Avatar -> Yari)
             //    y activar Loop Time en Idle y Caminar/Trotar.
             string animsFolder = "Assets/Art/Characters/Animations";
+            float yariSkeletonSpine = GetSkeletonBoneLength(importer, "Spine1");
             if (Directory.Exists(animsFolder))
             {
                 foreach (var animFile in Directory.GetFiles(animsFolder, "*.fbx"))
@@ -150,16 +151,29 @@ namespace Ayni.Editor
                         if (Mathf.Abs(ratio - 1f) > 0.02f) desiredScale = animImporter.globalScale * ratio;
                     }
 
+                    // Esqueleto de referencia copiado del Avatar: si quedó a otra escala (pasó con Neutral_Idle, Sprint,
+                    // Crouch y Jump, guardados 14 000 veces más grandes), el clip coloca la cadera a la altura del
+                    // suelo y Yari se hunde hasta la cintura. Se vuelve a copiar del Avatar de Yari.
+                    float animSkeletonSpine = GetSkeletonBoneLength(animImporter, "Spine1");
+                    bool staleSkeleton = yariSkeletonSpine > 0f &&
+                                         (animSkeletonSpine <= 0f || Mathf.Abs(animSkeletonSpine / yariSkeletonSpine - 1f) > 0.02f);
+                    if (staleSkeleton)
+                    {
+                        Debug.Log($"[Ayni] {Path.GetFileName(unityPath)}: esqueleto de referencia desfasado " +
+                                  $"(Spine1 {animSkeletonSpine:0.#####} en vez de {yariSkeletonSpine:0.#####}); se vuelve a copiar del Avatar de Yari.");
+                    }
+
                     bool needReimport = false;
                     if (animImporter.animationType != ModelImporterAnimationType.Human ||
                         animImporter.avatarSetup != ModelImporterAvatarSetup.CopyFromOther ||
                         animImporter.sourceAvatar != yariAvatar ||
                         Mathf.Abs(animImporter.globalScale - desiredScale) > desiredScale * 0.001f ||
-                        rigRebuilt)
+                        rigRebuilt || staleSkeleton)
                     {
                         animImporter.animationType = ModelImporterAnimationType.Human;
                         animImporter.avatarSetup = ModelImporterAvatarSetup.CopyFromOther;
                         animImporter.sourceAvatar = yariAvatar;
+                        if (staleSkeleton) animImporter.humanDescription = importer.humanDescription;
                         animImporter.globalScale = desiredScale;
                         needReimport = true;
                         Debug.Log($"[Ayni] {Path.GetFileName(unityPath)}: Scale Factor {desiredScale:0.######} (hueso Spine1 anim {animSpineLen:0.#####} → Yari {rigSpineLen:0.#####}).");
@@ -174,7 +188,8 @@ namespace Ayni.Editor
                     // Loop Time solo en las animaciones cíclicas (Idle y Jog/Walk)
                     string fileName = Path.GetFileNameWithoutExtension(unityPath).ToLowerInvariant();
                     bool shouldLoop = fileName.Contains("idle") || fileName.Contains("jog") ||
-                                      fileName.Contains("walk") || fileName.Contains("run");
+                                      fileName.Contains("walk") || fileName.Contains("run") ||
+                                      fileName.Contains("strafe") || fileName.Contains("loop");
 
                     var clips = animImporter.clipAnimations;
                     if (clips == null || clips.Length == 0) clips = animImporter.defaultClipAnimations;
@@ -184,7 +199,8 @@ namespace Ayni.Editor
                         if (c.loopTime != shouldLoop) { c.loopTime = shouldLoop; needReimport = true; }
                         // Mantener a Yari en su sitio: la raíz no rota ni sube/baja por la animación
                         if (!c.lockRootRotation) { c.lockRootRotation = true; needReimport = true; }
-                        if (!c.lockRootHeightY) { c.lockRootHeightY = true; needReimport = true; }
+                        // (el salto es la excepción: su altura la pone la física; lo configura AyniAttackTimingBaker.SetupJumpClip)
+                        if (!fileName.Contains("jump") && !c.lockRootHeightY) { c.lockRootHeightY = true; needReimport = true; }
                         if (shouldLoop && !c.lockRootPositionXZ) { c.lockRootPositionXZ = true; needReimport = true; }
                     }
 
@@ -366,6 +382,10 @@ namespace Ayni.Editor
             // Configurar ruts humanoid primero
             Avatar yariAvatar = ConfigureHumanoidRigs();
 
+            // Preparar el clip de salto (medir despegue/aterrizaje y sacar la altura de la pose)
+            try { AyniAttackTimingBaker.SetupJumpClip(); }
+            catch (System.Exception e) { Debug.LogWarning("[Ayni] No se pudo preparar el clip de salto: " + e.Message); }
+
             string controllerPath = $"{folderPath}/Yari_AnimatorController.controller";
             var controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
 
@@ -383,6 +403,23 @@ namespace Ayni.Editor
             controller.AddParameter("JumpAvoid", AnimatorControllerParameterType.Trigger);
             controller.AddParameter("Hit", AnimatorControllerParameterType.Trigger);
             controller.AddParameter("Die", AnimatorControllerParameterType.Trigger);
+            controller.AddParameter(new AnimatorControllerParameter
+            {
+                name = "JumpSpeed",
+                type = AnimatorControllerParameterType.Float,
+                defaultFloat = 1f
+            });
+            // Fijación de blanco: dirección del movimiento respecto al rival
+            controller.AddParameter("IsLockedOn", AnimatorControllerParameterType.Bool);
+            controller.AddParameter("MoveX", AnimatorControllerParameterType.Float);
+            controller.AddParameter("MoveY", AnimatorControllerParameterType.Float);
+            // Multiplicador de velocidad de los estados de ataque (lo fija YariCombatController en cada golpe)
+            controller.AddParameter(new AnimatorControllerParameter
+            {
+                name = "AttackSpeed",
+                type = AnimatorControllerParameterType.Float,
+                defaultFloat = 1f
+            });
 
             // Cargar Clips de Animación descargados de Mixamo
             string animFolder = "Assets/Art/Characters/Animations";
@@ -398,6 +435,27 @@ namespace Ayni.Editor
             AnimationClip dodgeClip = LoadClipFromFBX($"{animFolder}/Sifu_DuckAvoid.fbx");
             AnimationClip hitClip = LoadClipFromFBX($"{animFolder}/Impact_Hit.fbx");
             AnimationClip deathClip = LoadClipFromFBX($"{animFolder}/Defeat_Death.fbx");
+
+            // Animaciones de combate nuevas (pelea andina de puños: Takanakuy / Tinku)
+            AnimationClip guardIdleClip = LoadClipFromFBX($"{animFolder}/Guard_Idle.fbx");
+            AnimationClip blockHitClip = LoadClipFromFBX($"{animFolder}/Guard_BlockHit.fbx");
+            AnimationClip parryClip = LoadClipFromFBX($"{animFolder}/Parry_Deflect.fbx");
+            AnimationClip duckClip = LoadClipFromFBX($"{animFolder}/Dodge_Duck.fbx");
+            AnimationClip hopBackClip = LoadClipFromFBX($"{animFolder}/Dodge_HopBack.fbx");
+            AnimationClip hitHeadClip = LoadClipFromFBX($"{animFolder}/Hit_Head.fbx");
+            AnimationClip hitBodyClip = LoadClipFromFBX($"{animFolder}/Hit_Body.fbx");
+            AnimationClip hitHeavyClip = LoadClipFromFBX($"{animFolder}/Hit_Heavy.fbx");
+            AnimationClip stunnedLoopClip = LoadClipFromFBX($"{animFolder}/Stunned_Loop.fbx");
+
+            if (guardIdleClip == null) guardIdleClip = combatIdleClip;
+            if (duckClip == null) duckClip = dodgeClip;
+            if (hopBackClip == null) hopBackClip = dodgeClip;
+            if (hitHeadClip == null) hitHeadClip = hitClip;
+            if (hitBodyClip == null) hitBodyClip = hitHeadClip;
+            if (hitHeavyClip == null) hitHeavyClip = hitHeadClip;
+            if (stunnedLoopClip == null) stunnedLoopClip = hitClip;
+            if (blockHitClip == null) blockHitClip = guardIdleClip;
+            if (parryClip == null) parryClip = guardIdleClip;
 
             // Respaldo por si falta alguno
             if (neutralIdleClip == null) neutralIdleClip = combatIdleClip;
@@ -440,15 +498,39 @@ namespace Ayni.Editor
             if (crouchWalkClip != null) crouchBlendTree.AddChild(crouchWalkClip, 1f);
             if (crouchWalkClip != null) crouchBlendTree.AddChild(crouchWalkClip, 2f);
 
+            // 3b. Locomoción con el rival fijado: avanzar, retroceder y pasos laterales sin dejar de encararlo
+            AnimationClip strafeLeftClip = LoadClipFromFBX($"{animFolder}/Strafe_Left.fbx");
+            AnimationClip strafeRightClip = LoadClipFromFBX($"{animFolder}/Strafe_Right.fbx");
+            AnimationClip walkBackClip = LoadClipFromFBX($"{animFolder}/Walk_Back.fbx");
+
+            BlendTree lockOnBlendTree;
+            var lockOnState = controller.CreateBlendTreeInController("LockOn_Locomotion", out lockOnBlendTree, 0);
+            lockOnBlendTree.name = "LockOn_BlendTree";
+            lockOnBlendTree.blendType = BlendTreeType.SimpleDirectional2D;
+            lockOnBlendTree.blendParameter = "MoveX";
+            lockOnBlendTree.blendParameterY = "MoveY";
+            if (combatIdleClip != null) lockOnBlendTree.AddChild(combatIdleClip, new Vector2(0f, 0f));
+            if (jogClip != null) lockOnBlendTree.AddChild(jogClip, new Vector2(0f, 1f));
+            if (walkBackClip != null) lockOnBlendTree.AddChild(walkBackClip, new Vector2(0f, -1f));
+            if (strafeLeftClip != null) lockOnBlendTree.AddChild(strafeLeftClip, new Vector2(-1f, 0f));
+            if (strafeRightClip != null) lockOnBlendTree.AddChild(strafeRightClip, new Vector2(1f, 0f));
+
+            // Ajustar la cadencia de cada clip a la velocidad real de Yari para que los pies patinen menos
+            MatchLocomotionToMoveSpeed(new[] { relaxedBlendTree, combatBlendTree, crouchBlendTree, lockOnBlendTree },
+                                       jogClip, sprintClip, crouchWalkClip);
+
             // El estado por defecto es la postura natural relajada
             rootStateMachine.defaultState = relaxedState;
 
             // 4. Estados de Acciones de Combate, Guardia y Salto
             var guardState = rootStateMachine.AddState("Guard_Stance");
-            if (combatIdleClip != null) guardState.motion = combatIdleClip;
+            if (guardIdleClip != null) guardState.motion = guardIdleClip;
 
             var jumpState = rootStateMachine.AddState("Jump");
             if (jumpClip != null) jumpState.motion = jumpClip;
+            // La velocidad la fija el código para que el clip dure lo mismo que el salto real
+            jumpState.speedParameterActive = true;
+            jumpState.speedParameter = "JumpSpeed";
 
             var lightAttackState = rootStateMachine.AddState("RumiMaki_LightStrike");
             if (punchClip != null) lightAttackState.motion = punchClip;
@@ -457,19 +539,79 @@ namespace Ayni.Editor
             if (kickClip != null) heavyAttackState.motion = kickClip;
 
             var duckAvoidState = rootStateMachine.AddState("Sifu_DuckAvoid");
-            if (dodgeClip != null) duckAvoidState.motion = dodgeClip;
+            if (duckClip != null) duckAvoidState.motion = duckClip;
+            duckAvoidState.speed = 1.5f;
 
             var jumpAvoidState = rootStateMachine.AddState("Sifu_JumpAvoid");
-            if (dodgeClip != null) jumpAvoidState.motion = dodgeClip;
+            if (hopBackClip != null) jumpAvoidState.motion = hopBackClip;
+            jumpAvoidState.speed = 1.8f;
 
             var hitState = rootStateMachine.AddState("Impact_Hit");
-            if (hitClip != null) hitState.motion = hitClip;
+            if (hitHeadClip != null) hitState.motion = hitHeadClip;
+            hitState.speed = 1.3f;
 
             var stunnedState = rootStateMachine.AddState("BrokenStructure_Stunned");
-            if (hitClip != null) stunnedState.motion = hitClip;
+            if (stunnedLoopClip != null) stunnedState.motion = stunnedLoopClip;
 
             var dieState = rootStateMachine.AddState("Defeat_Death");
             if (deathClip != null) dieState.motion = deathClip;
+
+            // 5. Combo Rumi Maki: estados reproducidos por código (YariCombatController los lanza con CrossFade,
+            //    saltándose la preparación larga del clip y con la velocidad del parámetro AttackSpeed).
+            string[,] attackStates =
+            {
+                { "Atk_Light1", "Light_Punch_1_L" },
+                { "Atk_Light2", "Light_Punch_2_R" },
+                { "Atk_Light3", "Light_Punch_3_L" },
+                { "Atk_Light4", "Light_Punch_4_R" },
+                { "Atk_Overhand", "Heavy_Overhand" },
+                { "Atk_Uppercut", "Heavy_Uppercut" },
+                { "Atk_Elbow", "Heavy_Elbow" },
+                { "Atk_Headbutt", "Heavy_Headbutt" },
+                { "Atk_FrontKick", "Heavy_FrontKick" },
+            };
+            for (int i = 0; i < attackStates.GetLength(0); i++)
+            {
+                AnimationClip atkClip = LoadClipFromFBX($"{animFolder}/{attackStates[i, 1]}.fbx");
+                if (atkClip == null) atkClip = punchClip;
+                AddCodeDrivenState(rootStateMachine, attackStates[i, 0], atkClip, combatState, "AttackSpeed", 1f, 0.9f);
+            }
+
+            // Reacciones defensivas y de impacto lanzadas por código
+            AddCodeDrivenState(rootStateMachine, "Guard_BlockHit", blockHitClip, guardState, null, 1.5f, 0.6f);
+            AddCodeDrivenState(rootStateMachine, "Parry_Deflect", parryClip, guardState, null, 2.0f, 0.5f);
+            AddCodeDrivenState(rootStateMachine, "Impact_HitBody", hitBodyClip, combatState, null, 1.3f, 0.45f);
+            AddCodeDrivenState(rootStateMachine, "Impact_HitHeavy", hitHeavyClip, combatState, null, 1.0f, 0.7f);
+
+            // Resurrección: Yari se levanta del suelo. La velocidad se calcula para que el tramo útil del clip
+            // dure GetUpSeconds, igual que el valor "Get Up Duration" de YariCombatController.
+            AnimationClip getUpClip = LoadClipFromFBX($"{animFolder}/GetUp.fbx");
+            if (getUpClip != null)
+            {
+                const float GetUpSeconds = 2.0f;
+                float usefulSpan = YariCombatController.GetUpEndNormalized - YariCombatController.GetUpStartNormalized;
+                float getUpSpeed = Mathf.Max(0.5f, getUpClip.length * usefulSpan / GetUpSeconds);
+                AddCodeDrivenState(rootStateMachine, "GetUp", getUpClip, combatState, null, getUpSpeed,
+                                   YariCombatController.GetUpEndNormalized);
+            }
+
+            // Juicio Ayni: gesto de perdón de Yari
+            AnimationClip mercyClip = LoadClipFromFBX($"{animFolder}/Mercy_Offer.fbx");
+            if (mercyClip != null)
+            {
+                AddCodeDrivenState(rootStateMachine, "Mercy_Offer", mercyClip, relaxedState, null, 1.5f, 0.55f);
+            }
+
+            // Postura rota (lo usará el rival cuando tenga modelo): entra y sale con el bool IsStunned
+            var anyToStunned = rootStateMachine.AddAnyStateTransition(stunnedState);
+            anyToStunned.AddCondition(AnimatorConditionMode.If, 0, "IsStunned");
+            anyToStunned.hasExitTime = false;
+            anyToStunned.duration = 0.15f;
+            anyToStunned.canTransitionToSelf = false;
+            var stunnedToCombat = stunnedState.AddTransition(combatState);
+            stunnedToCombat.AddCondition(AnimatorConditionMode.IfNot, 0, "IsStunned");
+            stunnedToCombat.hasExitTime = false;
+            stunnedToCombat.duration = 0.2f;
 
             // Transiciones entre Locomoción Relajada y de Combate
             var relaxedToCombat = relaxedState.AddTransition(combatState);
@@ -510,23 +652,43 @@ namespace Ayni.Editor
             // Transiciones a Guardia
             var relaxedToGuard = relaxedState.AddTransition(guardState);
             relaxedToGuard.AddCondition(AnimatorConditionMode.If, 0, "IsGuarding");
+            relaxedToGuard.AddCondition(AnimatorConditionMode.Less, 0.1f, "Speed"); // guardia a cuerpo completo solo si está quieto
             relaxedToGuard.hasExitTime = false;
             relaxedToGuard.duration = 0.1f;
 
             var combatToGuard = combatState.AddTransition(guardState);
             combatToGuard.AddCondition(AnimatorConditionMode.If, 0, "IsGuarding");
+            combatToGuard.AddCondition(AnimatorConditionMode.Less, 0.1f, "Speed"); // guardia a cuerpo completo solo si está quieto
             combatToGuard.hasExitTime = false;
             combatToGuard.duration = 0.1f;
 
             var crouchToGuard = crouchState.AddTransition(guardState);
             crouchToGuard.AddCondition(AnimatorConditionMode.If, 0, "IsGuarding");
+            crouchToGuard.AddCondition(AnimatorConditionMode.Less, 0.1f, "Speed"); // guardia a cuerpo completo solo si está quieto
             crouchToGuard.hasExitTime = false;
             crouchToGuard.duration = 0.1f;
 
             var fromGuard = guardState.AddTransition(combatState);
             fromGuard.AddCondition(AnimatorConditionMode.IfNot, 0, "IsGuarding");
+            fromGuard.AddCondition(AnimatorConditionMode.IfNot, 0, "IsLockedOn");
             fromGuard.hasExitTime = false;
             fromGuard.duration = 0.15f;
+
+            // Al caminar en guardia las piernas vuelven a la locomoción; los brazos los mantiene la capa UpperBody
+            AddConditionalTransition(guardState, combatState, 0.15f,
+                (AnimatorConditionMode.IfNot, 0f, "IsLockedOn"), (AnimatorConditionMode.Greater, 0.1f, "Speed"));
+            AddConditionalTransition(guardState, lockOnState, 0.15f,
+                (AnimatorConditionMode.If, 0f, "IsLockedOn"), (AnimatorConditionMode.IfNot, 0f, "IsGuarding"));
+            AddConditionalTransition(guardState, lockOnState, 0.15f,
+                (AnimatorConditionMode.If, 0f, "IsLockedOn"), (AnimatorConditionMode.Greater, 0.1f, "Speed"));
+
+            // Fijación de blanco: entrar y salir de la locomoción encarada al rival
+            AddConditionalTransition(relaxedState, lockOnState, 0.2f, (AnimatorConditionMode.If, 0f, "IsLockedOn"));
+            AddConditionalTransition(combatState, lockOnState, 0.2f, (AnimatorConditionMode.If, 0f, "IsLockedOn"));
+            AddConditionalTransition(lockOnState, combatState, 0.2f, (AnimatorConditionMode.IfNot, 0f, "IsLockedOn"));
+            AddConditionalTransition(lockOnState, crouchState, 0.15f, (AnimatorConditionMode.If, 0f, "IsCrouching"));
+            AddConditionalTransition(lockOnState, guardState, 0.1f,
+                (AnimatorConditionMode.If, 0f, "IsGuarding"), (AnimatorConditionMode.Less, 0.1f, "Speed"));
 
             // Salto y Regreso
             AddTriggerTransition(rootStateMachine, jumpState, "Jump");
@@ -573,11 +735,146 @@ namespace Ayni.Editor
 
             var hitToCombat = hitState.AddTransition(combatState);
             hitToCombat.hasExitTime = true;
-            hitToCombat.exitTime = 0.85f;
-            hitToCombat.duration = 0.12f;
+            hitToCombat.exitTime = 0.45f;
+            hitToCombat.duration = 0.2f;
+
+            // Capa de brazos: mantiene la guardia alta mientras las piernas caminan (el código controla su peso)
+            AvatarMask upperMask = GetOrCreateUpperBodyMask();
+            controller.AddLayer("UpperBody");
+            var layers = controller.layers;
+            layers[0].iKPass = true; // necesario para que FootIK apoye los pies en el terreno
+            layers[1].avatarMask = upperMask;
+            layers[1].defaultWeight = 0f;
+            layers[1].blendingMode = AnimatorLayerBlendingMode.Override;
+            controller.layers = layers;
+            var upperGuardState = controller.layers[1].stateMachine.AddState("Guard_Upper");
+            if (guardIdleClip != null) upperGuardState.motion = guardIdleClip;
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"<color=green>[Ayni]</color> Animator Controller generado con 12 animaciones (Neutral, Combate, Agachado, Sprint, Salto) en: {controllerPath}");
+            Debug.Log($"<color=green>[Ayni]</color> Animator Controller generado (locomoción, combo Rumi Maki, guardia, esquivas y reacciones) en: {controllerPath}");
+
+            // Al regenerar el controller, el Animator de Yari en la escena pierde la referencia: volver a asignarla
+            GameObject sceneYari = GameObject.Find("Yari_Hero");
+            if (sceneYari != null && !EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                var sceneAnimator = sceneYari.GetComponentInChildren<Animator>(true);
+                if (sceneAnimator != null && sceneAnimator.runtimeAnimatorController != controller)
+                {
+                    sceneAnimator.runtimeAnimatorController = controller;
+                    EditorUtility.SetDirty(sceneAnimator);
+                    EditorSceneManager.MarkSceneDirty(sceneYari.scene);
+                    EditorSceneManager.SaveScene(sceneYari.scene);
+                    Debug.Log("[Ayni] Animator Controller reasignado a Yari_Hero y escena guardada.");
+                }
+            }
+
+            // Medir en los clips el instante real de impacto de cada golpe
+            try { AyniAttackTimingBaker.Bake(); }
+            catch (System.Exception e) { Debug.LogWarning("[Ayni] No se pudieron medir los tiempos de impacto: " + e.Message); }
+        }
+
+        /// <summary>
+        /// Mide la velocidad natural de los clips de trote, sprint y agachado y ajusta su velocidad de reproducción
+        /// dentro de los BlendTrees a la velocidad a la que Yari se mueve de verdad. Se limita a un rango razonable
+        /// (0.85x – 1.2x) para que las piernas no se vean a cámara rápida.
+        /// </summary>
+        private static void MatchLocomotionToMoveSpeed(BlendTree[] trees, AnimationClip jogClip, AnimationClip sprintClip, AnimationClip crouchWalkClip)
+        {
+            float jogSpeed = 5.2f, sprintSpeed = 8.8f, crouchSpeed = 2.4f;
+            GameObject sceneYari = GameObject.Find("Yari_Hero");
+            var ctrl = sceneYari != null ? sceneYari.GetComponent<YariCombatController>() : null;
+            if (ctrl != null)
+            {
+                var so = new SerializedObject(ctrl);
+                jogSpeed = so.FindProperty("baseMoveSpeed").floatValue;
+                sprintSpeed = so.FindProperty("sprintSpeed").floatValue;
+                crouchSpeed = so.FindProperty("crouchSpeed").floatValue;
+            }
+
+            var clips = new[] { jogClip, sprintClip, crouchWalkClip };
+            var targets = new[] { jogSpeed, sprintSpeed, crouchSpeed };
+            var scales = new float[clips.Length];
+            for (int i = 0; i < clips.Length; i++)
+            {
+                scales[i] = 1f;
+                if (clips[i] == null) continue;
+                float natural = 0f;
+                try { natural = AyniAttackTimingBaker.MeasureGroundSpeed(clips[i]); }
+                catch (System.Exception e) { Debug.LogWarning("[Ayni] No se pudo medir " + clips[i].name + ": " + e.Message); }
+                if (natural <= 0f) continue;
+
+                scales[i] = Mathf.Clamp(targets[i] / natural, 0.85f, 1.2f);
+                Debug.Log($"[Ayni] Locomoción '{clips[i].name}': velocidad natural {natural:0.00} m/s, Yari se mueve a " +
+                          $"{targets[i]:0.00} m/s → reproducción a {scales[i]:0.00}x" +
+                          (targets[i] / natural > 1.2f ? " (límite: Yari va más rápido de lo que el clip puede cubrir sin patinar)." : "."));
+            }
+
+            foreach (BlendTree tree in trees)
+            {
+                if (tree == null) continue;
+                var children = tree.children;
+                for (int c = 0; c < children.Length; c++)
+                {
+                    for (int i = 0; i < clips.Length; i++)
+                    {
+                        if (clips[i] != null && children[c].motion == clips[i]) children[c].timeScale = scales[i];
+                    }
+                }
+                tree.children = children;
+                EditorUtility.SetDirty(tree);
+            }
+        }
+
+        private static void AddConditionalTransition(AnimatorState from, AnimatorState to, float duration,
+            params (AnimatorConditionMode mode, float threshold, string parameter)[] conditions)
+        {
+            var t = from.AddTransition(to);
+            t.hasExitTime = false;
+            t.duration = duration;
+            foreach (var c in conditions) t.AddCondition(c.mode, c.threshold, c.parameter);
+        }
+
+        /// <summary>Máscara de tronco, cabeza y brazos para la capa de guardia.</summary>
+        private static AvatarMask GetOrCreateUpperBodyMask()
+        {
+            const string maskPath = "Assets/Art/Characters/Yari_UpperBodyMask.mask";
+            AvatarMask mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(maskPath);
+            if (mask == null)
+            {
+                mask = new AvatarMask();
+                AssetDatabase.CreateAsset(mask, maskPath);
+            }
+
+            for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; i++)
+            {
+                var part = (AvatarMaskBodyPart)i;
+                bool upper = part == AvatarMaskBodyPart.Body || part == AvatarMaskBodyPart.Head ||
+                             part == AvatarMaskBodyPart.LeftArm || part == AvatarMaskBodyPart.RightArm ||
+                             part == AvatarMaskBodyPart.LeftFingers || part == AvatarMaskBodyPart.RightFingers;
+                mask.SetHumanoidBodyPartActive(part, upper);
+            }
+            EditorUtility.SetDirty(mask);
+            return mask;
+        }
+
+        /// <summary>Estado que el código reproduce con CrossFade y que vuelve solo a <paramref name="returnState"/>.</summary>
+        private static AnimatorState AddCodeDrivenState(AnimatorStateMachine sm, string stateName, AnimationClip clip,
+            AnimatorState returnState, string speedParameter, float speed, float exitTime)
+        {
+            var state = sm.AddState(stateName);
+            if (clip != null) state.motion = clip;
+            state.speed = speed;
+            if (!string.IsNullOrEmpty(speedParameter))
+            {
+                state.speedParameterActive = true;
+                state.speedParameter = speedParameter;
+            }
+
+            var back = state.AddTransition(returnState);
+            back.hasExitTime = true;
+            back.exitTime = exitTime;
+            back.duration = 0.15f;
+            return state;
         }
 
         private static void AddTriggerTransition(AnimatorStateMachine sm, AnimatorState targetState, string triggerName)
@@ -669,7 +966,9 @@ namespace Ayni.Editor
             if (!player.GetComponent<IllaTalismanSystem>()) player.AddComponent<IllaTalismanSystem>();
             var combatCtrl = GetOrAdd<YariCombatController>(player);
 
-            // 4. Spawning Jefe Apo Rumi en el sendero
+            // 4. Jefe de prueba. Si Amaru ya está integrado (Ayni > Jefes), no se crea la cápsula de Apo Rumi.
+            if (GameObject.Find("Jefe_Amaru_ElCazador") == null)
+            {
             Vector3 bossPos = spawnPos + new Vector3(2f, 0f, 9f);
             if (activeTerrain != null)
             {
@@ -696,6 +995,7 @@ namespace Ayni.Editor
             soBoss.FindProperty("isBoss").boolValue = true;
             soBoss.FindProperty("maxHealth").floatValue = 250f;
             soBoss.ApplyModifiedProperties();
+            }
 
             // 5. Cámara en tercera persona sobre el hombro
             Camera cam = Camera.main;
@@ -895,6 +1195,11 @@ namespace Ayni.Editor
             if (anim.avatar == null || !anim.avatar.isHuman)
             {
                 Debug.LogWarning("[Ayni] Yari no tiene un Avatar Humanoid válido: las animaciones no se verán. Ejecuta 'Ayni/1. Generar Animator Controller y Rig Humanoid de Yari'.");
+            }
+
+            if (visualObj.GetComponent<AndeanCombatStanceModifier>() == null)
+            {
+                visualObj.AddComponent<AndeanCombatStanceModifier>();
             }
 
             EditorUtility.SetDirty(yariMat);
