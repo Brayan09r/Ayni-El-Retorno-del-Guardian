@@ -10,19 +10,31 @@ namespace Ayni.Editor
     /// Ajustes de movimiento de Yari. Solo se ejecuta desde el menú (o desde el puente de agentes).
     ///
     /// Las velocidades salen de lo que cubren los pasos de cada animación con el cuerpo de Yari (mide 1.4 m), medido por
-    /// AyniAttackTimingBaker: caminar 1.07 m/s, correr 2.37, sprint 2.95, agachado 0.62. Acelerando las piernas hasta
-    /// 1.35x (correr), 1.5x (sprint) y 1.6x (agachado) se cubren 3.2, 4.4 y 1.0 m/s. Con la Illa joven Yari va un 15 %
-    /// más rápido, así que estas son las velocidades base con las que los pies patinan como mucho un 10 %.
-    /// Las anteriores (4.0 al correr, 6.5 en sprint, 2.4 agachado) casi doblaban lo que cubren las animaciones
-    /// y los pies patinaban entre el 45 y el 80 %.
+    /// AyniAttackTimingBaker, y de cuánto se pueden acelerar las piernas sin que se vean a cámara rápida:
+    ///
+    ///   clip            cubre a 1x   ciclo    tope de cadencia   cubre como mucho
+    ///   correr          3.70 m/s     0.53 s   1.05x              3.9 m/s
+    ///   sprint          3.93 m/s     0.53 s   1.30x              5.1 m/s
+    ///   agachado        0.95 m/s     1.03 s   1.40x              1.3 m/s
+    ///   lateral izq.    3.0 m/s      0.67 s   1.30x
+    ///   lateral der.    2.3 m/s      0.67 s   1.30x              3.0 m/s
+    ///   hacia atrás     1.66 m/s     0.80 s   1.30x              2.2 m/s
+    ///
+    /// Con la Illa joven Yari va un 15 % más rápido: estas son las velocidades base con las que los pies patinan
+    /// como mucho un 10 % en ese caso (velocidad base = cubre como mucho × 1.10 / 1.15). Si se cambia un clip,
+    /// hay que volver a medir (Ayni.Editor.AyniLocomotionProbe.MeasureClips) y rehacer esta cuenta.
     /// </summary>
     public static class AyniTuning
     {
         private const float JogSpeed = 3.6f;
-        private const float SprintSpeed = 5.5f;
-        private const float CrouchSpeed = 1.0f;
+        private const float SprintSpeed = 4.9f;
+        private const float CrouchSpeed = 1.1f;
+        private const float LockStrafeSpeed = 2.4f;
+        private const float LockBackSpeed = 2.0f;
         private const float MaxRunCadence = 1.05f;
-        private const float MaxSprintCadence = 1.5f;
+        // El clip de sprint ("Two Cycle Sprint") ya da 3.8 pasos por segundo; a 1.3x son casi 5, lo de un velocista
+        private const float MaxSprintCadence = 1.3f;
+        private const float MaxCrouchCadence = 1.4f;
         // Salto: antes subía 1.6 m con gravedad lunar (-9.81) y tardaba más de un segundo en caer
         private const float JumpHeight = 1.1f;
         private const float Gravity = -20f;
@@ -53,8 +65,11 @@ namespace Ayni.Editor
             so.FindProperty("baseMoveSpeed").floatValue = JogSpeed;
             so.FindProperty("sprintSpeed").floatValue = SprintSpeed;
             so.FindProperty("crouchSpeed").floatValue = CrouchSpeed;
+            so.FindProperty("lockStrafeSpeed").floatValue = LockStrafeSpeed;
+            so.FindProperty("lockBackSpeed").floatValue = LockBackSpeed;
             so.FindProperty("maxRunCadence").floatValue = MaxRunCadence;
             so.FindProperty("maxSprintCadence").floatValue = MaxSprintCadence;
+            so.FindProperty("maxCrouchCadence").floatValue = MaxCrouchCadence;
             so.FindProperty("jumpHeight").floatValue = JumpHeight;
             so.FindProperty("gravity").floatValue = Gravity;
             so.FindProperty("attackRange").floatValue = AttackRange;

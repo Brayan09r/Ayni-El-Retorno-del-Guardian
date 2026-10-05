@@ -18296,8 +18296,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ayni.Player.YariCombatController
   baseMoveSpeed: 3.6
-  sprintSpeed: 5.5
-  crouchSpeed: 1
+  sprintSpeed: 4.9
+  crouchSpeed: 1.1
   jumpHeight: 1.1
   rotationSpeed: 12
   gravity: -20
@@ -18306,8 +18306,9 @@ MonoBehaviour:
   walkPaceMax: 1.2
   runPaceAtThreshold: 0.72
   maxRunCadence: 1.05
-  maxSprintCadence: 1.5
-  maxCrouchCadence: 1.6
+  maxSprintCadence: 1.3
+  maxCrouchCadence: 1.4
+  maxStrafeCadence: 1.3
   combatStanceDuration: 4.5
   standingHeight: 2
   standingCenter: {x: 0, y: 1, z: 0}
@@ -18352,6 +18353,7 @@ MonoBehaviour:
   lockOnRange: 14
   lockOnBreakRange: 20
   lockStrafeSpeed: 2.4
+  lockBackSpeed: 2
   landBlendTime: 0.15
   fallAnimSpeed: -7.5
   fallAnimMinDrop: 1.2

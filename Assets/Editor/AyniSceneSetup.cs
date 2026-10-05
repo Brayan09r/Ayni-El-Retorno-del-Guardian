@@ -194,8 +194,35 @@ namespace Ayni.Editor
                     var clips = animImporter.clipAnimations;
                     if (clips == null || clips.Length == 0) clips = animImporter.defaultClipAnimations;
 
+                    // Pasos laterales, hacia atrás y agachado: se conserva la orientación con la que se animó el clip.
+                    // Con la opción por defecto ("Body Orientation") Unity gira el clip hacia donde mira el torso, y como
+                    // en esos clips el torso va girado, Yari acababa dando los pasos en diagonal.
+                    bool keepAuthoredFacing = fileName.StartsWith("strafe") || fileName == "walk_back" ||
+                                              fileName.StartsWith("crouch_walk");
+                    var takes = animImporter.defaultClipAnimations;
+
                     foreach (var c in clips)
                     {
+                        // Clips cíclicos: el rango es la toma completa. Al sustituir un .fbx conservando su .meta, el rango
+                        // guardado era el del clip anterior y el nuevo quedaba cortado a media zancada (salto en cada vuelta).
+                        if (shouldLoop && takes != null)
+                        {
+                            foreach (var take in takes)
+                            {
+                                if (take.takeName != c.takeName) continue;
+                                if (Mathf.Abs(c.firstFrame - take.firstFrame) > 0.01f || Mathf.Abs(c.lastFrame - take.lastFrame) > 0.01f)
+                                {
+                                    Debug.Log($"[Ayni] {Path.GetFileName(unityPath)}: rango del clip {c.firstFrame:0}-{c.lastFrame:0} → " +
+                                              $"{take.firstFrame:0}-{take.lastFrame:0} (la toma completa).");
+                                    c.firstFrame = take.firstFrame;
+                                    c.lastFrame = take.lastFrame;
+                                    needReimport = true;
+                                }
+                                break;
+                            }
+                        }
+                        if (keepAuthoredFacing && !c.keepOriginalOrientation) { c.keepOriginalOrientation = true; needReimport = true; }
+
                         if (c.loopTime != shouldLoop) { c.loopTime = shouldLoop; needReimport = true; }
                         // Mantener a Yari en su sitio: la raíz no rota ni sube/baja por la animación
                         if (!c.lockRootRotation) { c.lockRootRotation = true; needReimport = true; }

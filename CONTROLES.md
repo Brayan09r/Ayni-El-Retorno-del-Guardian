@@ -9,10 +9,12 @@
 
 | Acción | Mando de Xbox | Teclado y ratón |
 | :--- | :--- | :--- |
-| Moverse | Stick izquierdo (hasta el 75 % = caminar; más = correr, y a fondo corre a tope) | `W` `A` `S` `D` |
+| Caminar | Stick izquierdo hasta el 75 % | `W` `A` `S` `D` |
 | Cámara | Stick derecho | Ratón |
-| Correr | Mantener `RT` (o pulsar el stick izquierdo, `L3`) | `Shift Izq.` |
+| Correr | Stick izquierdo a fondo | Mantener `Shift Izq.` mientras te mueves |
+| Esprintar | Mantener `RT` (o pulsar el stick izquierdo, `L3`) | — (solo con mando) |
 | Saltar | `A` | `Espacio` |
+| Salto largo | `A` mientras corres o esprintas | `Espacio` mientras corres con `Shift` |
 | Agacharse | `B` (alternar) | `C` / `Ctrl Izq.` |
 | Golpe ligero | `X` | `Clic Izq.` |
 | Golpe pesado | `Y` | `Q` / `E` |
@@ -42,13 +44,13 @@ Permite mover a Yari de forma tridimensional fluida con la cámara en tercera pe
 
 ---
 
-## 2. Sprint / Carrera Rápida: Mantener `[SHIFT IZQUIERDO]`
-Permite acelerar el paso de Yari hasta `4.3 m/s` (unos `4.9 m/s` con la Illa joven) para cruzar grandes distancias, escapar de emboscadas o cerrar la distancia rápidamente contra un oponente.
+## 2. Correr: Mantener `[SHIFT IZQUIERDO]`
+Con el teclado Yari **camina** con `W` `A` `S` `D` (unos `1.4 m/s`) y **corre** mientras se mantiene `Shift` (`3.6 m/s`; unos `4.1 m/s` con la Illa joven), para cruzar grandes distancias, escapar de emboscadas o cerrar la distancia contra un oponente. El sprint (`4.9 m/s`) es solo del mando (`RT` o `L3`).
 
 ![Control Sprint con Shift](Assets/Art/Controls_Art/02_Control_Sprint_Shift.jpg)
 
 - **Teclas:** Mantener `Shift Izquierdo` mientras te mueves con `W`.
-- **Efecto:** Si estás agachado, iniciar sprint te pone de pie automáticamente.
+- **Efecto:** Si estás agachado, echar a correr te pone de pie automáticamente.
 
 ---
 
@@ -69,6 +71,7 @@ Permite sortear desniveles, grietas en la calzada incaica y abismos entre puente
 
 - **Tecla:** `Espacio` (cuando no estás en guardia).
 - **Efecto:** Salto vertical en parábola con detección de suelo (`IsGrounded`).
+- **Salto largo:** si saltas corriendo (o esprintando con el mando), Yari no se frena: sale lanzado hacia delante un 30 % más rápido de lo que venía y cae a unos 3.5 m (unos 4.5 m en sprint). En el aire la dirección se puede corregir un poco.
 
 ---
 

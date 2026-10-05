@@ -45,38 +45,60 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
 - **Animaciones de Mixamo** (rig de Yari, In Place, sin malla, 30 fps), en `Assets/Art/Characters/Animations/`:
   caminar **"Standard Walk"** (`Walk_Forward_InPlace.fbx`), correr **"Fast Run"** (`Run_Forward_InPlace.fbx`), sprint **"Two Cycle Sprint"** (`Sprint_Run_InPlace.fbx`),
   laterales **"Left Strafe"** / **"Right Strafe"** (`Strafe_Left.fbx`, `Strafe_Right.fbx`) y retroceso **"Jog Backward"** (`Walk_Back.fbx`).
-  En el Animator, `Speed` = 0 reposo · 0.5 caminar · 1 correr · 2 sprint.
+  En el Animator, `Speed` = 0 reposo · 0.5 caminar · 1 correr · 2 sprint. Los originales están en `AnimBackups/` (fuera de Assets).
 - **La cadencia de los pasos se calcula sola.** Al generar el Animator, `AyniAttackTimingBaker` mide cuántos m/s cubren los pasos de
   cada clip con el cuerpo de Yari y lo guarda en `Assets/Resources/YariAttackTimings.asset`. En cada fotograma `YariCombatController`
-  reproduce la animación a *velocidad real ÷ lo que cubre el clip*. Si se cambia un clip, basta con regenerar el Animator (menú **Ayni > 1**).
+  reproduce la animación a *velocidad real ÷ lo que cubre el clip*, hasta un tope para que las piernas no se vean a cámara rápida.
 
-  | Clip | Cubre a 1x | Tope de cadencia | Cubre como mucho |
-  |---|---|---|---|
-  | Caminar | 1.07 m/s | 0.7x – 1.3x | 1.39 m/s |
-  | Correr | 3.70 m/s | 1.05x | 3.88 m/s |
-  | Sprint | 3.86 m/s | 1.50x | 5.79 m/s |
-  | Agachado | 0.62 m/s | 1.6x | 1.0 m/s |
+  | Clip | Cubre a 1x | Ciclo | Tope de cadencia | Cubre como mucho |
+  |---|---|---|---|---|
+  | Caminar | 1.07 m/s | 1.17 s | 0.7x – 1.3x | 1.39 m/s |
+  | Correr | 3.70 m/s | 0.53 s | 1.05x | 3.9 m/s |
+  | Sprint | 3.96 m/s | 0.53 s (el clip trae dos ciclos: 1.07 s) | 1.3x | 5.1 m/s |
+  | Agachado | 0.95 m/s | 1.03 s | 1.4x | 1.3 m/s |
+  | Lateral izquierdo | 3.01 m/s | 0.67 s | 1.3x | 3.9 m/s |
+  | Lateral derecho | 2.37 m/s | 0.67 s | 1.3x | 3.1 m/s |
+  | Hacia atrás | 1.67 m/s | 0.80 s | 1.3x | 2.2 m/s |
 
 - **Velocidades de Yari** (base; con la Illa joven va un 15 % más rápido y de anciano un 15 % más lento): correr **3.6 m/s**,
-  sprint **5.5 m/s**, agachado **1.0 m/s**. Antes eran 4.0, 6.5 y 2.4: casi el doble de lo que cubren las animaciones de un
-  personaje de 1.4 m, y por eso los pies patinaban (56 % al correr, 52 % en sprint, 78 % agachado). Están en
-  `Assets/Editor/AyniTuning.cs` (menú **Ayni > 5**); si se suben, vuelven a patinar.
-- **Stick en tres tramos:** hasta el 75 % camina (0.85 a 1.2 m/s); pasado el 75 % corre suave (72 % de la velocidad) y acelera
-  hasta el tope con el stick a fondo. El teclado corre siempre a fondo.
+  sprint **4.9 m/s**, agachado **1.1 m/s**; con el rival fijado, de lado **2.4 m/s** y hacia atrás **2.0 m/s**. Las originales
+  (4.0, 6.5 y 2.4) casi doblaban lo que cubrían las animaciones y los pies patinaban entre el 50 y el 80 %. Están en
+  `Assets/Editor/AyniTuning.cs` (menú **Ayni > 5**), con la cuenta explicada en su cabecera; si se suben, vuelven a patinar.
+- **Mando, stick en tres tramos:** hasta el 75 % camina (0.85 a 1.2 m/s); pasado el 75 % corre suave (72 % de la velocidad) y
+  acelera hasta el tope con el stick a fondo. `RT` o `L3` es el sprint.
+- **Teclado, dos marchas:** `WASD` camina (1.2 m/s base) y con `Shift` corre a fondo. No hay sprint con teclado.
+  `AyniInput.MoveFromStick` dice de dónde viene el movimiento; en las pruebas, `SimulateMove` imita el stick y `SimulateKeys` las teclas.
+- **Salto en carrera:** saltando a un ritmo de 0.7 o más (1 = correr a fondo) y sin rival fijado, Yari conserva la dirección y sale
+  un 30 % más rápido (`leapSpeedBoost`), con 1.05 m de altura: unos 3.5 m de largo corriendo y unos 4.5 m en sprint. En el aire
+  solo se corrige la dirección (50°/s). Usa el mismo clip `Jump` desde el despegue; no hay clip propio de salto en carrera.
+- **El salto ya no se pierde:** la pulsación se recuerda 0.15 s y el suelo 0.12 s. Antes, corriendo por terreno irregular el
+  CharacterController perdía el suelo algún fotograma y, si coincidía con la pulsación, Yari no saltaba.
+- **Con el rival fijado** la velocidad y la cadencia se reparten según la dirección (hacia él, de lado, hacia atrás), igual que
+  mezcla los clips el BlendTree `LockOn_Locomotion`.
 - **Medido en Play** con `AyniLocomotionProbe.MeasureSlide` (Illa joven):
 
   | Prueba | Yari avanza | Patinaje |
   |---|---|---|
-  | Stick al 50 % (caminar) | 1.23 m/s | 1 % (cadencia 1.15x) |
-  | Stick a fondo / teclado (correr) | 4.14 m/s | 9 % (cadencia 1.05x) |
-  | Sprint | 6.33 m/s | 7 % (cadencia 1.50x) |
-  | Agachado | 1.15 m/s | 13 % |
+  | Stick al 50 % (caminar) | 1.23 m/s | 1 % |
+  | Stick a fondo / teclado (correr) | 4.14 m/s | 2 – 9 % (cadencia 1.05x) |
+  | Sprint | 5.6 m/s | 3 – 9 % (cadencia 1.3x) |
+  | Agachado | 1.27 m/s | en torno al 10 % |
+  | Fijado, hacia la izquierda | 2.69 m/s | 5 % |
+  | Fijado, hacia la derecha | 2.76 m/s | 3 % |
+  | Fijado, hacia atrás | 2.33 m/s | 10 % |
+  | Fijado, hacia el rival | 4.03 m/s | 4 % |
 
+- **Al sustituir un clip por otro con el mismo nombre de archivo** (conservando su `.meta`) hay que regenerar el Animator
+  (menú **Ayni > 1**): ajusta el rango del clip a la toma nueva. Sin eso el clip queda cortado con la duración del anterior
+  (pasó con el sprint: se cortaba a media zancada y daba un salto en cada vuelta). Después, medir con
+  `AyniLocomotionProbe.MeasureClips` y rehacer la cuenta de `AyniTuning.cs`.
+- Los laterales, el paso atrás y el agachado se importan con la orientación original del clip (no la del torso): si no, Unity los
+  gira y Yari da los pasos en diagonal.
 - **Sensación de velocidad:** al correr a fondo la cámara abre el campo de visión 4° y se aleja un 6 %; en sprint, 10° y un 15 %
   (`ThirdPersonSifuCamera`, sección *Sensación de velocidad*). Yari no avanza más rápido, pero lo parece. No se aplica con el
   rival fijado, en los remates ni en las caídas, y las escenas reciben la cámara con su campo de visión normal.
-- La consola muestra avisos amarillos *"Rig Error: Copied Avatar Rig Configuration mis-match"* al reimportar los clips de caminar
-  y correr: sus huesos difieren entre 1 y 7 mm de los de Yari. No afecta a la animación.
+- La consola muestra avisos amarillos *"Rig Error: Copied Avatar Rig Configuration mis-match"* al reimportar los clips de Mixamo:
+  sus huesos difieren unos milímetros de los de Yari. No afecta a la animación.
 
 ## Mando de Xbox
 

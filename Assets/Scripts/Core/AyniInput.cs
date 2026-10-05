@@ -16,7 +16,9 @@ namespace Ayni.Core
     ///
     /// Mando de Xbox:
     ///   Stick izq. moverse · Stick der. cámara · X golpe ligero · Y golpe pesado · A saltar / perdonar (Ayni)
-    ///   B agacharse / rematar (Venganza) · LB guardia (+ stick: esquivas) · RB o R3 fijar rival · RT o L3 correr
+    ///   B agacharse / rematar (Venganza) · LB guardia (+ stick: esquivas) · RB o R3 fijar rival · RT o L3 esprintar
+    ///   (el stick a medias camina y a fondo corre)
+    /// Teclado: WASD camina y con Shift corre; no hay sprint.
     ///   View tutorial · Menu saltar escena / reintentar · Cruceta arriba mostrar u ocultar controles
     ///
     /// Los ejes del mando (stick derecho, gatillos, cruceta) los crea el menú Ayni > Mando > Configurar Ejes del Mando.
@@ -85,6 +87,8 @@ namespace Ayni.Core
         private static readonly float[] simulatedUntil = new float[ActionCount];
         private static Vector2 simulatedMove;
         private static float simulatedMoveUntil = -1f;
+        private static bool simulatedFromStick = true;
+        private static bool moveFromStick;
 
         /// <summary>Último dispositivo usado: decide qué botones muestran el HUD y el tutorial.</summary>
         public static AyniDevice LastDevice { get; private set; } = AyniDevice.KeyboardMouse;
@@ -119,6 +123,12 @@ namespace Ayni.Core
 
         /// <summary>Dirección de movimiento (stick izquierdo, cruceta o WASD / flechas). Magnitud entre 0 y 1.</summary>
         public static Vector2 Move { get { EnsureUpdated(); return move; } }
+
+        /// <summary>
+        /// El movimiento de este fotograma viene de un stick analógico y no de las teclas. Con el stick la inclinación
+        /// decide entre caminar y correr; con las teclas se camina y Shift hace correr.
+        /// </summary>
+        public static bool MoveFromStick { get { EnsureUpdated(); return moveFromStick; } }
 
         /// <summary>Stick derecho, entre -1 y 1 (arriba = +Y). La cámara lo multiplica por su velocidad de giro.</summary>
         public static Vector2 LookStick { get { EnsureUpdated(); return lookStick; } }
@@ -179,6 +189,15 @@ namespace Ayni.Core
         {
             simulatedMove = Vector2.ClampMagnitude(new Vector2(x, y), 1f);
             simulatedMoveUntil = Time.unscaledTime + seconds;
+            simulatedFromStick = true;
+        }
+
+        /// <summary>Simula las teclas de movimiento (WASD) durante unos segundos reales.</summary>
+        public static void SimulateKeys(float x, float y, float seconds)
+        {
+            simulatedMove = new Vector2(x, y).normalized;
+            simulatedMoveUntil = Time.unscaledTime + seconds;
+            simulatedFromStick = false;
         }
 
         // ───────────────────────── Lectura ─────────────────────────
@@ -219,8 +238,13 @@ namespace Ayni.Core
 
             if (keys != Vector2.zero) move = keys.normalized;
             else move = Vector2.ClampMagnitude(pad, 1f);
+            moveFromStick = keys == Vector2.zero && pad != Vector2.zero;
 
-            if (Time.unscaledTime < simulatedMoveUntil) move = simulatedMove;
+            if (Time.unscaledTime < simulatedMoveUntil)
+            {
+                move = simulatedMove;
+                moveFromStick = simulatedFromStick;
+            }
 
             // --- Cámara ---
             Vector2 rightStick = new Vector2(SafeAxis(AxisRightX), SafeAxis(AxisRightY));

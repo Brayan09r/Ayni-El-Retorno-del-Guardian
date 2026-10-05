@@ -10,6 +10,7 @@ namespace Ayni.Editor
     /// Sondas de movimiento y combate para probar en Play desde el puente de agentes (AyniAgentBridge):
     ///   call Ayni.Editor.AyniLocomotionProbe.MeasureSlide 3     mide cuánto patinan los pies durante 3 s
     ///   call Ayni.Editor.AyniLocomotionProbe.MeasureClips       (fuera de Play) lo que cubre cada clip de locomoción
+    ///   call Ayni.Editor.AyniLocomotionProbe.MeasureJump 3      mide el próximo salto (largo, alto y tiempo en el aire)
     ///   call Ayni.Editor.AyniLocomotionProbe.TraceStates 4      registra los cambios de estado del Animator durante 4 s
     ///   call Ayni.Editor.AyniLocomotionProbe.RemoveEnemies      aparta a los rivales para probar sin que ataquen
     ///   call Ayni.Editor.AyniLocomotionProbe.SetYariField campo valor   cambia un ajuste de Yari durante el Play
@@ -30,7 +31,8 @@ namespace Ayni.Editor
         private static Animator slideAnimator;
         private static Transform slideRoot, leftFoot, rightFoot;
         private static float slideEnd, slideStart;
-        private static Vector3 lastLeftLocal, lastRightLocal, startPosition;
+        private static Vector3 lastLeftLocal, lastRightLocal, lastBodyPosition;
+        private static float bodyPath;
         private static int lastFrame;
         // Por cada pie: altura respecto al cuerpo y velocidad hacia atrás en cada fotograma
         private static readonly System.Collections.Generic.List<Vector2> leftSamples = new System.Collections.Generic.List<Vector2>();
@@ -54,7 +56,8 @@ namespace Ayni.Editor
             rightFoot = slideAnimator.GetBoneTransform(HumanBodyBones.RightFoot);
             lastLeftLocal = slideRoot.InverseTransformPoint(leftFoot.position);
             lastRightLocal = slideRoot.InverseTransformPoint(rightFoot.position);
-            startPosition = slideRoot.position;
+            lastBodyPosition = slideRoot.position;
+            bodyPath = 0f;
             slideStart = Time.time;
             slideEnd = Time.time + seconds;
             leftSamples.Clear();
@@ -77,18 +80,23 @@ namespace Ayni.Editor
 
             Vector3 l = slideRoot.InverseTransformPoint(leftFoot.position);
             Vector3 r = slideRoot.InverseTransformPoint(rightFoot.position);
-            leftSamples.Add(new Vector2(l.y, -(l.z - lastLeftLocal.z) / Time.deltaTime));
-            rightSamples.Add(new Vector2(r.y, -(r.z - lastRightLocal.z) / Time.deltaTime));
+            // Velocidad del pie respecto al cuerpo en el plano del suelo (vale para avanzar, retroceder y los laterales)
+            leftSamples.Add(new Vector2(l.y, new Vector2(l.x - lastLeftLocal.x, l.z - lastLeftLocal.z).magnitude / Time.deltaTime));
+            rightSamples.Add(new Vector2(r.y, new Vector2(r.x - lastRightLocal.x, r.z - lastRightLocal.z).magnitude / Time.deltaTime));
             lastLeftLocal = l;
             lastRightLocal = r;
+
+            // Camino recorrido (no la distancia en línea recta: con un rival fijado Yari se mueve en arco)
+            Vector3 step = slideRoot.position - lastBodyPosition;
+            step.y = 0f;
+            bodyPath += step.magnitude;
+            lastBodyPosition = slideRoot.position;
 
             if (Time.time < slideEnd) return;
             Application.onBeforeRender -= SlideTick;
 
             float elapsed = Mathf.Max(0.01f, Time.time - slideStart);
-            Vector3 travelled = slideRoot.position - startPosition;
-            travelled.y = 0f;
-            float bodySpeed = travelled.magnitude / elapsed;
+            float bodySpeed = bodyPath / elapsed;
 
             var planted = new System.Collections.Generic.List<float>();
             CollectPlanted(leftSamples, planted);
@@ -132,7 +140,8 @@ namespace Ayni.Editor
         public static void MeasureClips()
         {
             var report = new StringBuilder("[Ayni Paso] Lo que cubre cada clip a velocidad normal:");
-            foreach (string name in new[] { "Walk_Forward_InPlace", "Jog_Forward_InPlace", "Run_Forward_InPlace", "Sprint_Run_InPlace", "Crouch_Walk_InPlace" })
+            foreach (string name in new[] { "Walk_Forward_InPlace", "Jog_Forward_InPlace", "Run_Forward_InPlace", "Sprint_Run_InPlace",
+                                            "Crouch_Walk_InPlace", "Strafe_Left", "Strafe_Right", "Walk_Back" })
             {
                 AnimationClip clip = null;
                 foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath($"Assets/Art/Characters/Animations/{name}.fbx"))
@@ -212,6 +221,74 @@ namespace Ayni.Editor
             Debug.Log("[Ayni Paso] Trayectorias de los pies guardadas en DebugCaptures/foot_paths.csv");
         }
 
+        /// <summary>
+        /// Fuera de Play: cambia en un clip de Assets/Art/Characters/Animations si la rotación de la raíz se calcula
+        /// desde la orientación original (1) o desde la del torso (0), para comparar con DumpFootPaths.
+        /// </summary>
+        public static void SetClipFacing(string fbxName, float keepOriginal)
+        {
+            var importer = AssetImporter.GetAtPath($"Assets/Art/Characters/Animations/{fbxName}.fbx") as ModelImporter;
+            if (importer == null) { Debug.LogWarning("[Ayni Paso] No existe " + fbxName); return; }
+            var clips = importer.clipAnimations;
+            if (clips == null || clips.Length == 0) clips = importer.defaultClipAnimations;
+            foreach (var c in clips) c.keepOriginalOrientation = keepOriginal > 0.5f;
+            importer.clipAnimations = clips;
+            importer.SaveAndReimport();
+            Debug.Log($"[Ayni Paso] {fbxName}: orientación {(keepOriginal > 0.5f ? "original" : "del torso")}.");
+        }
+
+        // ───────────────────────── Salto ─────────────────────────
+
+        private static CharacterController leapBody;
+        private static float leapEnd, leapAirStart;
+        private static Vector3 leapFrom;
+        private static float leapPeak;
+        private static bool leapInAir;
+
+        /// <summary>Mide el próximo salto de Yari (distancia, altura y tiempo en el aire) dentro de los segundos indicados.</summary>
+        public static void MeasureJump(float seconds)
+        {
+            if (!Application.isPlaying) return;
+            var player = GameObject.FindGameObjectWithTag("Player");
+            leapBody = player != null ? player.GetComponent<CharacterController>() : null;
+            if (leapBody == null) return;
+            leapEnd = Time.time + seconds;
+            leapInAir = false;
+            leapFrom = player.transform.position;
+            Application.onBeforeRender -= JumpTick;
+            Application.onBeforeRender += JumpTick;
+        }
+
+        private static void JumpTick()
+        {
+            if (!Application.isPlaying || leapBody == null || Time.time > leapEnd)
+            {
+                Application.onBeforeRender -= JumpTick;
+                if (Application.isPlaying && !leapInAir) Debug.Log("[Ayni Salto] No hubo ningún salto en ese tiempo.");
+                return;
+            }
+
+            Vector3 p = leapBody.transform.position;
+            if (!leapInAir)
+            {
+                if (leapBody.isGrounded) { leapFrom = p; return; }
+                leapInAir = true;
+                leapAirStart = Time.time;
+                leapPeak = p.y;
+                return;
+            }
+
+            leapPeak = Mathf.Max(leapPeak, p.y);
+            if (!leapBody.isGrounded || Time.time - leapAirStart < 0.1f) return;
+
+            Application.onBeforeRender -= JumpTick;
+            Vector3 flat = p - leapFrom;
+            flat.y = 0f;
+            float air = Time.time - leapAirStart;
+            Debug.Log($"[Ayni Salto] {flat.magnitude:F2} m de largo · {leapPeak - leapFrom.y:F2} m de alto · {air:F2} s en el aire · " +
+                      $"{flat.magnitude / Mathf.Max(0.01f, air):F2} m/s");
+        }
+
         // ───────────────────────── Traza de estados ─────────────────────────
 
         private static Animator traceAnimator;
@@ -288,6 +365,21 @@ namespace Ayni.Editor
             if (!string.IsNullOrEmpty(path))
             {
                 UnityEditor.SceneManagement.EditorSceneManager.OpenScene(path, UnityEditor.SceneManagement.OpenSceneMode.Single);
+            }
+        }
+
+        /// <summary>Deja a los rivales quietos y sin atacar, pero presentes (para probar el movimiento con uno fijado).</summary>
+        public static void PacifyEnemies()
+        {
+            // Siguen activos (para poder fijarlos), pero no ven a Yari, no se mueven y no alcanzan a golpear
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            foreach (EnemyController enemy in Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None))
+            {
+                foreach (string field in new[] { "aggroRange", "moveSpeed", "attackRange" })
+                {
+                    var info = typeof(EnemyController).GetField(field, flags);
+                    if (info != null && info.FieldType == typeof(float)) info.SetValue(enemy, 0f);
+                }
             }
         }
 

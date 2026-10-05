@@ -16,9 +16,9 @@ namespace Ayni.Player
         [Header("Movimiento")]
         [Tooltip("Velocidades base (m/s); con la Illa joven Yari va un 15 % más rápido. Están ajustadas a lo que cubren " +
                  "los pasos de las animaciones (ver AyniTuning): si se suben, los pies patinan.")]
-        [SerializeField] private float baseMoveSpeed = 3.1f;
-        [SerializeField] private float sprintSpeed = 4.3f;
-        [SerializeField] private float crouchSpeed = 1.0f;
+        [SerializeField] private float baseMoveSpeed = 3.6f;
+        [SerializeField] private float sprintSpeed = 4.9f;
+        [SerializeField] private float crouchSpeed = 1.1f;
         [SerializeField] private float jumpHeight = 1.6f;
         [SerializeField] private float rotationSpeed = 12f;
         [SerializeField] private float gravity = -18f;
@@ -37,8 +37,20 @@ namespace Ayni.Player
         [Tooltip("La animación se acelera o se frena para que los pies pisen a la velocidad a la que Yari avanza de verdad. " +
                  "Estos son los topes: por encima las piernas se verían a cámara rápida y se prefiere que patinen un poco.")]
         [SerializeField] private float maxRunCadence = 1.05f;
-        [SerializeField] private float maxSprintCadence = 1.5f;
-        [SerializeField] private float maxCrouchCadence = 1.6f;
+        [SerializeField] private float maxSprintCadence = 1.3f;
+        [SerializeField] private float maxCrouchCadence = 1.4f;
+        [Tooltip("Tope para los pasos laterales y hacia atrás con el rival fijado.")]
+        [SerializeField] private float maxStrafeCadence = 1.3f;
+
+        [Header("Salto en carrera")]
+        [Tooltip("A partir de este ritmo (1 = corriendo a fondo) el salto se convierte en un salto largo hacia delante.")]
+        [SerializeField] private float leapMinPace = 0.7f;
+        [Tooltip("Cuánto se acelera Yari en el aire respecto a la velocidad a la que venía corriendo.")]
+        [SerializeField] private float leapSpeedBoost = 1.3f;
+        [Tooltip("Altura del salto largo (m). Algo más bajo que el salto parado: se va lejos, no alto.")]
+        [SerializeField] private float leapHeight = 1.05f;
+        [Tooltip("Grados por segundo que se puede corregir la dirección en el aire.")]
+        [SerializeField] private float leapSteer = 50f;
 
         [Header("Postura y Agachado")]
         [SerializeField] private float combatStanceDuration = 4.5f;
@@ -124,6 +136,8 @@ namespace Ayni.Player
         [SerializeField] private float lockOnBreakRange = 20f;
         [Tooltip("Velocidad al moverse de lado o hacia atrás con el rival fijado.")]
         [SerializeField] private float lockStrafeSpeed = 2.4f;
+        [Tooltip("Velocidad al retroceder con el rival fijado (m/s). El clip de paso atrás cubre menos que los laterales.")]
+        [SerializeField] private float lockBackSpeed = 2.0f;
 
         [Header("Salto")]
         [Tooltip("Segundos de mezcla al aterrizar para volver a la locomoción.")]
@@ -255,8 +269,19 @@ namespace Ayni.Player
         private float walkStride = 1.07f;
         private float runStride = 2.37f;
         private float sprintStride = 2.95f;
-        private float crouchStride = 0.62f;
+        private float crouchStride = 0.95f;
+        private float strafeLeftStride = 3.0f;
+        private float strafeRightStride = 2.3f;
+        private float backStride = 1.66f;
         private float runBlend = 1f;      // 0 = caminando, 1 = corriendo (suavizado)
+        private float lastGroundedAt = -10f;
+        private float jumpPressedAt = -10f;
+        // Salto en carrera: en el aire Yari conserva la dirección y la velocidad con las que despegó
+        private bool leaping;
+        private Vector3 leapDir;
+        private float leapSpeed;
+        private Vector3 lastMoveDir;
+        private float lastMoveSpeed;
         private float paceRatio;
         private int paceFrame = -10;
         private float locomotionCadence = 1f;
@@ -350,6 +375,9 @@ namespace Ayni.Player
                             attackTimings.GetGroundSpeed("Jog_Forward_InPlace", runStride));
                 sprintStride = attackTimings.GetGroundSpeed("Sprint_Run_InPlace", sprintStride);
                 crouchStride = attackTimings.GetGroundSpeed("Crouch_Walk_InPlace", crouchStride);
+                strafeLeftStride = attackTimings.GetGroundSpeed("Strafe_Left", strafeLeftStride);
+                strafeRightStride = attackTimings.GetGroundSpeed("Strafe_Right", strafeRightStride);
+                backStride = attackTimings.GetGroundSpeed("Walk_Back", backStride);
             }
             ApplyVisualGroundOffset();
             footIK = FootIK.Attach(animator, characterController);
@@ -486,7 +514,9 @@ namespace Ayni.Player
             // Cayendo por el aire: solo un poco de control de dirección
             if (fallAnimPlaying)
             {
-                HandleAirControl();
+                // Si la caída viene de un salto en carrera, conserva su impulso
+                if (leaping) LeapAirMove();
+                else HandleAirControl();
                 ApplyGravity();
                 return;
             }
@@ -530,10 +560,15 @@ namespace Ayni.Player
             if (animator == null || CinematicControl) return;
             if (animator.speed < 0.1f) return; // micro-pausa de un impacto en curso
 
+            // En las cuestas el CharacterController pierde el suelo un fotograma de vez en cuando: se da un margen
+            // para que la cadencia no salte a 1 y vuelva
+            if (characterController.isGrounded) lastGroundedAt = Time.time;
+            bool onGround = Time.time - lastGroundedAt < 0.2f;
+
             bool paced = locomotionCadence < 0.999f || locomotionCadence > 1.001f;
             bool canScale = paced && !isAttacking && !isDead && !isGuarding && !jumpInAir && !fallAnimPlaying &&
                             !beingRescued && !IsStunned && !AyniGameState.InputLocked &&
-                            characterController.isGrounded && InLocomotionState();
+                            onGround && InLocomotionState();
 
             if (canScale)
             {
@@ -686,6 +721,11 @@ namespace Ayni.Player
 
         private void HandleMovement()
         {
+            if (leaping)
+            {
+                LeapAirMove();
+                return;
+            }
             if (isAttacking) return;
 
             if (cameraTransform == null)
@@ -719,11 +759,14 @@ namespace Ayni.Player
             Vector3 animMoveDir = Vector3.zero;
             locomotionCadence = 1f;
 
-            // Sprint (Shift, RT o L3) cuando se mueve, sin estar en guardia ni con el rival fijado
-            if (hasMoveInput && analog > 0.5f && AyniInput.Held(AyniInput.Action.Sprint) && !locked)
+            // Con el stick, la inclinación decide entre caminar y correr y RT / L3 es el sprint.
+            // Con el teclado se camina, Shift hace correr y no hay sprint.
+            bool stick = AyniInput.MoveFromStick;
+            bool runHeld = AyniInput.Held(AyniInput.Action.Sprint);
+            if (hasMoveInput && analog > 0.5f && runHeld && !locked)
             {
                 if (isCrouching) SetCrouch(false); // Salir de cuclillas al correr
-                isSprinting = true;
+                isSprinting = stick;
             }
             else
             {
@@ -756,10 +799,20 @@ namespace Ayni.Player
                     targetAnimSpeedVal = 2f;
                 }
 
-                // Con el rival fijado: hacia él a velocidad normal, de lado o hacia atrás más despacio
+                // Con el rival fijado: hacia él a velocidad normal, de lado o hacia atrás más despacio. La velocidad y
+                // lo que cubren los pasos se reparten según cuánto del movimiento va en cada dirección (como el
+                // BlendTree de LockOn_Locomotion, que mezcla correr, retroceder y los dos laterales).
+                float lockStride = runStride;
                 if (locked && !isCrouching)
                 {
-                    speedToUse = Mathf.Lerp(lockStrafeSpeed, baseMoveSpeed, Mathf.Clamp01(Vector3.Dot(moveDir, toTarget)));
+                    Vector3 local = toTarget.sqrMagnitude > 0.5f
+                        ? Quaternion.Inverse(Quaternion.LookRotation(toTarget)) * moveDir
+                        : transform.InverseTransformDirection(moveDir);
+                    float fwd = Mathf.Max(0f, local.z), back = Mathf.Max(0f, -local.z);
+                    float left = Mathf.Max(0f, -local.x), right = Mathf.Max(0f, local.x);
+                    float sum = Mathf.Max(0.001f, fwd + back + left + right);
+                    speedToUse = (fwd * baseMoveSpeed + back * lockBackSpeed + (left + right) * lockStrafeSpeed) / sum;
+                    lockStride = (fwd * runStride + back * backStride + left * strafeLeftStride + right * strafeRightStride) / sum;
                 }
 
                 float speedMul = talisman.GetSpeedMultiplier();
@@ -780,16 +833,16 @@ namespace Ayni.Player
                 }
                 else if (!locked)
                 {
-                    // Dos marchas con el stick: caminar y correr (el teclado siempre da 1 = correr a fondo).
-                    // Pasado el umbral corre suave y acelera hasta el tope con el stick a fondo.
-                    bool wantsRun = analog >= runStickThreshold;
+                    // Dos marchas: caminar y correr. Con el stick, pasado el umbral corre suave y acelera hasta el
+                    // tope con el stick a fondo; con el teclado camina y corre a fondo mientras se mantiene Shift.
+                    bool wantsRun = stick ? analog >= runStickThreshold : runHeld;
                     runBlend = Mathf.MoveTowards(runBlend, wantsRun ? 1f : 0f, 4.5f * Time.deltaTime);
                     float smooth = runBlend * runBlend * (3f - 2f * runBlend);
 
                     float walkSpeed = Mathf.Lerp(walkPaceMin, walkPaceMax, Mathf.InverseLerp(0.1f, runStickThreshold, analog)) * speedMul;
                     float runSpeed = currentSpeed * Mathf.Lerp(runPaceAtThreshold, 1f, Mathf.InverseLerp(runStickThreshold, 0.97f, analog));
                     float walkCadence = Mathf.Clamp(walkSpeed / walkStride, 0.7f, 1.3f);
-                    float runCadence = Mathf.Clamp(runSpeed / runStride, 0.85f, maxRunCadence);
+                    float runCadence = Mathf.Clamp(runSpeed / runStride, 0.7f, maxRunCadence);
 
                     currentSpeed = Mathf.Lerp(walkSpeed, runSpeed, smooth);
                     locomotionCadence = Mathf.Lerp(walkCadence, runCadence, smooth);
@@ -797,18 +850,16 @@ namespace Ayni.Player
                 }
                 else
                 {
-                    // Con el rival fijado: más despacio con el stick a medias. Hacia él se usa el clip de carrera y su
-                    // cadencia; de lado y hacia atrás, los pasos de combate al ritmo del stick.
-                    float walk = Mathf.Lerp(0.45f, 1f, Mathf.InverseLerp(0.1f, 0.9f, analog));
-                    currentSpeed *= walk;
-                    float towards = Mathf.InverseLerp(0.5f, 0.9f, Vector3.Dot(moveDir, toTarget));
-                    locomotionCadence = Mathf.Lerp(Mathf.Clamp(walk, 0.6f, 1f),
-                                                   Mathf.Clamp(currentSpeed / runStride, 0.7f, maxRunCadence), towards);
+                    // Con el rival fijado: más despacio con el stick a medias, y los pasos al ritmo de esa velocidad
+                    currentSpeed *= Mathf.Lerp(0.45f, 1f, Mathf.InverseLerp(0.1f, 0.9f, analog));
+                    locomotionCadence = Mathf.Clamp(currentSpeed / Mathf.Max(0.1f, lockStride), 0.6f, maxStrafeCadence);
                 }
 
                 characterController.Move(moveDir * (currentSpeed * Time.deltaTime));
                 paceRatio = currentSpeed / Mathf.Max(0.1f, baseMoveSpeed * speedMul);
                 paceFrame = Time.frameCount;
+                lastMoveDir = moveDir;
+                lastMoveSpeed = currentSpeed;
 
                 if (!locked)
                 {
@@ -822,8 +873,8 @@ namespace Ayni.Player
             else
             {
                 currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 10f * Time.deltaTime);
-                // Desde parado: con el stick se arranca caminando y se acelera; con el teclado, corriendo
-                runBlend = AyniInput.UsingGamepad ? 0f : 1f;
+                // Desde parado siempre se arranca caminando y, si toca correr, se acelera
+                runBlend = 0f;
             }
 
             if (animator) animator.SetFloat("Speed", currentAnimSpeed);
@@ -926,22 +977,69 @@ namespace Ayni.Player
 
         private void HandleJump()
         {
-            if (!characterController.isGrounded) return;
+            // La pulsación se recuerda un instante y el suelo también: corriendo por terreno irregular el
+            // CharacterController pierde el suelo algún fotograma suelto, y si coincidía con la pulsación el salto se perdía.
+            if (AyniInput.Down(AyniInput.Action.Jump)) jumpPressedAt = Time.time;
+            bool onGround = characterController.isGrounded || Time.time - lastGroundedAt < 0.12f;
+            if (!onGround || jumpInAir || velocity.y > 0.5f) return;
 
             // Salto estándar (Espacio / A sin estar en guardia). Con un rival para el Juicio Ayni, A del mando es "perdonar".
-            if (AyniInput.Down(AyniInput.Action.Jump) && !isGuarding && !isAttacking &&
+            if (Time.time - jumpPressedAt < 0.15f && !isGuarding && !isAttacking &&
                 !(AyniInput.UsingGamepad && HasJudgeableEnemy()))
             {
+                jumpPressedAt = -10f;
                 if (isCrouching)
                 {
                     SetCrouch(false);
                 }
-                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+
+                // Corriendo (sin rival fijado) el salto es largo: Yari no se frena, sale lanzado hacia donde corría
+                bool runningJump = lockTarget == null && Time.frameCount == paceFrame && paceRatio >= leapMinPace &&
+                                   lastMoveDir.sqrMagnitude > 0.5f;
+
+                velocity.y = Mathf.Sqrt((runningJump ? leapHeight : jumpHeight) * -2f * gravity);
                 float airTime = 2f * velocity.y / Mathf.Max(0.01f, -gravity);
                 PlayJumpAnimation(airTime);
                 jumpInAir = true;
                 jumpStartTime = Time.time;
+
+                if (runningJump)
+                {
+                    leaping = true;
+                    leapDir = lastMoveDir.normalized;
+                    leapSpeed = lastMoveSpeed * leapSpeedBoost;
+                    runBlend = 1f;
+                }
             }
+        }
+
+        /// <summary>
+        /// En el aire durante un salto en carrera: Yari sigue en la dirección y a la velocidad del despegue.
+        /// La dirección se puede corregir un poco, pero no frenar ni dar media vuelta.
+        /// </summary>
+        private void LeapAirMove()
+        {
+            if (cameraTransform != null)
+            {
+                Vector2 move = AyniInput.Move;
+                if (move.sqrMagnitude > 0.04f)
+                {
+                    Vector3 camForward = cameraTransform.forward;
+                    Vector3 camRight = cameraTransform.right;
+                    camForward.y = 0f;
+                    camRight.y = 0f;
+                    Vector3 wanted = camForward.normalized * move.y + camRight.normalized * move.x;
+                    if (wanted.sqrMagnitude > 0.01f)
+                    {
+                        leapDir = Vector3.RotateTowards(leapDir, wanted.normalized, leapSteer * Mathf.Deg2Rad * Time.deltaTime, 0f);
+                    }
+                }
+            }
+
+            characterController.Move(leapDir * (leapSpeed * Time.deltaTime));
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(leapDir), rotationSpeed * Time.deltaTime);
+            locomotionCadence = 1f;
+            paceFrame = Time.frameCount; // la cámara mantiene la sensación de velocidad durante el salto
         }
 
         /// <summary>
@@ -971,6 +1069,7 @@ namespace Ayni.Player
         {
             if (!jumpInAir || Time.time - jumpStartTime < 0.15f || !characterController.isGrounded) return;
             jumpInAir = false;
+            leaping = false;
             if (!animator) return;
 
             bool inJump = animator.GetCurrentAnimatorStateInfo(0).IsName("Jump") ||
@@ -985,6 +1084,7 @@ namespace Ayni.Player
         private void ApplyGravity()
         {
             if (characterController.isGrounded && velocity.y < 0) velocity.y = -2f;
+            if (characterController.isGrounded) lastGroundedAt = Time.time;
 
             velocity.y += gravity * Time.deltaTime;
             characterController.Move(velocity * Time.deltaTime);
@@ -1031,6 +1131,7 @@ namespace Ayni.Player
 
             fallAnimPlaying = false;
             jumpInAir = false;
+            leaping = false;
             Land(drop);
         }
 
@@ -1112,6 +1213,7 @@ namespace Ayni.Player
         private IEnumerator AbyssDeathRoutine(Vector3 safePosition, float rimY, float waterY)
         {
             beingRescued = true;
+            leaping = false;
             isDead = true;
             CancelPendingAttack();
             SetGuard(false);
@@ -1186,6 +1288,7 @@ namespace Ayni.Player
             airborne = false;
             fallAnimPlaying = false;
             jumpInAir = false;
+            leaping = false;
             if (cam != null)
             {
                 cam.StopWatchingFall();

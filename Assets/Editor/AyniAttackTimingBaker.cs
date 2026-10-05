@@ -25,7 +25,8 @@ namespace Ayni.Editor
 
         private static readonly string[] LocomotionClips =
         {
-            "Walk_Forward_InPlace", "Jog_Forward_InPlace", "Run_Forward_InPlace", "Sprint_Run_InPlace", "Crouch_Walk_InPlace"
+            "Walk_Forward_InPlace", "Jog_Forward_InPlace", "Run_Forward_InPlace", "Sprint_Run_InPlace", "Crouch_Walk_InPlace",
+            "Strafe_Left", "Strafe_Right", "Walk_Back"
         };
 
         [MenuItem("Ayni/Herramientas/Medir Tiempos de Impacto de los Ataques")]
@@ -334,6 +335,7 @@ namespace Ayni.Editor
 
                 var y = new float[samples];
                 var z = new float[samples];
+                var x = new float[samples];
                 float minY = float.MaxValue, maxY = float.MinValue;
                 for (int i = 0; i < samples; i++)
                 {
@@ -341,6 +343,7 @@ namespace Ayni.Editor
                     Vector3 p = go.transform.InverseTransformPoint(foot.position);
                     y[i] = p.y;
                     z[i] = p.z;
+                    x[i] = p.x;
                     minY = Mathf.Min(minY, p.y);
                     maxY = Mathf.Max(maxY, p.y);
                 }
@@ -352,8 +355,11 @@ namespace Ayni.Editor
                 {
                     if (y[i] <= plantedBelow && y[i + 1] <= plantedBelow)
                     {
-                        float backwardSpeed = -(z[i + 1] - z[i]) / step;
-                        if (backwardSpeed > 0.05f) speeds.Add(backwardSpeed);
+                        // Velocidad del pie sobre el suelo en cualquier dirección: vale igual para avanzar,
+                        // retroceder o desplazarse de lado
+                        float dz = z[i + 1] - z[i], dx = x[i + 1] - x[i];
+                        float groundSpeed = Mathf.Sqrt(dz * dz + dx * dx) / step;
+                        if (groundSpeed > 0.05f) speeds.Add(groundSpeed);
                     }
                 }
             }
