@@ -1,7 +1,34 @@
 # 🎮 GUÍA VISUAL DE CONTROLES Y MOVIMIENTOS
 # 🌄 AYNI: EL RETORNO DEL GUARDIÁN
 
-> **Guía Oficial de Comportamiento y Asignación de Teclas (Teclado & Ratón)**
+> **Guía Oficial de Comportamiento y Asignación de Teclas (Teclado & Ratón y Mando de Xbox)**
+>
+> El HUD y el tutorial muestran solos los botones del dispositivo que estés usando: cambian al tocar el mando o el teclado.
+
+## 🎮 Mando de Xbox (resumen)
+
+| Acción | Mando de Xbox | Teclado y ratón |
+| :--- | :--- | :--- |
+| Moverse | Stick izquierdo (inclinarlo poco = caminar despacio) | `W` `A` `S` `D` |
+| Cámara | Stick derecho | Ratón |
+| Correr | Mantener `RT` (o pulsar el stick izquierdo, `L3`) | `Shift Izq.` |
+| Saltar | `A` | `Espacio` |
+| Agacharse | `B` (alternar) | `C` / `Ctrl Izq.` |
+| Golpe ligero | `X` | `Clic Izq.` |
+| Golpe pesado | `Y` | `Q` / `E` |
+| Guardia (Yari se planta) | Mantener `LB` | Mantener `Clic Der.` / `G` |
+| Guardia + agacharse (evita golpes altos) | `LB` + stick ↓ | Guardia + `S` |
+| Guardia + saltito (evita barridos) | `LB` + stick ↑ (o `A`) | Guardia + `W` / `Espacio` |
+| Guardia + balanceo (evita cualquier golpe) | `LB` + stick ← → | Guardia + `A` / `D` |
+| Fijar rival | `RB` o `R3` | `Tab` / `Clic central` |
+| Juicio Ayni: Venganza | `B` (botón rojo) | `F` |
+| Juicio Ayni: Ayni (perdón) | `A` (botón verde) | `X` |
+| Tutorial | `View` | `F1` |
+| Saltar escena / tutorial · Reintentar | `Menu` | `Tab` / `Esc` · `R` |
+| Mostrar u ocultar controles | Cruceta ↑ | `H` |
+| Panel de prueba del mando | — | `F9` |
+
+**Primera vez con el mando:** el menú `Ayni > Mando > Configurar Ejes del Mando Xbox` deja listos los ejes (ya vienen configurados en el repositorio). Para comprobar que Unity lee cada botón, entra en Play y pulsa `F9`.
 
 ---
 
@@ -45,14 +72,18 @@ Permite sortear desniveles, grietas en la calzada incaica y abismos entre puente
 
 ---
 
-## 5. Guardia Activa, Desvío (Parry) y Esquivas Sifu: `[CLIC DERECHO]` + `[S]` / `[ESPACIO]`
+## 5. Guardia Activa, Desvío (Parry) y Esquivas Sifu: `[CLIC DERECHO]` / `[LB]` + dirección
 El pilar defensivo táctico del combate. Mantener la guardia reduce el daño recibido pero aumenta la barra de estructura propia. Desviar en el último milisegundo produce un **Parry perfecto**.
+
+Como en *Sifu*, **en guardia Yari se planta y no camina**: solo gira para encarar al rival. La dirección ya no lo desplaza, solo elige la esquiva, y todas se hacen sin moverse del sitio. Tras esquivar o desviar, el siguiente golpe es un **contraataque** que daña mucho más la postura.
 
 ![Control Guardia y Esquiva Sifu](Assets/Art/Controls_Art/05_Control_Guardia_Esquiva_Sifu.jpg)
 
-- **Guardia:** Mantener `Clic Derecho` o tecla `G`.
-- **Esquiva Duck (Agachada rápida bajo golpes altos):** En guardia + `S` o `Espacio`.
-- **Esquiva Jump (Salto sobre barridos bajos):** En guardia + `W`.
+- **Guardia:** Mantener `Clic Derecho`, tecla `G` o `LB`.
+- **Esquiva Duck (Agachada rápida bajo golpes altos, aviso rojo):** En guardia + `S` (stick ↓).
+- **Esquiva Jump (Saltito sobre barridos bajos, aviso amarillo):** En guardia + `W` o `Espacio` (stick ↑ o `A`).
+- **Balanceo lateral (evita cualquier golpe, con menos margen):** En guardia + `A` / `D` (stick ← →).
+- Hay que volver a inclinar la dirección para encadenar otra esquiva (mantenerla pulsada no repite).
 
 ---
 
@@ -63,4 +94,5 @@ El sistema ofensivo del "Puño de Piedra" incaico, combinando impactos rápidos 
 
 - **Ataque Ligero (Puñetazo Rumi Maki):** `Clic Izquierdo` (combo rápido de puños y codazos).
 - **Ataque Pesado (Patada Circular y Golpe Sísmico):** Tecla `Q` o `E` (alto daño a la postura del rival).
-- **Juicio Ayni (al quebrar la postura enemiga):** Tecla `F` (Golpe Letal de Venganza) / Tecla `X` (Desarme y Purificación).
+- **Juicio Ayni (al quebrar la postura enemiga):** Tecla `F` / `B` (Golpe Letal de Venganza) · Tecla `X` / `A` (Desarme y Purificación).
+- **Jefes:** no mueren a golpes. Romperles la postura antes de su fase final solo los deja expuestos (los golpes duelen más); en la fase final (≤ 40 % de vida) la acción se congela a cámara lenta y se decide el **Juicio Ayni**.

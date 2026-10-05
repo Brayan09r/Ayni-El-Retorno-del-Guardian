@@ -771,6 +771,10 @@ namespace Ayni.Editor
             // Medir en los clips el instante real de impacto de cada golpe
             try { AyniAttackTimingBaker.Bake(); }
             catch (System.Exception e) { Debug.LogWarning("[Ayni] No se pudieron medir los tiempos de impacto: " + e.Message); }
+
+            // Volver a poner las esquivas en el sitio, las caídas y el aterrizaje (Ayni > Animaciones)
+            try { AyniAnimatorUpgrade.Apply(); }
+            catch (System.Exception e) { Debug.LogWarning("[Ayni] No se pudieron añadir los estados generados: " + e.Message); }
         }
 
         /// <summary>

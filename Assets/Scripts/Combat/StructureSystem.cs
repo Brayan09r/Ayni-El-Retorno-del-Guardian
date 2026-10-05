@@ -22,13 +22,16 @@ namespace Ayni.Combat
         private float brokenTime;
         public bool IsBroken { get; private set; }
 
+        /// <summary>Mientras es true, la postura rota no se recupera sola (el Juicio Ayni de un jefe espera la decisión).</summary>
+        public bool HoldBroken { get; set; }
+
         public float CurrentStructure => currentStructure;
         public float MaxStructure => maxStructure;
         public float StructureRatio => currentStructure / maxStructure;
 
         /// <summary>Segundos que quedan de aturdimiento (0 si no está rota o si no se recupera sola).</summary>
         public float BrokenTimeRemaining =>
-            IsBroken && brokenDuration > 0f ? Mathf.Max(0f, brokenDuration - (Time.time - brokenTime)) : 0f;
+            IsBroken && brokenDuration > 0f && !HoldBroken ? Mathf.Max(0f, brokenDuration - (Time.time - brokenTime)) : 0f;
 
         public event Action OnStructureBroken;
         public event Action OnStructureRecovered;
@@ -38,7 +41,7 @@ namespace Ayni.Combat
         {
             if (IsBroken)
             {
-                if (brokenDuration > 0f && Time.time - brokenTime >= brokenDuration)
+                if (brokenDuration > 0f && !HoldBroken && Time.time - brokenTime >= brokenDuration)
                 {
                     ResetStructure();
                 }

@@ -57,8 +57,13 @@ namespace Ayni.Editor
         [InitializeOnLoadMethod]
         public static void ImportAndConfigureAll()
         {
+            // Una sola vez por sesión del editor y nunca al entrar en Play: antes corría en cada recompilación
+            // y en cada Play, reimportando las animaciones y provocando recargas extra
+            if (SessionState.GetBool("AyniAnimationImporterDone", false)) return;
             EditorApplication.delayCall += () =>
             {
+                if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+                SessionState.SetBool("AyniAnimationImporterDone", true);
                 RunImport();
             };
         }

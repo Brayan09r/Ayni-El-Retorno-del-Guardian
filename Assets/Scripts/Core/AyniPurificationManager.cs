@@ -17,6 +17,8 @@ namespace Ayni.Core
         [SerializeField] private int enemiesKilled = 0;
         [SerializeField] private int enemiesSpared = 0;
         [SerializeField] private float executionRange = 3.0f;
+        [Tooltip("Distancia desde la que se puede resolver el Juicio Ayni de un jefe (Yari se acerca solo).")]
+        [SerializeField] private float bossJudgmentRange = 9f;
 
         public int EnemiesKilled => enemiesKilled;
         public int EnemiesSpared => enemiesSpared;
@@ -41,10 +43,10 @@ namespace Ayni.Core
             EnemyController[] enemies = FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
             foreach (var enemy in enemies)
             {
-                if (!enemy.IsDead && enemy.Structure.IsBroken)
+                if (enemy.CanBeJudged)
                 {
                     float dist = Vector3.Distance(playerPos, enemy.transform.position);
-                    if (dist <= executionRange)
+                    if (dist <= (enemy.IsBoss ? bossJudgmentRange : executionRange))
                     {
                         ResolveDilemma(enemy, isAyniMercy);
                         return;

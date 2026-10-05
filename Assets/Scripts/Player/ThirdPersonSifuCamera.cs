@@ -22,6 +22,12 @@ namespace Ayni.Player
         [SerializeField] private float minPitch = -20f;
         [SerializeField] private float maxPitch = 60f;
 
+        [Header("Mando (stick derecho)")]
+        [Tooltip("Grados por segundo que gira la cámara con el stick derecho al fondo.")]
+        [SerializeField] private float stickYawSpeed = 170f;
+        [SerializeField] private float stickPitchSpeed = 110f;
+        [SerializeField] private bool invertStickY = false;
+
         [Header("Colisión con el escenario")]
         [SerializeField] private float collisionRadius = 0.25f;
         [SerializeField] private float minDistance = 0.8f;
@@ -96,8 +102,8 @@ namespace Ayni.Player
             SnapBehindTarget();
         }
 
-        /// <summary>Coloca la cámara directamente detrás del personaje (sin suavizado).</summary>
-        private void SnapBehindTarget()
+        /// <summary>Coloca la cámara directamente detrás del personaje (sin suavizado). La usan las escenas al terminar.</summary>
+        public void SnapBehindTarget()
         {
             if (target == null) return;
 
@@ -153,9 +159,11 @@ namespace Ayni.Player
             }
             else if (!Ayni.Core.AyniGameState.InputLocked)
             {
-                // Cámara libre con el ratón (no gira mientras el tutorial está abierto)
-                yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
-                pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
+                // Cámara libre con el ratón o el stick derecho (no gira mientras el tutorial está abierto)
+                Vector2 mouse = Ayni.Core.AyniInput.MouseDelta;
+                Vector2 stick = Ayni.Core.AyniInput.LookStick;
+                yaw += mouse.x * mouseSensitivity + stick.x * stickYawSpeed * Time.unscaledDeltaTime;
+                pitch -= mouse.y * mouseSensitivity + stick.y * (invertStickY ? -1f : 1f) * stickPitchSpeed * Time.unscaledDeltaTime;
             }
             pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
