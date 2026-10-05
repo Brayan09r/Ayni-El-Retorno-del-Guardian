@@ -6,6 +6,7 @@ namespace Ayni.Combat
     /// <summary>
     /// Sistema de Estructura / Postura (Mecánica idéntica a Sifu y Sekiro).
     /// Si la barra de estructura se llena al 100%, el personaje queda aturdido y vulnerable a ejecuciones o al perdón del Ayni.
+    /// Pasado <see cref="brokenDuration"/> la postura se recupera sola.
     /// </summary>
     public class StructureSystem : MonoBehaviour
     {
@@ -14,13 +15,20 @@ namespace Ayni.Combat
         [SerializeField] private float currentStructure = 0f;
         [SerializeField] private float recoveryRate = 18f; // Tasa de recuperación de estructura por segundo
         [SerializeField] private float recoveryDelay = 1.2f;
+        [Tooltip("Segundos que dura la postura rota antes de recuperarse sola. 0 = no se recupera hasta llamar a ResetStructure().")]
+        [SerializeField] private float brokenDuration = 4f;
 
         private float lastDamageTime;
+        private float brokenTime;
         public bool IsBroken { get; private set; }
 
         public float CurrentStructure => currentStructure;
         public float MaxStructure => maxStructure;
         public float StructureRatio => currentStructure / maxStructure;
+
+        /// <summary>Segundos que quedan de aturdimiento (0 si no está rota o si no se recupera sola).</summary>
+        public float BrokenTimeRemaining =>
+            IsBroken && brokenDuration > 0f ? Mathf.Max(0f, brokenDuration - (Time.time - brokenTime)) : 0f;
 
         public event Action OnStructureBroken;
         public event Action OnStructureRecovered;
@@ -28,7 +36,14 @@ namespace Ayni.Combat
 
         private void Update()
         {
-            if (IsBroken) return;
+            if (IsBroken)
+            {
+                if (brokenDuration > 0f && Time.time - brokenTime >= brokenDuration)
+                {
+                    ResetStructure();
+                }
+                return;
+            }
 
             if (Time.time - lastDamageTime >= recoveryDelay && currentStructure > 0f)
             {
@@ -58,15 +73,18 @@ namespace Ayni.Combat
         {
             currentStructure = maxStructure;
             IsBroken = true;
+            brokenTime = Time.time;
             Debug.Log($"[StructureSystem] ¡Estructura Rota en {gameObject.name}! Estado de aturdimiento.");
             OnStructureBroken?.Invoke();
         }
 
         public void ResetStructure()
         {
+            bool wasBroken = IsBroken;
             currentStructure = 0f;
             IsBroken = false;
-            OnStructureRecovered?.Invoke();
+            lastDamageTime = Time.time;
+            if (wasBroken) OnStructureRecovered?.Invoke();
             OnStructureChanged?.Invoke(currentStructure, maxStructure);
         }
     }

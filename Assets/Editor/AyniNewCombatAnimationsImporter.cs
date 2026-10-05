@@ -150,7 +150,10 @@ namespace Ayni.Editor
                     if (c.loopTime != shouldLoop) { c.loopTime = shouldLoop; needReimport = true; }
                     if (!c.lockRootRotation) { c.lockRootRotation = true; needReimport = true; }
                     if (!c.lockRootHeightY) { c.lockRootHeightY = true; needReimport = true; }
-                    if (!c.lockRootPositionXZ) { c.lockRootPositionXZ = true; needReimport = true; }
+                    // Los golpes NO fijan su desplazamiento en la pose: el paso del clip mueve al personaje en el juego
+                    // (RootMotionRelay). Con el desplazamiento fijado, el cuerpo avanzaba y los pies se arrastraban.
+                    bool bakeXZ = !isAttack;
+                    if (c.lockRootPositionXZ != bakeXZ) { c.lockRootPositionXZ = bakeXZ; needReimport = true; }
                     if (c.mirror != isMirrored) { c.mirror = isMirrored; needReimport = true; }
                 }
 

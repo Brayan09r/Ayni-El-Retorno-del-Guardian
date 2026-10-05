@@ -74,3 +74,6 @@ crashlytics-build.properties
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Copia local del terreno original (Ayni > Entorno)
+/EnvironmentBackups/

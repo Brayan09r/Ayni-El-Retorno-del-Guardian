@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afc32b64995a5134b83fe13d8b57e191, type: 3}
+  m_Name: YariAttackTimings
+  m_EditorClassIdentifier: Assembly-CSharp::Ayni.Combat.AttackTimingTable
+  jumpTakeoff: 0.87
+  jumpLand: 1.23
+  jumpLength: 2.1666667
+  entries:
+  - clipName: Light_Punch_1_L
+    length: 1.3333334
+    contactTime: 0.4
+    strikingBone: LeftHand
+  - clipName: Light_Punch_2_R
+    length: 2
+    contactTime: 1.17
+    strikingBone: RightHand
+  - clipName: Light_Punch_3_L
+    length: 1.3000001
+    contactTime: 0.43
+    strikingBone: LeftHand
+  - clipName: Light_Punch_4_R
+    length: 1
+    contactTime: 0.35
+    strikingBone: RightHand
+  - clipName: Heavy_Overhand
+    length: 1.1
+    contactTime: 0.3
+    strikingBone: RightHand
+  - clipName: Heavy_Uppercut
+    length: 1.3333334
+    contactTime: 0.52
+    strikingBone: LeftHand
+  - clipName: Heavy_Elbow
+    length: 1.7333335
+    contactTime: 0.6
+    strikingBone: RightLowerArm
+  - clipName: Heavy_Headbutt
+    length: 2.1000001
+    contactTime: 0.77
+    strikingBone: Head
+  - clipName: Heavy_FrontKick
+    length: 1.6000001
+    contactTime: 0.67
+    strikingBone: RightFoot
+  locomotion:
+  - clipName: Jog_Forward_InPlace
+    groundSpeed: 1.61
+  - clipName: Sprint_Run_InPlace
+    groundSpeed: 2.4
+  - clipName: Crouch_Walk_InPlace
+    groundSpeed: 0.63

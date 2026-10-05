@@ -59,7 +59,7 @@ namespace Ayni.Core
             {
                 enemiesSpared++;
                 Debug.Log($"<color=cyan>[CAMINO DEL AYNI]</color> Has perdonado y desarmado a {enemy.CharacterName}. El equilibrio ecológico y social comienza a restaurarse.");
-                enemy.Defeat(killed: false);
+                enemy.Defeat(killed: false, reactionDelay: 0.45f);
 
                 // Reducir el contador de muerte del talismán como recompensa por restaurar el Ayni
                 var player = GameObject.FindGameObjectWithTag("Player");
@@ -72,7 +72,7 @@ namespace Ayni.Core
             {
                 enemiesKilled++;
                 Debug.Log($"<color=red>[CAMINO DE LA VENGANZA]</color> Has ejecutado a {enemy.CharacterName}. La violencia engendra más destrucción.");
-                enemy.Defeat(killed: true);
+                enemy.Defeat(killed: true, reactionDelay: 0.25f);
             }
 
             OnCombatResolved?.Invoke(enemy, isAyniMercy);

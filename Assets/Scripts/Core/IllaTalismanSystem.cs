@@ -22,9 +22,9 @@ namespace Ayni.Core
 
         public enum AgeStage
         {
-            Youth,    // 20 a 29 años: Alta velocidad, esquivas ágiles, gran vida base
-            Prime,    // 30 a 49 años: Fuerza equilibrada, técnicas intermedias de Rumi Maki
-            Elder     // 50 a 70+ años: Daño masivo de impacto y contraataques letales, vida muy reducida
+            Youth,    // 20 a 35 años: Alta velocidad, esquivas ágiles, gran vida base
+            Prime,    // 36 a 55 años: Fuerza equilibrada, técnicas intermedias de Rumi Maki
+            Elder     // 56 a 75 años: Daño masivo de impacto y contraataques letales, vida muy reducida
         }
 
         private void Awake()
@@ -34,8 +34,8 @@ namespace Ayni.Core
 
         public AgeStage GetCurrentStage()
         {
-            if (CurrentAge < 30) return AgeStage.Youth;
-            if (CurrentAge < 50) return AgeStage.Prime;
+            if (CurrentAge <= 35) return AgeStage.Youth;
+            if (CurrentAge <= 55) return AgeStage.Prime;
             return AgeStage.Elder;
         }
 

@@ -1,7 +1,10 @@
 using System;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Ayni.Core;
 using Ayni.Combat;
+using Ayni.Enemy;
 
 namespace Ayni.Player
 {
@@ -26,15 +29,80 @@ namespace Ayni.Player
         [SerializeField] private Vector3 crouchCenter = new Vector3(0f, 0.575f, 0f);
         [SerializeField] private float crouchLerpSpeed = 10f;
 
+        [Header("Vida y Talismán Illa")]
+        [SerializeField] private float baseMaxHealth = 100f;
+        [Tooltip("Segundos que Yari permanece caído antes de que el talismán lo resucite.")]
+        [SerializeField] private float reviveDelay = 2.2f;
+        [Tooltip("Segundos de invulnerabilidad tras resucitar.")]
+        [SerializeField] private float reviveInvulnerability = 1.5f;
+
         [Header("Combate Rumi Maki")]
         [SerializeField] private float lightAttackDamage = 18f;
         [SerializeField] private float heavyAttackDamage = 35f;
         [SerializeField] private float attackRange = 2.0f;
-        [SerializeField] private LayerMask enemyLayer;
+        [SerializeField] private LayerMask enemyLayer; // Ya no se usa: los golpes se resuelven contra EnemyController.All
         [SerializeField] private float parryWindow = 0.22f; // Ventana para desvío perfecto (parry)
+
+        [Header("Ritmo del Combo")]
+        [Tooltip("Segundos de preparación del clip que se conservan antes del impacto en los golpes ligeros (menos = más seco).")]
+        [SerializeField] private float lightLeadIn = 0.20f;
+        [Tooltip("Segundos de preparación del clip que se conservan antes del impacto en los golpes pesados.")]
+        [SerializeField] private float heavyLeadIn = 0.40f;
+        [Tooltip("Velocidad de reproducción de los golpes ligeros.")]
+        [SerializeField] private float lightAnimSpeed = 1.4f;
+        [Tooltip("Velocidad de reproducción de los golpes pesados.")]
+        [SerializeField] private float heavyAnimSpeed = 1.25f;
+        [Tooltip("Segundos tras el impacto a partir de los cuales se puede encadenar el siguiente golpe.")]
+        [SerializeField] private float comboCancelAfterContact = 0.10f;
+        [Tooltip("Segundos tras el impacto en que Yari recupera el control si no encadena (ligero).")]
+        [SerializeField] private float lightRecovery = 0.32f;
+        [Tooltip("Segundos tras el impacto en que Yari recupera el control si no encadena (pesado).")]
+        [SerializeField] private float heavyRecovery = 0.50f;
+        [Tooltip("Segundos que una pulsación de ataque queda en memoria para encadenar el combo.")]
+        [SerializeField] private float inputBufferTime = 0.30f;
+        [Tooltip("Segundos sin atacar tras los que el combo vuelve al primer golpe.")]
+        [SerializeField] private float comboResetTime = 0.6f;
+        [Tooltip("Cuánto del desplazamiento propio de cada animación de golpe se aplica a Yari (1 = el paso real del clip, 0 = golpea sin moverse).")]
+        [SerializeField] private float attackRootMotionScale = 1f;
+        [Tooltip("El paso del golpe no acerca a Yari al rival más allá de esta distancia.")]
+        [SerializeField] private float lungeStopDistance = 1.3f;
+        [Tooltip("Si el rival queda fuera de alcance por menos de esta distancia, Yari la cubre durante el golpe para que conecte.")]
+        [SerializeField] private float attackReachAssist = 0.4f;
+        [Tooltip("Estela que dibujan los golpes fuertes y los remates.")]
+        [SerializeField] private bool attackTrails = true;
+        [Tooltip("Ángulo total del arco frontal en el que conectan los golpes.")]
+        [SerializeField] private float attackArc = 120f;
+        [Tooltip("Al atacar, Yari se gira hacia el enemigo más cercano dentro de esta distancia.")]
+        [SerializeField] private float autoFaceRange = 3.5f;
+
+        [Header("Defensa")]
+        [Tooltip("Segundos de invulnerabilidad de cada esquiva (Duck evita ataques altos, Jump evita bajos).")]
+        [SerializeField] private float dodgeWindow = 0.45f;
+        [Tooltip("Segundos sin control tras recibir un golpe directo.")]
+        [SerializeField] private float hitStunDuration = 0.35f;
+        [Tooltip("Segundos sin control cuando la guardia de Yari se rompe.")]
+        [SerializeField] private float guardBreakStun = 1.5f;
+
+        [Header("Fijación de Blanco (Lock-On)")]
+        [Tooltip("Distancia máxima para fijar a un rival con Tab o clic central.")]
+        [SerializeField] private float lockOnRange = 14f;
+        [Tooltip("La fijación se suelta sola si el rival se aleja más de esta distancia.")]
+        [SerializeField] private float lockOnBreakRange = 20f;
+        [Tooltip("Velocidad al moverse de lado o hacia atrás con el rival fijado.")]
+        [SerializeField] private float lockStrafeSpeed = 2.4f;
+
+        [Header("Salto")]
+        [Tooltip("Segundos de mezcla al aterrizar para volver a la locomoción.")]
+        [SerializeField] private float landBlendTime = 0.15f;
+
+        [Header("Resurrección")]
+        [Tooltip("Segundos que tarda Yari en levantarse del suelo (debe coincidir con el estado GetUp del Animator).")]
+        [SerializeField] private float getUpDuration = 2.0f;
 
         [Header("Referencias")]
         [SerializeField] private Transform cameraTransform;
+        [Tooltip("Ajuste fino de la altura del modelo respecto al suelo (metros). 0 = pies apoyados.")]
+        [SerializeField] private float visualHeightOffset = 0f;
 
         private CharacterController characterController;
         private StructureSystem structure;
@@ -45,19 +113,125 @@ namespace Ayni.Player
         private bool isGuarding;
         private float guardStartTime;
         private bool isAttacking;
-        private float attackCooldown;
 
-        // Nuevos estados
+        // Combo Rumi Maki
+        private struct AttackDef
+        {
+            public string state;          // Estado del Animator
+            public string clip;           // Nombre del clip (para buscar su tiempo de impacto medido)
+            public bool heavy;
+            public float fallbackContact; // Segundo de impacto si no hay medición
+            public float damageMul;
+            public float structureMul;
+            public HitReaction reaction;  // Cómo reacciona el rival
+            public float knockback;       // Metros que lo hace retroceder
+            public int impact;            // 0 = ligero, 1 = fuerte, 2 = remate (pausa, sacudida y destello)
+
+            public AttackDef(string state, string clip, bool heavy, float fallbackContact, float damageMul = 1f, float structureMul = 1f,
+                             HitReaction reaction = HitReaction.Head, float knockback = 0.2f, int impact = 0)
+            {
+                this.state = state;
+                this.clip = clip;
+                this.heavy = heavy;
+                this.fallbackContact = fallbackContact;
+                this.damageMul = damageMul;
+                this.structureMul = structureMul;
+                this.reaction = reaction;
+                this.knockback = knockback;
+                this.impact = impact;
+            }
+        }
+
+        // Cadena ligera: directo izq. → directo der. → gancho izq. → remate der.
+        private static readonly AttackDef[] LightChain =
+        {
+            new AttackDef("Atk_Light1", "Light_Punch_1_L", false, 0.56f, 1f, 1f, HitReaction.Head, 0.15f, 0),
+            new AttackDef("Atk_Light2", "Light_Punch_2_R", false, 0.88f, 1f, 1f, HitReaction.Head, 0.20f, 0),
+            new AttackDef("Atk_Light3", "Light_Punch_3_L", false, 0.62f, 1f, 1f, HitReaction.Body, 0.20f, 0),
+            new AttackDef("Atk_Light4", "Light_Punch_4_R", false, 0.50f, 1.3f, 1.3f, HitReaction.Heavy, 0.60f, 1),
+        };
+
+        // Cadena pesada: puñetazo descendente → gancho ascendente → codazo
+        private static readonly AttackDef[] HeavyChain =
+        {
+            new AttackDef("Atk_Overhand", "Heavy_Overhand", true, 0.57f, 1f, 1f, HitReaction.Heavy, 0.50f, 1),
+            new AttackDef("Atk_Uppercut", "Heavy_Uppercut", true, 0.60f, 1.1f, 1.1f, HitReaction.Head, 0.40f, 1),
+            new AttackDef("Atk_Elbow", "Heavy_Elbow", true, 0.69f, 1.2f, 1.2f, HitReaction.Heavy, 0.70f, 1),
+        };
+
+        // Remates: pesado tras 2-3 ligeros = cabezazo; pesado tras los 4 ligeros = patada frontal de empuje
+        private static readonly AttackDef HeadbuttFinisher = new AttackDef("Atk_Headbutt", "Heavy_Headbutt", true, 0.97f, 1.2f, 1.5f, HitReaction.Heavy, 0.80f, 2);
+        private static readonly AttackDef FrontKickFinisher = new AttackDef("Atk_FrontKick", "Heavy_FrontKick", true, 0.83f, 1.3f, 1.7f, HitReaction.Knockdown, 1.60f, 2);
+
+        /// <summary>Punto del clip GetUp (0-1) desde el que Yari empieza a levantarse; el Animator usa el mismo valor.</summary>
+        public const float GetUpStartNormalized = 0.25f;
+        /// <summary>Punto del clip GetUp (0-1) en el que ya está de pie y vuelve a la locomoción.</summary>
+        public const float GetUpEndNormalized = 0.9f;
+
+        private AttackTimingTable attackTimings;
+        private AttackDef currentAttack;
+        private float attackHitTime;
+        private float attackCancelTime;
+        private float attackEndTime;
+        private bool attackHitDone;
+        private int lightCount;
+        private int heavyIndex;
+        private float comboExpireTime;
+        private int bufferedAttack; // 0 = nada, 1 = ligero, 2 = pesado
+        private float bufferedUntil;
+        private bool nextHitToBody;
+        private EnemyController lungeTarget;
+        private Animator rootMotionHookedFor;
+        private float reachAssistRemaining;
+        private float reachAssistSpeed;
+        private TrailRenderer activeTrail;
+        private float trailOffTime;
+        private readonly System.Collections.Generic.Dictionary<HumanBodyBones, TrailRenderer> trails =
+            new System.Collections.Generic.Dictionary<HumanBodyBones, TrailRenderer>();
+        private FootIK footIK;
+        private AndeanCombatStanceModifier andeanStance;
+        private bool jumpInAir;
+        private float jumpStartTime;
+
+        // Fijación de blanco y capa de brazos en guardia
+        private EnemyController lockTarget;
+        private float upperGuardWeight;
+        private float guardReactionUntil;
+        private Animator cachedParamsFor;
+        private readonly System.Collections.Generic.HashSet<int> animatorParams = new System.Collections.Generic.HashSet<int>();
+
         private bool isCrouching;
         private bool isSprinting;
         private bool inCombatStance;
         private float combatStanceTimer;
         private float currentAnimSpeed;
 
+        // Vida, muerte y estados de reacción
+        private float currentHealth;
+        private bool isDead;
+        private bool isGameOver;
+        private float invulnerableUntil;
+        private float stunnedUntil;
+        private float dodgeUntil;
+        private AttackHeight dodgeEvades;
+
         public bool IsGuarding => isGuarding;
         public bool IsCrouching => isCrouching;
         public bool IsSprinting => isSprinting;
         public bool InCombatStance => inCombatStance;
+
+        public float CurrentHealth => currentHealth;
+        public float MaxHealth => baseMaxHealth * (talisman != null ? talisman.GetMaxHealthMultiplier() : 1f);
+        public bool IsDead => isDead;
+        public bool IsGameOver => isGameOver;
+        public bool IsStunned => Time.time < stunnedUntil;
+        /// <summary>Rival fijado con Lock-On (null si no hay ninguno).</summary>
+        public EnemyController LockTarget => lockTarget;
+
+        /// <summary>Se dispara cada vez que un ataque enemigo se resuelve contra Yari (para feedback, sonido, etc.).</summary>
+        public event Action<AttackResult> OnAttackReceived;
+        /// <summary>Se dispara cuando un golpe de Yari conecta con un enemigo. bool = golpe pesado.</summary>
+        public event Action<EnemyController, bool> OnAttackLanded;
 
         private void Awake()
         {
@@ -78,6 +252,103 @@ namespace Ayni.Player
             {
                 cameraTransform = Camera.main.transform;
             }
+
+            attackTimings = Resources.Load<AttackTimingTable>(AttackTimingTable.ResourceName);
+            ApplyVisualGroundOffset();
+            footIK = FootIK.Attach(animator, characterController);
+        }
+
+        /// <summary>
+        /// El CharacterController flota sobre el suelo la distancia de su "Skin Width" (8 cm por defecto).
+        /// Se baja el modelo esa misma distancia para que los pies queden apoyados.
+        /// </summary>
+        private void ApplyVisualGroundOffset()
+        {
+            if (animator == null || characterController == null || animator.transform == transform) return;
+            Vector3 p = animator.transform.localPosition;
+            p.y = -characterController.skinWidth + visualHeightOffset;
+            animator.transform.localPosition = p;
+        }
+
+        private void Start()
+        {
+            currentHealth = MaxHealth;
+            if (AyniPurificationManager.Instance != null)
+            {
+                AyniPurificationManager.Instance.OnCombatResolved += HandleCombatResolved;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (AyniPurificationManager.Instance != null)
+            {
+                AyniPurificationManager.Instance.OnCombatResolved -= HandleCombatResolved;
+            }
+        }
+
+        /// <summary>Juicio Ayni resuelto: Yari remata con un puñetazo descendente o hace el gesto de perdón.</summary>
+        private void HandleCombatResolved(EnemyController enemy, bool mercy)
+        {
+            if (isDead) return;
+            CancelPendingAttack();
+
+            // Remate en pareja: Yari se coloca a distancia de golpe y la cámara se acerca
+            if (enemy != null) StartCoroutine(AlignForFinisher(enemy, mercy ? 1.5f : 1.15f, 0.12f));
+            CombatFeedback.FinisherCamera(mercy ? 1.6f : 1.2f);
+
+            if (enemy != null)
+            {
+                Vector3 dir = enemy.transform.position - transform.position;
+                dir.y = 0f;
+                if (dir.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(dir);
+            }
+
+            if (mercy)
+            {
+                inCombatStance = false;
+                if (animator) animator.SetBool("InCombatStance", false);
+                PlayState("Mercy_Offer", 0.2f);
+                stunnedUntil = Mathf.Max(stunnedUntil, Time.time + 1.6f);
+            }
+            else
+            {
+                if (animator) animator.SetFloat("AttackSpeed", 1.2f);
+                PlayState("Atk_Overhand", 0.08f);
+                stunnedUntil = Mathf.Max(stunnedUntil, Time.time + 0.7f);
+            }
+        }
+
+        /// <summary>Lleva a Yari a la distancia justa del rival antes del remate, para que el golpe le llegue.</summary>
+        private IEnumerator AlignForFinisher(EnemyController enemy, float distance, float duration)
+        {
+            float elapsed = 0f;
+            while (elapsed < duration && enemy != null && !isDead)
+            {
+                Vector3 toEnemy = enemy.transform.position - transform.position;
+                toEnemy.y = 0f;
+                float dist = toEnemy.magnitude;
+                if (dist < 0.001f) break;
+
+                float remainingTime = Mathf.Max(Time.deltaTime, duration - elapsed);
+                float step = (dist - distance) * Mathf.Clamp01(Time.deltaTime / remainingTime);
+                characterController.Move(toEnemy / dist * step);
+                transform.rotation = Quaternion.LookRotation(toEnemy);
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        private void OnEnable()
+        {
+            if (structure == null) structure = GetComponent<StructureSystem>();
+            structure.OnStructureBroken += HandleGuardBroken;
+        }
+
+        private void OnDisable()
+        {
+            if (structure != null) structure.OnStructureBroken -= HandleGuardBroken;
         }
 
         private void Update()
@@ -87,19 +358,137 @@ namespace Ayni.Player
             {
                 animator = GetComponentInChildren<Animator>();
             }
+            HookRootMotion();
 
-            if (isAttacking && Time.time >= attackCooldown)
+            if (footIK != null) footIK.Suspended = isDead || jumpInAir;
+
+            // Postura andina: solo en guardia de pelea, no al pasear, correr, agacharse, saltar o caer
+            if (andeanStance == null && animator != null) andeanStance = animator.GetComponent<AndeanCombatStanceModifier>();
+            if (andeanStance != null)
             {
-                isAttacking = false;
+                bool fighting = inCombatStance && !isDead && !jumpInAir && !isCrouching && !isSprinting;
+                andeanStance.SetStanceWeight(fighting ? 1f : 0f);
             }
 
+            // Tutorial o pausa: no se procesa ninguna entrada
+            if (AyniGameState.InputLocked) return;
+
+            if (isGameOver)
+            {
+                if (Input.GetKeyDown(KeyCode.R)) RestartScene();
+                ApplyGravity();
+                return;
+            }
+
+            if (isDead)
+            {
+                UpdateUpperGuardLayer();
+                ApplyGravity();
+                return;
+            }
+
+            // Aturdido por un golpe o por rotura de guardia: sin control
+            if (IsStunned)
+            {
+                currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 10f * Time.deltaTime);
+                if (animator) animator.SetFloat("Speed", currentAnimSpeed);
+                UpdateUpperGuardLayer();
+                ApplyGravity();
+                return;
+            }
+
+            HandleLockOn();
             HandleCrouch();
             HandleMovement();
             HandleJump();
+            ApplyGravity();
             HandleDefense();
             HandleAttacks();
             HandleCombatStanceTimer();
             HandleDilemmaInputs();
+            UpdateUpperGuardLayer();
+        }
+
+        // ───────────────────────── Fijación de blanco ─────────────────────────
+
+        /// <summary>Tab o clic central fijan al rival más cercano; se suelta al pulsar de nuevo, si muere o si se aleja.</summary>
+        private void HandleLockOn()
+        {
+            if (lockTarget != null)
+            {
+                Vector3 to = lockTarget.transform.position - transform.position;
+                to.y = 0f;
+                if (lockTarget.IsDead || !lockTarget.isActiveAndEnabled || to.magnitude > lockOnBreakRange) lockTarget = null;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Tab) || Input.GetMouseButtonDown(2))
+            {
+                lockTarget = lockTarget != null ? null : FindLockCandidate();
+            }
+
+            if (lockTarget != null) EnterCombatStance();
+            SetAnimBool("IsLockedOn", lockTarget != null);
+        }
+
+        /// <summary>Mejor candidato a fijar: el rival vivo dentro del alcance más centrado en la cámara y más cercano.</summary>
+        private EnemyController FindLockCandidate()
+        {
+            EnemyController best = null;
+            float bestScore = float.MaxValue;
+
+            Vector3 viewDir = cameraTransform != null ? cameraTransform.forward : transform.forward;
+            viewDir.y = 0f;
+
+            var enemies = EnemyController.All;
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyController enemy = enemies[i];
+                if (enemy == null || enemy.IsDead) continue;
+
+                Vector3 to = enemy.transform.position - transform.position;
+                to.y = 0f;
+                float dist = to.magnitude;
+                if (dist > lockOnRange) continue;
+
+                float angle = dist > 0.01f ? Vector3.Angle(viewDir, to) : 0f;
+                float score = dist + angle * 0.1f;
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    best = enemy;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// Capa de brazos en guardia: al caminar con la guardia alta, las piernas siguen la locomoción
+        /// y los brazos mantienen la guardia, en lugar de deslizarse con la pose estática.
+        /// </summary>
+        private void UpdateUpperGuardLayer()
+        {
+            if (animator == null || animator.layerCount < 2) return;
+
+            bool wantUpperGuard = isGuarding && currentAnimSpeed > 0.1f && !isAttacking && Time.time >= guardReactionUntil;
+            upperGuardWeight = Mathf.MoveTowards(upperGuardWeight, wantUpperGuard ? 1f : 0f, 8f * Time.deltaTime);
+            animator.SetLayerWeight(1, upperGuardWeight);
+        }
+
+        private bool HasParam(string paramName)
+        {
+            if (animator == null || animator.runtimeAnimatorController == null) return false;
+            if (cachedParamsFor != animator)
+            {
+                animatorParams.Clear();
+                foreach (var p in animator.parameters) animatorParams.Add(p.nameHash);
+                cachedParamsFor = animator;
+            }
+            return animatorParams.Contains(Animator.StringToHash(paramName));
+        }
+
+        private void SetAnimBool(string paramName, bool value)
+        {
+            if (HasParam(paramName)) animator.SetBool(paramName, value);
         }
 
         private void HandleCrouch()
@@ -151,8 +540,19 @@ namespace Ayni.Player
 
             bool hasMoveInput = direction.magnitude >= 0.1f;
 
-            // Sprint con LeftShift cuando se mueve, sin estar en guardia
-            if (hasMoveInput && Input.GetKey(KeyCode.LeftShift) && !isGuarding)
+            bool locked = lockTarget != null;
+            Vector3 toTarget = Vector3.zero;
+            if (locked)
+            {
+                toTarget = lockTarget.transform.position - transform.position;
+                toTarget.y = 0f;
+                if (toTarget.sqrMagnitude > 0.0001f) toTarget.Normalize();
+            }
+
+            Vector3 animMoveDir = Vector3.zero;
+
+            // Sprint con LeftShift cuando se mueve, sin estar en guardia ni con el rival fijado
+            if (hasMoveInput && Input.GetKey(KeyCode.LeftShift) && !isGuarding && !locked)
             {
                 if (isCrouching) SetCrouch(false); // Salir de cuclillas al correr
                 isSprinting = true;
@@ -187,10 +587,11 @@ namespace Ayni.Player
                     speedToUse = sprintSpeed;
                     targetAnimSpeedVal = 2f;
                 }
-                else
+
+                // Con el rival fijado: hacia él a velocidad normal, de lado o hacia atrás más despacio
+                if (locked && !isCrouching)
                 {
-                    speedToUse = baseMoveSpeed;
-                    targetAnimSpeedVal = 1f;
+                    speedToUse = Mathf.Lerp(lockStrafeSpeed, baseMoveSpeed, Mathf.Clamp01(Vector3.Dot(moveDir, toTarget)));
                 }
 
                 // Si está defendiendo, reduce la velocidad de paso
@@ -203,8 +604,12 @@ namespace Ayni.Player
                 float currentSpeed = speedToUse * talisman.GetSpeedMultiplier();
                 characterController.Move(moveDir * (currentSpeed * Time.deltaTime));
 
-                Quaternion targetRot = Quaternion.LookRotation(moveDir);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
+                if (!locked)
+                {
+                    Quaternion targetRot = Quaternion.LookRotation(moveDir);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
+                }
+                animMoveDir = moveDir * (isGuarding ? 0.6f : 1f);
 
                 currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, targetAnimSpeedVal, 8f * Time.deltaTime);
             }
@@ -214,31 +619,87 @@ namespace Ayni.Player
             }
 
             if (animator) animator.SetFloat("Speed", currentAnimSpeed);
+
+            // Con el rival fijado Yari siempre lo encara y la animación depende de hacia dónde se mueve respecto a él
+            if (locked && toTarget.sqrMagnitude > 0.0001f)
+            {
+                Quaternion faceTarget = Quaternion.LookRotation(toTarget);
+                transform.rotation = Quaternion.Slerp(transform.rotation, faceTarget, rotationSpeed * Time.deltaTime);
+            }
+            if (animator && HasParam("MoveX"))
+            {
+                Vector3 local = locked ? transform.InverseTransformDirection(animMoveDir) : Vector3.zero;
+                animator.SetFloat("MoveX", local.x, 0.1f, Time.deltaTime);
+                animator.SetFloat("MoveY", local.z, 0.1f, Time.deltaTime);
+            }
         }
 
         private void HandleJump()
         {
-            if (characterController.isGrounded)
+            if (!characterController.isGrounded) return;
+
+            // Salto estándar (Espacio sin estar en guardia)
+            if (Input.GetKeyDown(KeyCode.Space) && !isGuarding && !isAttacking)
             {
-                if (velocity.y < 0) velocity.y = -2f;
-
-                // Salto estándar (Espacio sin estar en guardia)
-                if (Input.GetKeyDown(KeyCode.Space) && !isGuarding && !isAttacking)
+                if (isCrouching)
                 {
-                    if (isCrouching)
-                    {
-                        SetCrouch(false);
-                    }
-                    velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-                    if (animator) animator.SetTrigger("Jump");
+                    SetCrouch(false);
                 }
+                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                float airTime = 2f * velocity.y / Mathf.Max(0.01f, -gravity);
+                PlayJumpAnimation(airTime);
+                jumpInAir = true;
+                jumpStartTime = Time.time;
             }
+        }
 
-            // Aplicar gravedad
+        /// <summary>
+        /// Reproduce el clip de salto desde el instante del despegue (sin la preparación larga) y a la velocidad
+        /// justa para que el aterrizaje del clip coincida con el del salto real.
+        /// </summary>
+        private void PlayJumpAnimation(float airTime)
+        {
+            if (!animator) return;
+
+            bool hasTimings = attackTimings != null && attackTimings.jumpLand > attackTimings.jumpTakeoff;
+            if (hasTimings && HasState("Jump"))
+            {
+                float clipAirTime = attackTimings.jumpLand - attackTimings.jumpTakeoff;
+                float speed = Mathf.Clamp(clipAirTime / Mathf.Max(0.05f, airTime), 0.4f, 3f);
+                if (HasParam("JumpSpeed")) animator.SetFloat("JumpSpeed", speed);
+                animator.CrossFadeInFixedTime("Jump", 0.05f, 0, attackTimings.jumpTakeoff);
+            }
+            else
+            {
+                animator.SetTrigger("Jump");
+            }
+        }
+
+        /// <summary>Al tocar el suelo se sale del clip de salto hacia la locomoción, sin esperar a que termine.</summary>
+        private void HandleLanding()
+        {
+            if (!jumpInAir || Time.time - jumpStartTime < 0.15f || !characterController.isGrounded) return;
+            jumpInAir = false;
+            if (!animator) return;
+
+            bool inJump = animator.GetCurrentAnimatorStateInfo(0).IsName("Jump") ||
+                          animator.GetNextAnimatorStateInfo(0).IsName("Jump");
+            if (!inJump) return;
+
+            string landState = lockTarget != null && HasState("LockOn_Locomotion") ? "LockOn_Locomotion"
+                             : inCombatStance ? "Combat_Locomotion" : "Relaxed_Locomotion";
+            if (HasState(landState)) animator.CrossFadeInFixedTime(landState, landBlendTime);
+        }
+
+        private void ApplyGravity()
+        {
+            if (characterController.isGrounded && velocity.y < 0) velocity.y = -2f;
+
             velocity.y += gravity * Time.deltaTime;
             characterController.Move(velocity * Time.deltaTime);
 
             if (animator) animator.SetBool("IsGrounded", characterController.isGrounded);
+            HandleLanding();
         }
 
         private void HandleDefense()
@@ -254,8 +715,7 @@ namespace Ayni.Player
             }
             else if (Input.GetMouseButtonUp(1) || Input.GetKeyUp(KeyCode.G))
             {
-                isGuarding = false;
-                if (animator) animator.SetBool("IsGuarding", false);
+                SetGuard(false);
             }
 
             if (isGuarding)
@@ -265,54 +725,353 @@ namespace Ayni.Player
                 // Esquivas Direccionales estilo Sifu (Duck / Jump Avoid)
                 if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.S))
                 {
-                    Debug.Log("[Sifu Evade] Yari se agacha (Duck) para esquivar ataque alto.");
+                    // Agacharse evita los ataques ALTOS durante la ventana de esquiva
+                    dodgeUntil = Time.time + dodgeWindow;
+                    dodgeEvades = AttackHeight.High;
+                    guardReactionUntil = Time.time + 0.7f;
                     if (animator) animator.SetTrigger("DuckAvoid");
                 }
                 else if (Input.GetKeyDown(KeyCode.W))
                 {
-                    Debug.Log("[Sifu Evade] Yari salta (Jump Avoid) para esquivar barrido de piernas.");
+                    // Saltar evita los ataques BAJOS (barridos) durante la ventana de esquiva
+                    dodgeUntil = Time.time + dodgeWindow;
+                    dodgeEvades = AttackHeight.Low;
+                    guardReactionUntil = Time.time + 0.7f;
                     if (animator) animator.SetTrigger("JumpAvoid");
                 }
             }
         }
 
+        private void SetGuard(bool guarding)
+        {
+            isGuarding = guarding;
+            if (animator) animator.SetBool("IsGuarding", guarding);
+        }
+
         private void HandleAttacks()
         {
-            if (isGuarding) return;
-
-            // Golpe Ligero de Rumi Maki (Click izquierdo)
-            if (Input.GetMouseButtonDown(0) && Time.time >= attackCooldown)
+            // 1. Leer la entrada y guardarla un instante (buffer) para poder encadenar golpes con fluidez
+            if (!isGuarding)
             {
-                if (isCrouching) SetCrouch(false);
-                ExecuteAttack(isHeavy: false);
+                if (Input.GetMouseButtonDown(0))
+                {
+                    bufferedAttack = 1;
+                    bufferedUntil = Time.time + inputBufferTime;
+                }
+                else if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.E))
+                {
+                    bufferedAttack = 2;
+                    bufferedUntil = Time.time + inputBufferTime;
+                }
             }
-            // Golpe Fuerte de Rumi Maki (Tecla Q o E)
-            else if ((Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.E)) && Time.time >= attackCooldown)
+            if (bufferedAttack != 0 && Time.time > bufferedUntil) bufferedAttack = 0;
+
+            // 2. Golpe en curso: impacto, encadenado o recuperación
+            if (activeTrail != null && Time.time >= trailOffTime)
             {
-                if (isCrouching) SetCrouch(false);
-                ExecuteAttack(isHeavy: true);
+                activeTrail.emitting = false;
+                activeTrail = null;
+            }
+
+            if (isAttacking)
+            {
+                if (!attackHitDone) ApplyReachAssist();
+
+                if (!attackHitDone && Time.time >= attackHitTime)
+                {
+                    attackHitDone = true;
+                    ResolveAttackHit(currentAttack);
+                }
+
+                if (attackHitDone && Time.time >= attackCancelTime && bufferedAttack != 0 && !isGuarding)
+                {
+                    StartAttack(bufferedAttack == 2);
+                }
+                else if (Time.time >= attackEndTime)
+                {
+                    isAttacking = false;
+                    comboExpireTime = Time.time + comboResetTime;
+                    string idleState = lockTarget != null && HasState("LockOn_Locomotion") ? "LockOn_Locomotion" : "Combat_Locomotion";
+                    if (animator && HasState(currentAttack.state) && HasState(idleState))
+                    {
+                        animator.CrossFadeInFixedTime(idleState, 0.15f);
+                    }
+                }
+                return;
+            }
+
+            // 3. Sin golpe en curso
+            if (Time.time > comboExpireTime)
+            {
+                lightCount = 0;
+                heavyIndex = 0;
+            }
+
+            if (bufferedAttack != 0 && !isGuarding)
+            {
+                StartAttack(bufferedAttack == 2);
             }
         }
 
-        private void ExecuteAttack(bool isHeavy)
+        private void StartAttack(bool isHeavy)
         {
+            bufferedAttack = 0;
+            if (isCrouching) SetCrouch(false);
             EnterCombatStance();
-            isAttacking = true;
-            attackCooldown = Time.time + (isHeavy ? 0.7f : 0.4f);
-            if (animator) animator.SetTrigger(isHeavy ? "HeavyAttack" : "LightAttack");
+            FaceNearestEnemy();
 
-            float dmg = (isHeavy ? heavyAttackDamage : lightAttackDamage) * talisman.GetDamageMultiplier();
-            float structDmg = (isHeavy ? 30f : 15f) * talisman.GetDamageMultiplier();
-
-            // Detectar impacto frontal
-            int mask = enemyLayer.value == 0 ? Physics.AllLayers : enemyLayer.value;
-            Collider[] hits = Physics.OverlapSphere(transform.position + transform.forward * 1.2f, attackRange, mask);
-            foreach (var hit in hits)
+            // Elegir el golpe según el punto del combo
+            AttackDef def;
+            if (!isHeavy)
             {
-                if (hit.TryGetComponent<Enemy.EnemyController>(out var enemy))
+                if (lightCount >= LightChain.Length) lightCount = 0;
+                def = LightChain[lightCount];
+                lightCount++;
+                heavyIndex = 0;
+            }
+            else
+            {
+                if (lightCount >= LightChain.Length) def = FrontKickFinisher;
+                else if (lightCount >= 2) def = HeadbuttFinisher;
+                else
                 {
-                    enemy.TakeHit(dmg, structDmg, transform.position);
+                    def = HeavyChain[heavyIndex % HeavyChain.Length];
+                    heavyIndex++;
                 }
+                lightCount = 0;
+            }
+
+            // Tiempo de impacto del clip: medido si existe, estimado si no
+            float contact = def.fallbackContact;
+            if (attackTimings != null && attackTimings.TryGetContact(def.clip, out float measured)) contact = measured;
+
+            // Se entra al clip poco antes del impacto (sin la preparación larga) y se reproduce acelerado
+            float leadIn = def.heavy ? heavyLeadIn : lightLeadIn;
+            float speed = Mathf.Max(0.1f, def.heavy ? heavyAnimSpeed : lightAnimSpeed);
+            float startOffset = Mathf.Max(0f, contact - leadIn);
+
+            currentAttack = def;
+            isAttacking = true;
+            attackHitDone = false;
+            attackHitTime = Time.time + (contact - startOffset) / speed;
+            attackCancelTime = attackHitTime + comboCancelAfterContact;
+            attackEndTime = attackHitTime + (def.heavy ? heavyRecovery : lightRecovery);
+
+            // Ayuda de alcance: solo cuando el rival queda justo fuera, para que el golpe no falle por centímetros
+            reachAssistRemaining = 0f;
+            if (lungeTarget != null && !lungeTarget.IsDead)
+            {
+                Vector3 toTarget = lungeTarget.transform.position - transform.position;
+                toTarget.y = 0f;
+                float reach = attackRange - 0.1f;
+                float gap = toTarget.magnitude - reach;
+                if (gap > 0f && gap <= attackReachAssist)
+                {
+                    reachAssistRemaining = gap;
+                    reachAssistSpeed = gap / Mathf.Max(0.05f, attackHitTime - Time.time);
+                }
+            }
+
+            if (def.impact >= 1) StartAttackTrail(def);
+
+            if (animator)
+            {
+                if (HasState(def.state))
+                {
+                    animator.SetFloat("AttackSpeed", speed);
+                    animator.CrossFadeInFixedTime(def.state, 0.05f, 0, startOffset);
+                }
+                else
+                {
+                    // Animator antiguo sin los estados del combo: ejecuta Ayni > 1. Generar Animator Controller
+                    animator.SetTrigger(def.heavy ? "HeavyAttack" : "LightAttack");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Desplazamiento que trae la propia animación (el paso y el traslado de peso de cada golpe). Yari se mueve
+        /// exactamente lo que se mueve el clip, así los pies pisan donde deben en vez de arrastrarse.
+        /// Lo envía RootMotionRelay desde el objeto que tiene el Animator.
+        /// </summary>
+        private void HandleRootMotion(Vector3 delta)
+        {
+            if (!isAttacking || isDead || IsStunned || characterController == null) return;
+
+            delta.y = 0f;
+            delta *= attackRootMotionScale;
+            if (delta.sqrMagnitude <= 0f) return;
+
+            // No empujar al rival: si ya está pegado a él, se descarta la parte del paso que lo acerca más
+            if (lungeTarget != null && !lungeTarget.IsDead)
+            {
+                Vector3 to = lungeTarget.transform.position - transform.position;
+                to.y = 0f;
+                float dist = to.magnitude;
+                if (dist > 0.001f && dist <= lungeStopDistance)
+                {
+                    Vector3 dir = to / dist;
+                    float toward = Vector3.Dot(delta, dir);
+                    if (toward > 0f) delta -= dir * toward;
+                }
+            }
+
+            characterController.Move(delta);
+        }
+
+        /// <summary>Conecta el desplazamiento de las animaciones (el Animator vive en el modelo hijo).</summary>
+        private void HookRootMotion()
+        {
+            if (animator == null || rootMotionHookedFor == animator) return;
+            rootMotionHookedFor = animator;
+
+            var relay = animator.GetComponent<RootMotionRelay>();
+            if (relay == null) relay = animator.gameObject.AddComponent<RootMotionRelay>();
+            relay.OnRootMotion = HandleRootMotion;
+        }
+
+        /// <summary>Cubre el último tramo cuando el rival está justo fuera de alcance, para que el golpe no se quede corto.</summary>
+        private void ApplyReachAssist()
+        {
+            if (reachAssistRemaining <= 0f) return;
+            float step = Mathf.Min(reachAssistSpeed * Time.deltaTime, reachAssistRemaining);
+            reachAssistRemaining -= step;
+            Vector3 forward = transform.forward;
+            forward.y = 0f;
+            characterController.Move(forward.normalized * step);
+        }
+
+        /// <summary>Estela en el miembro que golpea (mano, codo o pie), como en los golpes fuertes de Sifu.</summary>
+        private void StartAttackTrail(AttackDef def)
+        {
+            if (!attackTrails || animator == null || !animator.isHuman || attackTimings == null) return;
+
+            string boneName = attackTimings.GetStrikingBone(def.clip);
+            if (string.IsNullOrEmpty(boneName) || !Enum.TryParse(boneName, out HumanBodyBones boneId)) return;
+            if (boneId == HumanBodyBones.Head) return;
+
+            if (!trails.TryGetValue(boneId, out TrailRenderer trail) || trail == null)
+            {
+                Transform bone = animator.GetBoneTransform(boneId);
+                if (bone == null) return;
+
+                var go = new GameObject("AttackTrail_" + boneId);
+                go.transform.SetParent(bone, false);
+                trail = go.AddComponent<TrailRenderer>();
+                trail.sharedMaterial = CombatFeedback.SpriteMaterial;
+                trail.time = 0.16f;
+                trail.minVertexDistance = 0.02f;
+                trail.widthCurve = new AnimationCurve(new Keyframe(0f, 0.16f), new Keyframe(1f, 0f));
+                trail.numCapVertices = 2;
+                trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                trail.receiveShadows = false;
+                var gradient = new Gradient();
+                gradient.SetKeys(
+                    new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(new Color(1f, 0.9f, 0.7f), 1f) },
+                    new[] { new GradientAlphaKey(0.85f, 0f), new GradientAlphaKey(0f, 1f) });
+                trail.colorGradient = gradient;
+                trail.emitting = false;
+                trails[boneId] = trail;
+            }
+
+            if (activeTrail != null && activeTrail != trail) activeTrail.emitting = false;
+            trail.Clear();
+            trail.emitting = true;
+            activeTrail = trail;
+            trailOffTime = attackHitTime + 0.1f;
+        }
+
+        private void CancelPendingAttack()
+        {
+            reachAssistRemaining = 0f;
+            if (activeTrail != null)
+            {
+                activeTrail.emitting = false;
+                activeTrail = null;
+            }
+            isAttacking = false;
+            attackHitDone = true;
+            bufferedAttack = 0;
+            lightCount = 0;
+            heavyIndex = 0;
+        }
+
+        private bool HasState(string stateName)
+        {
+            return animator != null && animator.runtimeAnimatorController != null &&
+                   animator.HasState(0, Animator.StringToHash(stateName));
+        }
+
+        /// <summary>Reproduce un estado del Animator si existe; si no, dispara el trigger de respaldo.</summary>
+        private void PlayState(string stateName, float fade, string fallbackTrigger = null)
+        {
+            if (!animator) return;
+            if (HasState(stateName)) animator.CrossFadeInFixedTime(stateName, fade, 0, 0f);
+            else if (!string.IsNullOrEmpty(fallbackTrigger)) animator.SetTrigger(fallbackTrigger);
+        }
+
+        /// <summary>Aplica el golpe a los enemigos que estén dentro del alcance y del arco frontal.</summary>
+        private void ResolveAttackHit(AttackDef attack)
+        {
+            bool isHeavy = attack.heavy;
+            float dmg = (isHeavy ? heavyAttackDamage : lightAttackDamage) * attack.damageMul * talisman.GetDamageMultiplier();
+            float structDmg = (isHeavy ? 30f : 15f) * attack.structureMul * talisman.GetDamageMultiplier();
+
+            Vector3 forward = transform.forward;
+            forward.y = 0f;
+
+            var enemies = EnemyController.All;
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyController enemy = enemies[i];
+                if (enemy == null || enemy.IsDead) continue;
+
+                Vector3 toEnemy = enemy.transform.position - transform.position;
+                toEnemy.y = 0f;
+                if (toEnemy.magnitude > attackRange) continue;
+                if (toEnemy.sqrMagnitude > 0.0001f && Vector3.Angle(forward, toEnemy) > attackArc * 0.5f) continue;
+
+                Vector3 hitPoint = enemy.GetHitPoint(attack.reaction, transform.position);
+                enemy.TakeHit(dmg, structDmg, transform.position, isHeavy, attack.reaction, attack.knockback);
+
+                if (attack.impact >= 2) CombatFeedback.Finisher(hitPoint);
+                else if (attack.impact == 1) CombatFeedback.HeavyHit(hitPoint);
+                else CombatFeedback.LightHit(hitPoint);
+
+                OnAttackLanded?.Invoke(enemy, isHeavy);
+            }
+        }
+
+        /// <summary>Gira a Yari hacia el enemigo vivo más cercano si está a distancia de pelea.</summary>
+        private void FaceNearestEnemy()
+        {
+            EnemyController nearest = lockTarget != null && !lockTarget.IsDead ? lockTarget : null;
+            float best = autoFaceRange;
+
+            var enemies = EnemyController.All;
+            for (int i = 0; nearest == null && i < enemies.Count; i++)
+            {
+                EnemyController enemy = enemies[i];
+                if (enemy == null || enemy.IsDead) continue;
+
+                Vector3 to = enemy.transform.position - transform.position;
+                to.y = 0f;
+                float dist = to.magnitude;
+                if (dist < best)
+                {
+                    best = dist;
+                    nearest = enemy;
+                }
+            }
+
+            lungeTarget = nearest;
+            if (nearest == null) return;
+
+            Vector3 dir = nearest.transform.position - transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.0001f)
+            {
+                transform.rotation = Quaternion.LookRotation(dir);
             }
         }
 
@@ -332,7 +1091,6 @@ namespace Ayni.Player
                 {
                     inCombatStance = false;
                     if (animator) animator.SetBool("InCombatStance", false);
-                    Debug.Log("[Ayni] Yari relaja su postura de combate y regresa al descanso con brazos abajo.");
                 }
             }
         }
@@ -343,18 +1101,156 @@ namespace Ayni.Player
             return isGuarding && (Time.time - guardStartTime <= parryWindow);
         }
 
-        // Llamado por los enemigos cuando conectan un golpe directo
+        /// <summary>
+        /// Los enemigos llaman a este método en el instante en que su golpe conecta.
+        /// Resuelve esquiva, parry, bloqueo o golpe directo y aplica el daño correspondiente a Yari.
+        /// </summary>
+        public AttackResult ReceiveAttack(float damage, float structureDamage, AttackHeight height)
+        {
+            if (isDead || Time.time < invulnerableUntil) return AttackResult.Missed;
+
+            AttackResult result;
+            Vector3 impactPoint = transform.position + Vector3.up * (height == AttackHeight.High ? 1.4f : 0.6f) + transform.forward * 0.3f;
+
+            if (Time.time < dodgeUntil && dodgeEvades == height)
+            {
+                result = AttackResult.Dodged;
+            }
+            else if (TryParry())
+            {
+                EnterCombatStance();
+                guardReactionUntil = Time.time + 0.6f;
+                PlayState("Parry_Deflect", 0.04f);
+                CombatFeedback.Parry(impactPoint);
+                result = AttackResult.Parried;
+            }
+            else if (isGuarding)
+            {
+                // Bloqueo pasivo: sin daño de vida, pero la estructura de Yari sufre
+                structure.AddStructureDamage(structureDamage);
+                guardReactionUntil = Time.time + 0.5f;
+                if (!structure.IsBroken) PlayState("Guard_BlockHit", 0.05f);
+                CombatFeedback.Block(impactPoint);
+                result = AttackResult.Blocked;
+            }
+            else
+            {
+                // Golpe directo
+                CancelPendingAttack();
+                currentHealth = Mathf.Max(0f, currentHealth - damage);
+                structure.AddStructureDamage(structureDamage * 0.5f);
+                CombatFeedback.PlayerHurt(impactPoint);
+
+                if (currentHealth <= 0f)
+                {
+                    Die();
+                }
+                else
+                {
+                    PlayHitReaction();
+                    stunnedUntil = Mathf.Max(stunnedUntil, Time.time + hitStunDuration);
+                }
+                result = AttackResult.Hit;
+            }
+
+            OnAttackReceived?.Invoke(result);
+            return result;
+        }
+
         public void PlayHitReaction()
         {
             EnterCombatStance();
-            if (animator) animator.SetTrigger("Hit");
+            // Alterna golpe a la cabeza y al cuerpo
+            nextHitToBody = !nextHitToBody;
+            if (nextHitToBody) PlayState("Impact_HitBody", 0.06f, "Hit");
+            else if (animator) animator.SetTrigger("Hit");
         }
 
-        // Llamado cuando Yari es derrotado
-        public void PlayDefeat()
+        /// <summary>La estructura de Yari se llenó: pierde la guardia y queda expuesto unos instantes.</summary>
+        private void HandleGuardBroken()
         {
-            if (animator) animator.SetTrigger("Die");
-            enabled = false;
+            if (isDead) return;
+
+            Debug.Log("[Ayni] ¡La guardia de Yari se ha roto! Queda expuesto.");
+            CancelPendingAttack();
+            SetGuard(false);
+            stunnedUntil = Time.time + guardBreakStun;
+            EnterCombatStance();
+            PlayState("Impact_HitHeavy", 0.08f, "Hit");
+            StartCoroutine(RecoverGuardRoutine());
+        }
+
+        private IEnumerator RecoverGuardRoutine()
+        {
+            yield return new WaitForSeconds(guardBreakStun);
+            if (!isDead && structure.IsBroken) structure.ResetStructure();
+        }
+
+        private void Die()
+        {
+            isDead = true;
+            CancelPendingAttack();
+            isSprinting = false;
+            SetGuard(false);
+            SetCrouch(false);
+            currentAnimSpeed = 0f;
+            if (animator)
+            {
+                animator.SetFloat("Speed", 0f);
+                animator.SetTrigger("Die");
+            }
+            StartCoroutine(DeathRoutine());
+        }
+
+        /// <summary>Yari cae; tras unos segundos el Talismán Illa lo resucita a cambio de años de vida.</summary>
+        private IEnumerator DeathRoutine()
+        {
+            yield return new WaitForSeconds(reviveDelay);
+
+            if (talisman.TriggerResurrection())
+            {
+                structure.ResetStructure();
+                currentHealth = MaxHealth; // La vida máxima baja con la edad
+                isDead = false;
+
+                if (animator)
+                {
+                    animator.ResetTrigger("Die");
+                    animator.ResetTrigger("Hit");
+                }
+
+                if (HasState("GetUp"))
+                {
+                    // Se levanta del suelo: sin control e invulnerable mientras dura
+                    animator.CrossFade("GetUp", 0.04f, 0, GetUpStartNormalized);
+                    stunnedUntil = Time.time + getUpDuration;
+                    invulnerableUntil = Time.time + getUpDuration + reviveInvulnerability;
+                }
+                else
+                {
+                    stunnedUntil = 0f;
+                    invulnerableUntil = Time.time + reviveInvulnerability;
+                    if (animator) animator.CrossFadeInFixedTime("Combat_Locomotion", 0.25f);
+                }
+                EnterCombatStance();
+            }
+            else
+            {
+                // El talismán se rompió por exceso de edad: muerte definitiva
+                isGameOver = true;
+            }
+        }
+
+        private void RestartScene()
+        {
+            Scene scene = SceneManager.GetActiveScene();
+#if UNITY_EDITOR
+            // En el Editor la escena puede no estar en Build Settings
+            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
+                scene.path, new LoadSceneParameters(LoadSceneMode.Single));
+#else
+            SceneManager.LoadScene(scene.buildIndex);
+#endif
         }
 
         private void HandleDilemmaInputs()

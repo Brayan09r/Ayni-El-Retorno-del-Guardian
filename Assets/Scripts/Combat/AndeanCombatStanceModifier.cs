@@ -47,6 +47,7 @@ namespace Ayni.Combat
         private float currentWeight = 1.0f;
         private float targetWeight = 1.0f;
         private Coroutine hitstopCoroutine;
+        private FootIK footIK;
         private float preHitstopAnimSpeed = 1.0f;
 
         public bool IsAndeanStanceActive => enableAndeanStance && currentWeight > 0.01f;
@@ -79,14 +80,19 @@ namespace Ayni.Combat
         {
             // Transición suave del peso de la postura
             currentWeight = Mathf.MoveTowards(currentWeight, enableAndeanStance ? targetWeight : 0f, blendSpeed * Time.deltaTime);
+
+            // Con IK de pies, la cadera baja dentro del pase de IK: los pies se quedan en el suelo y las rodillas
+            // se flexionan. Mover el hueso de la cadera a mano arrastraba las piernas y hundía los pies 12 cm.
+            if (footIK == null) footIK = GetComponent<FootIK>();
+            if (footIK != null) footIK.ExtraPelvisDrop = hipsDrop * currentWeight;
         }
 
         private void LateUpdate()
         {
             if (currentWeight <= 0.001f || hipsBone == null) return;
 
-            // 1. Bajar centro de masa (Hips / Cadera) hacia el suelo
-            if (hipsBone != null)
+            // 1. Bajar centro de masa (Hips / Cadera) hacia el suelo (solo si no hay IK de pies que lo haga bien)
+            if (hipsBone != null && footIK == null)
             {
                 Vector3 hipsPos = hipsBone.position;
                 hipsPos.y -= hipsDrop * currentWeight;

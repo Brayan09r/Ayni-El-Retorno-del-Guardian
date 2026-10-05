@@ -305,6 +305,11 @@ namespace Ayni.Editor
                 animator.runtimeAnimatorController = animController;
                 if (amaruAvatar != null) animator.avatar = amaruAvatar;
                 animator.applyRootMotion = false;
+
+                if (visual.GetComponent<AndeanCombatStanceModifier>() == null)
+                {
+                    visual.AddComponent<AndeanCombatStanceModifier>();
+                }
             }
 
             // 4. Configurar StructureSystem

@@ -1,0 +1,236 @@
+{
+    "items": [
+        {
+            "fileName": "Light_Punch_1_L.fbx",
+            "originalMixamoName": "Lead Jab",
+            "durationSec": 1.3333333730697632,
+            "contactSec": 0.5600000023841858,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Light_Punch_2_R.fbx",
+            "originalMixamoName": "Cross Punch",
+            "durationSec": 2.0,
+            "contactSec": 0.8799999952316284,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Light_Punch_3_L.fbx",
+            "originalMixamoName": "Hook",
+            "durationSec": 1.3000000715255738,
+            "contactSec": 0.6200000047683716,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Light_Punch_4_R.fbx",
+            "originalMixamoName": "Punching",
+            "durationSec": 1.0,
+            "contactSec": 0.5,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Heavy_Overhand.fbx",
+            "originalMixamoName": "Right Hook",
+            "durationSec": 1.100000023841858,
+            "contactSec": 0.5699999928474426,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Heavy_Uppercut.fbx",
+            "originalMixamoName": "Uppercut",
+            "durationSec": 1.3333333730697632,
+            "contactSec": 0.6000000238418579,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Heavy_Elbow.fbx",
+            "originalMixamoName": "Elbow Punch",
+            "durationSec": 1.7333334684371949,
+            "contactSec": 0.6899999976158142,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Heavy_Headbutt.fbx",
+            "originalMixamoName": "Headbutt",
+            "durationSec": 2.1000001430511476,
+            "contactSec": 0.9700000286102295,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Heavy_FrontKick.fbx",
+            "originalMixamoName": "Kicking",
+            "durationSec": 1.6000001430511475,
+            "contactSec": 0.8299999833106995,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Shove_Push.fbx",
+            "originalMixamoName": "Pushing",
+            "durationSec": 3.9666669368743898,
+            "contactSec": 1.5099999904632569,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Guard_Idle.fbx",
+            "originalMixamoName": "Body Block",
+            "durationSec": 3.433333396911621,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Guard_BlockHit.fbx",
+            "originalMixamoName": "Standing Block React Large",
+            "durationSec": 1.3333333730697632,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Parry_Deflect.fbx",
+            "originalMixamoName": "Outward Block",
+            "durationSec": 2.5333335399627687,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Dodge_Duck.fbx",
+            "originalMixamoName": "Ducking",
+            "durationSec": 1.533333420753479,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Dodge_HopBack.fbx",
+            "originalMixamoName": "Dodging Back",
+            "durationSec": 2.6666667461395265,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Dodge_Left.fbx",
+            "originalMixamoName": "Dodging Right (2) [Mirrored]",
+            "durationSec": 1.433333396911621,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Dodge_Right.fbx",
+            "originalMixamoName": "Dodging Right (1)",
+            "durationSec": 1.433333396911621,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Strafe_Left.fbx",
+            "originalMixamoName": "Walk Strafe Left",
+            "durationSec": 1.4666666984558106,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Strafe_Right.fbx",
+            "originalMixamoName": "Walk Strafe Right",
+            "durationSec": 1.4666666984558106,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Walk_Back.fbx",
+            "originalMixamoName": "Walking Backwards",
+            "durationSec": 0.8666667342185974,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Hit_Head.fbx",
+            "originalMixamoName": "Head Hit",
+            "durationSec": 1.433333396911621,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Hit_Body.fbx",
+            "originalMixamoName": "Stomach Hit",
+            "durationSec": 1.2000000476837159,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Hit_Heavy.fbx",
+            "originalMixamoName": "Big Hit To Head",
+            "durationSec": 1.633333444595337,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Stunned_Loop.fbx",
+            "originalMixamoName": "Dizzy Idle",
+            "durationSec": 4.266666889190674,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Knockdown.fbx",
+            "originalMixamoName": "Knocked Out",
+            "durationSec": 4.933333396911621,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "GetUp.fbx",
+            "originalMixamoName": "Getting Up",
+            "durationSec": 8.333333969116211,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Finisher_Punch.fbx",
+            "originalMixamoName": "Double Leg Takedown - Attacker",
+            "durationSec": 7.233333587646484,
+            "contactSec": 4.199999809265137,
+            "isAttack": true,
+            "found": true
+        },
+        {
+            "fileName": "Mercy_Offer.fbx",
+            "originalMixamoName": "Standing Greeting",
+            "durationSec": 5.100000381469727,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        },
+        {
+            "fileName": "Enemy_Kneel.fbx",
+            "originalMixamoName": "Kneeling Down",
+            "durationSec": 2.766666889190674,
+            "contactSec": -1.0,
+            "isAttack": false,
+            "found": true
+        }
+    ]
+}
