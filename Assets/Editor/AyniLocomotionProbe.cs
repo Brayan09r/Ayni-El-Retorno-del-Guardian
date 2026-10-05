@@ -21,7 +21,7 @@ namespace Ayni.Editor
         private static readonly string[] KnownStates =
         {
             "Relaxed_Locomotion", "Combat_Locomotion", "Crouch_Locomotion", "LockOn_Locomotion", "Guard_Stance",
-            "Fall_Loop", "Fall_Back", "Land_Hard", "Jump", "GetUp", "Defeat_Death",
+            "Fall_Loop", "Fall_Back", "Land_Hard", "Jump", "Run_Jump", "GetUp", "Defeat_Death",
             "Atk_Light1", "Atk_Light2", "Atk_Light3", "Atk_Light4", "Atk_Overhand", "Atk_Uppercut", "Atk_Elbow",
             "Atk_Headbutt", "Atk_FrontKick"
         };
@@ -341,6 +341,7 @@ namespace Ayni.Editor
         /// <summary>Cambia un número privado de YariCombatController durante el Play (para afinar sin recompilar).</summary>
         public static void SetYariField(string field, float value)
         {
+            if (!Application.isPlaying) return;
             var player = GameObject.FindGameObjectWithTag("Player");
             var yari = player != null ? player.GetComponent<Ayni.Player.YariCombatController>() : null;
             if (yari == null) return;
@@ -371,6 +372,7 @@ namespace Ayni.Editor
         /// <summary>Deja a los rivales quietos y sin atacar, pero presentes (para probar el movimiento con uno fijado).</summary>
         public static void PacifyEnemies()
         {
+            if (!Application.isPlaying) return; // fuera de Play tocaría la escena abierta
             // Siguen activos (para poder fijarlos), pero no ven a Yari, no se mueven y no alcanzan a golpear
             var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
             foreach (EnemyController enemy in Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None))
@@ -383,8 +385,15 @@ namespace Ayni.Editor
             }
         }
 
+        /// <summary>Cámara lenta para capturar un movimiento fotograma a fotograma (1 = normal).</summary>
+        public static void SetTimeScale(float scale)
+        {
+            if (Application.isPlaying) Time.timeScale = Mathf.Clamp(scale, 0.05f, 2f);
+        }
+
         public static void RemoveEnemies()
         {
+            if (!Application.isPlaying) return; // fuera de Play dejaría al jefe desactivado en la escena abierta
             foreach (EnemyController enemy in Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None))
             {
                 enemy.gameObject.SetActive(false);

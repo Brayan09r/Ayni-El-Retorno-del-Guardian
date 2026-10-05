@@ -187,9 +187,11 @@ namespace Ayni.Editor
 
                     // Loop Time solo en las animaciones cíclicas (Idle y Jog/Walk)
                     string fileName = Path.GetFileNameWithoutExtension(unityPath).ToLowerInvariant();
-                    bool shouldLoop = fileName.Contains("idle") || fileName.Contains("jog") ||
-                                      fileName.Contains("walk") || fileName.Contains("run") ||
-                                      fileName.Contains("strafe") || fileName.Contains("loop");
+                    // (Run_Jump lleva "run" en el nombre pero es un salto: no es cíclico)
+                    bool shouldLoop = (fileName.Contains("idle") || fileName.Contains("jog") ||
+                                       fileName.Contains("walk") || fileName.Contains("run") ||
+                                       fileName.Contains("strafe") || fileName.Contains("loop")) &&
+                                      !fileName.Contains("jump");
 
                     var clips = animImporter.clipAnimations;
                     if (clips == null || clips.Length == 0) clips = animImporter.defaultClipAnimations;
@@ -460,6 +462,7 @@ namespace Ayni.Editor
             AnimationClip crouchIdleClip = LoadClipFromFBX($"{animFolder}/Crouch_Idle.fbx");
             AnimationClip crouchWalkClip = LoadClipFromFBX($"{animFolder}/Crouch_Walk_InPlace.fbx");
             AnimationClip jumpClip = LoadClipFromFBX($"{animFolder}/Jump.fbx");
+            AnimationClip runJumpClip = LoadClipFromFBX($"{animFolder}/Run_Jump.fbx");
             AnimationClip punchClip = LoadClipFromFBX($"{animFolder}/RumiMaki_LightPunch.fbx");
             AnimationClip kickClip = LoadClipFromFBX($"{animFolder}/RumiMaki_HeavyKick.fbx");
             AnimationClip dodgeClip = LoadClipFromFBX($"{animFolder}/Sifu_DuckAvoid.fbx");
@@ -564,6 +567,16 @@ namespace Ayni.Editor
             // La velocidad la fija el código para que el clip dure lo mismo que el salto real
             jumpState.speedParameterActive = true;
             jumpState.speedParameter = "JumpSpeed";
+
+            // Salto en carrera: lo lanza el código (CrossFade) cuando Yari salta corriendo
+            AnimatorState runJumpState = null;
+            if (runJumpClip != null)
+            {
+                runJumpState = rootStateMachine.AddState("Run_Jump");
+                runJumpState.motion = runJumpClip;
+                runJumpState.speedParameterActive = true;
+                runJumpState.speedParameter = "JumpSpeed";
+            }
 
             var lightAttackState = rootStateMachine.AddState("RumiMaki_LightStrike");
             if (punchClip != null) lightAttackState.motion = punchClip;
@@ -736,6 +749,21 @@ namespace Ayni.Editor
             jumpToCombat.hasExitTime = true;
             jumpToCombat.exitTime = 0.85f;
             jumpToCombat.duration = 0.15f;
+
+            if (runJumpState != null)
+            {
+                var runJumpToRelaxed = runJumpState.AddTransition(relaxedState);
+                runJumpToRelaxed.AddCondition(AnimatorConditionMode.IfNot, 0, "InCombatStance");
+                runJumpToRelaxed.hasExitTime = true;
+                runJumpToRelaxed.exitTime = 0.9f;
+                runJumpToRelaxed.duration = 0.12f;
+
+                var runJumpToCombat = runJumpState.AddTransition(combatState);
+                runJumpToCombat.AddCondition(AnimatorConditionMode.If, 0, "InCombatStance");
+                runJumpToCombat.hasExitTime = true;
+                runJumpToCombat.exitTime = 0.9f;
+                runJumpToCombat.duration = 0.12f;
+            }
 
             // Transiciones desde AnyState para Combate
             AddTriggerTransition(rootStateMachine, lightAttackState, "LightAttack");

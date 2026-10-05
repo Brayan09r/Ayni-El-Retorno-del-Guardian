@@ -40,6 +40,11 @@ namespace Ayni.Combat
         public float jumpLand;
         public float jumpLength;
 
+        [Header("Salto en carrera (medido en el clip Run_Jump)")]
+        public float runJumpTakeoff;
+        public float runJumpLand;
+        public float runJumpLength;
+
         public List<Entry> entries = new List<Entry>();
         public List<LocomotionEntry> locomotion = new List<LocomotionEntry>();
 

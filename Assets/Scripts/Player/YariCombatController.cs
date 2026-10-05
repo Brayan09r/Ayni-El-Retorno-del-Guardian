@@ -999,7 +999,7 @@ namespace Ayni.Player
 
                 velocity.y = Mathf.Sqrt((runningJump ? leapHeight : jumpHeight) * -2f * gravity);
                 float airTime = 2f * velocity.y / Mathf.Max(0.01f, -gravity);
-                PlayJumpAnimation(airTime);
+                PlayJumpAnimation(airTime, runningJump);
                 jumpInAir = true;
                 jumpStartTime = Time.time;
 
@@ -1046,9 +1046,19 @@ namespace Ayni.Player
         /// Reproduce el clip de salto desde el instante del despegue (sin la preparación larga) y a la velocidad
         /// justa para que el aterrizaje del clip coincida con el del salto real.
         /// </summary>
-        private void PlayJumpAnimation(float airTime)
+        private void PlayJumpAnimation(float airTime, bool running)
         {
             if (!animator) return;
+
+            // Salto en carrera: su propio clip, si está en el Animator y se pudo medir
+            if (running && attackTimings != null && attackTimings.runJumpLand > attackTimings.runJumpTakeoff && HasState("Run_Jump"))
+            {
+                float clipAir = attackTimings.runJumpLand - attackTimings.runJumpTakeoff;
+                float runSpeed = Mathf.Clamp(clipAir / Mathf.Max(0.05f, airTime), 0.4f, 3f);
+                if (HasParam("JumpSpeed")) animator.SetFloat("JumpSpeed", runSpeed);
+                animator.CrossFadeInFixedTime("Run_Jump", 0.06f, 0, attackTimings.runJumpTakeoff);
+                return;
+            }
 
             bool hasTimings = attackTimings != null && attackTimings.jumpLand > attackTimings.jumpTakeoff;
             if (hasTimings && HasState("Jump"))
@@ -1072,8 +1082,9 @@ namespace Ayni.Player
             leaping = false;
             if (!animator) return;
 
-            bool inJump = animator.GetCurrentAnimatorStateInfo(0).IsName("Jump") ||
-                          animator.GetNextAnimatorStateInfo(0).IsName("Jump");
+            AnimatorStateInfo now = animator.GetCurrentAnimatorStateInfo(0);
+            AnimatorStateInfo next = animator.GetNextAnimatorStateInfo(0);
+            bool inJump = now.IsName("Jump") || next.IsName("Jump") || now.IsName("Run_Jump") || next.IsName("Run_Jump");
             if (!inJump) return;
 
             string landState = lockTarget != null && HasState("LockOn_Locomotion") ? "LockOn_Locomotion"

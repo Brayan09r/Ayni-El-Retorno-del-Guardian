@@ -134,7 +134,13 @@ namespace Ayni.Editor
         /// </summary>
         public static void SetupJumpClip()
         {
-            string path = $"{AnimFolder}/Jump.fbx";
+            SetupJumpClip("Jump", false);
+            SetupJumpClip("Run_Jump", true);
+        }
+
+        private static void SetupJumpClip(string fileName, bool running)
+        {
+            string path = $"{AnimFolder}/{fileName}.fbx";
             var importer = AssetImporter.GetAtPath(path) as ModelImporter;
             if (importer == null) return;
 
@@ -150,16 +156,26 @@ namespace Ayni.Editor
             AttackTimingTable table = LoadOrCreateTable();
             if (measured)
             {
-                table.jumpTakeoff = takeoff;
-                table.jumpLand = land;
-                table.jumpLength = length;
+                if (running)
+                {
+                    table.runJumpTakeoff = takeoff;
+                    table.runJumpLand = land;
+                    table.runJumpLength = length;
+                }
+                else
+                {
+                    table.jumpTakeoff = takeoff;
+                    table.jumpLand = land;
+                    table.jumpLength = length;
+                }
                 EditorUtility.SetDirty(table);
                 AssetDatabase.SaveAssets();
-                Debug.Log($"<color=green>[Ayni Timing]</color> Salto: clip de {length:F2} s, despega en {takeoff:F2} s y aterriza en {land:F2} s.");
+                Debug.Log($"<color=green>[Ayni Timing]</color> {(running ? "Salto en carrera" : "Salto")}: clip de {length:F2} s, " +
+                          $"despega en {takeoff:F2} s y aterriza en {land:F2} s.");
             }
             else
             {
-                Debug.LogWarning("[Ayni Timing] No se pudo medir el clip de salto; se conservan los valores anteriores.");
+                Debug.LogWarning($"[Ayni Timing] No se pudo medir el clip {fileName}; se conservan los valores anteriores.");
             }
         }
 
@@ -262,13 +278,24 @@ namespace Ayni.Editor
             if (rise < 0.08f) return false; // los pies no llegan a separarse del suelo: no hay nada que medir
 
             float airborneAbove = floor + Mathf.Max(rise * 0.25f, 0.05f);
-            int first = -1, last = -1;
-            for (int i = 0; i < samples; i++)
+            // El tramo en el aire más largo. En un salto en carrera hay otros más cortos (las zancadas de antes
+            // y de después también tienen su fase de vuelo), y el salto es el mayor.
+            int first = -1, last = -1, runStart = -1;
+            for (int i = 0; i <= samples; i++)
             {
-                if (lowestFoot[i] > airborneAbove)
+                bool airborne = i < samples && lowestFoot[i] > airborneAbove;
+                if (airborne)
                 {
-                    if (first < 0) first = i;
-                    last = i;
+                    if (runStart < 0) runStart = i;
+                }
+                else if (runStart >= 0)
+                {
+                    if (first < 0 || (i - 1) - runStart > last - first)
+                    {
+                        first = runStart;
+                        last = i - 1;
+                    }
+                    runStart = -1;
                 }
             }
             if (first < 0 || last <= first) return false;

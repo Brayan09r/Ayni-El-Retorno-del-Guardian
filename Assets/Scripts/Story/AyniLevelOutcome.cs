@@ -10,7 +10,7 @@ namespace Ayni.Story
 {
     /// <summary>
     /// Desenlace del Nivel 1 (Biblia, 5.1 y 6.3) cuando se resuelve el Juicio Ayni del jefe:
-    ///   Ayni (perdón)  → la lluvia apaga las llamas, brotan plantones de queñua: ODS 15, el Antisuyo empieza a sanar.
+    ///   Ayni (perdón)  → la lluvia apaga las llamas y vuelve a brotar el queñual (AyniReforestation): ODS 15, el Antisuyo empieza a sanar.
     ///   Venganza       → cae ceniza, el cielo se oscurece: el bosque sigue ardiendo y la Hucha pesa sobre Yari.
     /// Termina con la tarjeta de "Nivel completado" y sus datos (edad, caídas, decisión, tiempo).
     /// SifuCombatHUD lo añade solo.
@@ -80,7 +80,7 @@ namespace Ayni.Story
             {
                 AyniScreenFX.Tint(new Color(0.12f, 0.32f, 0.2f), 0.14f);
                 spawned.Add(BuildRain(center));
-                StartCoroutine(GrowSprouts(center));
+                AyniReforestation.Begin(center, new[] { yariPos, boss.transform.position }, spawned);
             }
             else
             {
@@ -307,65 +307,6 @@ namespace Ayni.Story
             ps.Simulate(5f, true, true);
             ps.Play();
             return go;
-        }
-
-        /// <summary>Plantones de queñua que brotan alrededor del lugar del Juicio.</summary>
-        private IEnumerator GrowSprouts(Vector3 center)
-        {
-            Shader lit = Shader.Find("Universal Render Pipeline/Lit");
-            if (lit == null) yield break;
-            var stemMat = new Material(lit) { color = new Color(0.36f, 0.24f, 0.14f) };
-            var leafMat = new Material(lit) { color = new Color(0.25f, 0.55f, 0.2f) };
-
-            var sprouts = new List<(Transform t, float delay, float size)>();
-            var random = new System.Random(15);
-            for (int i = 0; i < 46; i++)
-            {
-                float angle = (float)random.NextDouble() * Mathf.PI * 2f;
-                float dist = 2.5f + (float)random.NextDouble() * 13f;
-                Vector3 p = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * dist;
-                if (!Physics.Raycast(p + Vector3.up * 20f, Vector3.down, out RaycastHit hit, 60f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) continue;
-                if (Vector3.Angle(hit.normal, Vector3.up) > 35f) continue;
-
-                var root = new GameObject("Planton_Quenua");
-                root.transform.position = hit.point;
-                root.transform.rotation = Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
-                root.transform.localScale = Vector3.zero;
-                spawned.Add(root);
-
-                var stem = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                Destroy(stem.GetComponent<Collider>());
-                stem.transform.SetParent(root.transform, false);
-                stem.transform.localPosition = new Vector3(0f, 0.35f, 0f);
-                stem.transform.localScale = new Vector3(0.06f, 0.35f, 0.06f);
-                stem.GetComponent<Renderer>().sharedMaterial = stemMat;
-
-                for (int k = 0; k < 3; k++)
-                {
-                    var leaf = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    Destroy(leaf.GetComponent<Collider>());
-                    leaf.transform.SetParent(root.transform, false);
-                    leaf.transform.localPosition = new Vector3((k - 1) * 0.12f, 0.72f + 0.08f * (k % 2), 0.05f * (k - 1));
-                    leaf.transform.localScale = new Vector3(0.32f, 0.24f, 0.32f);
-                    leaf.GetComponent<Renderer>().sharedMaterial = leafMat;
-                }
-
-                sprouts.Add((root.transform, 1.5f + (float)random.NextDouble() * 6f, 0.7f + (float)random.NextDouble() * 0.9f));
-            }
-
-            float t = 0f;
-            while (t < 10f)
-            {
-                foreach (var s in sprouts)
-                {
-                    if (s.t == null) continue;
-                    float k = Mathf.Clamp01((t - s.delay) / 2.2f);
-                    float grow = 1f - (1f - k) * (1f - k);
-                    s.t.localScale = Vector3.one * (s.size * grow);
-                }
-                t += Time.unscaledDeltaTime;
-                yield return null;
-            }
         }
     }
 }

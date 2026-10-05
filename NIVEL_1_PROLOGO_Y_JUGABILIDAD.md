@@ -17,7 +17,7 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
    - En el 40 % o menos: al romperle la postura llega el **Juicio Ayni**. Todo va a cámara lenta y se elige entre botón rojo
      (Venganza) y botón verde (Ayni). Los jefes no mueren a golpes: el final siempre pasa por el Juicio.
 4. **Desenlace:**
-   - Ayni: llueve, brotan plantones de queñua y aparece el título "ODS 15".
+   - Ayni: llueve, vuelve a brotar el queñual (ver *El queñual del perdón*) y aparece el título "ODS 15".
    - Venganza: cae ceniza y el cielo se oscurece.
    - Después sale la tarjeta "Nivel 1 completado" con la edad, las caídas, el tiempo y la decisión. Desde ahí se puede volver a jugar o seguir explorando.
 
@@ -70,7 +70,9 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
   `AyniInput.MoveFromStick` dice de dónde viene el movimiento; en las pruebas, `SimulateMove` imita el stick y `SimulateKeys` las teclas.
 - **Salto en carrera:** saltando a un ritmo de 0.7 o más (1 = correr a fondo) y sin rival fijado, Yari conserva la dirección y sale
   un 30 % más rápido (`leapSpeedBoost`), con 1.05 m de altura: unos 3.5 m de largo corriendo y unos 4.5 m en sprint. En el aire
-  solo se corrige la dirección (50°/s). Usa el mismo clip `Jump` desde el despegue; no hay clip propio de salto en carrera.
+  solo se corrige la dirección (50°/s). Usa su propio clip, **"Running Jump"** de Mixamo (`Run_Jump.fbx`, estado `Run_Jump`):
+  se reproduce desde el despegue (0.12 s) y a la velocidad justa para que el aterrizaje del clip (0.57 s) coincida con el real.
+  El clip no es "In Place", pero no hace falta: el Animator no aplica el movimiento de la raíz. Si falta, se usa el clip `Jump`.
 - **El salto ya no se pierde:** la pulsación se recuerda 0.15 s y el suelo 0.12 s. Antes, corriendo por terreno irregular el
   CharacterController perdía el suelo algún fotograma y, si coincidía con la pulsación, Yari no saltaba.
 - **Con el rival fijado** la velocidad y la cadencia se reparten según la dirección (hacia él, de lado, hacia atrás), igual que
@@ -99,6 +101,27 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
   rival fijado, en los remates ni en las caídas, y las escenas reciben la cámara con su campo de visión normal.
 - La consola muestra avisos amarillos *"Rig Error: Copied Avatar Rig Configuration mis-match"* al reimportar los clips de Mixamo:
   sus huesos difieren unos milímetros de los de Yari. No afecta a la animación.
+
+## El queñual del perdón
+
+Al perdonar al jefe, alrededor del lugar del Juicio brota un bosque en una ola que sale del centro hacia fuera (`AyniReforestation`):
+
+- **Queñuas** (*Polylepis*) en tres tamaños: plantones cerca de los personajes, árboles jóvenes y, al fondo, árboles de 3 m con
+  el tronco retorcido de corteza rojiza. Los altos se quedan a más de 10 m del centro para no tapar a Yari y al jefe ni cruzarse
+  con la cámara, que gira a 4.5 – 7.5 m.
+- **Brotes** recién nacidos, **matas de ichu** y **cantutas** (la flor sagrada de los incas) rojas, rosadas y amarillas.
+- Cada árbol levanta su montículo de tierra y musgo; primero sube el tallo, fino, luego engorda y al final se abre la copa.
+  Saltan tierra y hojas al brotar, el viento mece las copas en rachas y sobre el claro flotan motas de polen.
+- **Todo se genera por código**: mallas (troncos, copas, hierba, flores) y texturas (corteza, ramitas de hojas, paletas). No hay
+  modelos ni imágenes que importar. Los modelos se construyen una vez y las plantas los comparten.
+- Las hojas son láminas con una ramita pintada y recortada por transparencia. Sus materiales parten de las plantillas de
+  `Assets/Resources/AyniVegetacion` (menú **Ayni > Entorno > Recrear Materiales de la Vegetación**). **No borrar esa carpeta**:
+  sin ella, en el juego compilado las hojas saldrían como cuadrados opacos (en el editor seguiría viéndose bien).
+- Solo brota sobre el terreno (ni sobre el puente ni sobre las rocas), fuera de la quebrada y en pendientes suaves.
+- Los árboles no tienen colisión: si el jugador sigue explorando, los atraviesa.
+- Para verlo sin ganar el combate, en Play: `call Ayni.Editor.AyniOutcomePreview.Reforest` y
+  `call Ayni.Editor.AyniOutcomePreview.Shot 60 13 4.5` (ángulo, distancia y altura de la cámara). El desenlace real se puede
+  forzar con `call Ayni.Editor.AyniPlaytestProbe.HitBoss 200 999` seguido de `call Ayni.Core.AyniInput.Simulate Mercy 0.15`.
 
 ## Mando de Xbox
 
@@ -137,6 +160,9 @@ Menús en `Ayni > Animaciones`:
 | `Scripts/Story/AyniPrologue.cs` | Prólogo "La Noche de las Cenizas" (montado por código; no toca la escena) |
 | `Scripts/Story/AyniJudgment.cs` | Pantalla del Juicio Ayni del jefe (cámara lenta, botón rojo / verde) |
 | `Scripts/Story/AyniLevelOutcome.cs` | Desenlace del nivel según la decisión y tarjeta final |
+| `Scripts/Story/AyniReforestation.cs` | El queñual que brota al perdonar: árboles, brotes, ichu y cantutas generados por código |
+| `Editor/AyniVegetationMaterials.cs` | Crea las plantillas de material de esa vegetación en `Resources/AyniVegetacion` |
+| `Editor/AyniOutcomePreview.cs` | Para ver el queñual en Play sin ganar el combate |
 | `Scripts/Enemy/AmaruHunter.cs` | Segunda fase de Amaru: salto atrás y dardos envenenados |
 | `Scripts/UI/AyniScreenFX.cs` | Fundidos, franjas de cine, subtítulos, títulos y tinte de ambiente |
 | `Scripts/UI/AyniGamepadTester.cs` | Panel de prueba del mando (F9) |

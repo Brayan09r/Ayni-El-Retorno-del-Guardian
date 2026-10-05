@@ -15,6 +15,9 @@ MonoBehaviour:
   jumpTakeoff: 0.87
   jumpLand: 1.23
   jumpLength: 2.1666667
+  runJumpTakeoff: 0.12
+  runJumpLand: 0.57
+  runJumpLength: 0.90000004
   entries:
   - clipName: Light_Punch_1_L
     length: 1.3333334
