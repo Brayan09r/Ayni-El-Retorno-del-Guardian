@@ -9,7 +9,7 @@
 
 | Acción | Mando de Xbox | Teclado y ratón |
 | :--- | :--- | :--- |
-| Moverse | Stick izquierdo (inclinado a medias = caminar; a fondo = correr) | `W` `A` `S` `D` |
+| Moverse | Stick izquierdo (hasta el 75 % = caminar; más = correr, y a fondo corre a tope) | `W` `A` `S` `D` |
 | Cámara | Stick derecho | Ratón |
 | Correr | Mantener `RT` (o pulsar el stick izquierdo, `L3`) | `Shift Izq.` |
 | Saltar | `A` | `Espacio` |
@@ -43,7 +43,7 @@ Permite mover a Yari de forma tridimensional fluida con la cámara en tercera pe
 ---
 
 ## 2. Sprint / Carrera Rápida: Mantener `[SHIFT IZQUIERDO]`
-Permite acelerar el paso de Yari hasta `8.8 m/s` para cruzar grandes distancias, escapar de emboscadas o cerrar la distancia rápidamente contra un oponente.
+Permite acelerar el paso de Yari hasta `4.3 m/s` (unos `4.9 m/s` con la Illa joven) para cruzar grandes distancias, escapar de emboscadas o cerrar la distancia rápidamente contra un oponente.
 
 ![Control Sprint con Shift](Assets/Art/Controls_Art/02_Control_Sprint_Shift.jpg)
 

@@ -53,9 +53,13 @@ MonoBehaviour:
     contactTime: 0.67
     strikingBone: RightFoot
   locomotion:
+  - clipName: Walk_Forward_InPlace
+    groundSpeed: 1.07
   - clipName: Jog_Forward_InPlace
-    groundSpeed: 1.61
+    groundSpeed: 1.67
+  - clipName: Run_Forward_InPlace
+    groundSpeed: 3.7
   - clipName: Sprint_Run_InPlace
-    groundSpeed: 2.4
+    groundSpeed: 3.86
   - clipName: Crouch_Walk_InPlace
-    groundSpeed: 0.63
+    groundSpeed: 0.62

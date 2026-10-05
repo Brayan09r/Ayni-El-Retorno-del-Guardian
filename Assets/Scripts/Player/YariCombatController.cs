@@ -14,9 +14,11 @@ namespace Ayni.Player
     public class YariCombatController : MonoBehaviour
     {
         [Header("Movimiento")]
-        [SerializeField] private float baseMoveSpeed = 5.2f;
-        [SerializeField] private float sprintSpeed = 8.8f;
-        [SerializeField] private float crouchSpeed = 2.4f;
+        [Tooltip("Velocidades base (m/s); con la Illa joven Yari va un 15 % más rápido. Están ajustadas a lo que cubren " +
+                 "los pasos de las animaciones (ver AyniTuning): si se suben, los pies patinan.")]
+        [SerializeField] private float baseMoveSpeed = 3.1f;
+        [SerializeField] private float sprintSpeed = 4.3f;
+        [SerializeField] private float crouchSpeed = 1.0f;
         [SerializeField] private float jumpHeight = 1.6f;
         [SerializeField] private float rotationSpeed = 12f;
         [SerializeField] private float gravity = -18f;
@@ -25,13 +27,18 @@ namespace Ayni.Player
         [Tooltip("Por debajo de esta inclinación del stick Yari camina; por encima, corre como con el teclado.")]
         [Range(0.3f, 0.95f)] [SerializeField] private float runStickThreshold = 0.75f;
         [Tooltip("Velocidad al caminar con el stick apenas inclinado (m/s).")]
-        [SerializeField] private float walkSpeedMin = 0.8f;
+        [SerializeField] private float walkPaceMin = 0.85f;
         [Tooltip("Velocidad al caminar con el stick justo por debajo del umbral de correr (m/s).")]
-        [SerializeField] private float walkSpeedMax = 1.1f;
-        [Tooltip("Metros por segundo que cubren los pasos de la animación de trote a velocidad normal. Al caminar, la animación " +
-                 "se acelera o se frena para que los pies pisen a la velocidad real. Medido en Play con " +
-                 "Ayni.Editor.AyniLocomotionProbe.MeasureSlide (volver a medir si cambia el clip de trote).")]
-        [SerializeField] private float walkStrideSpeed = 1.05f;
+        [SerializeField] private float walkPaceMax = 1.2f;
+        [Tooltip("Parte de la velocidad de carrera con el stick recién pasado el umbral; a fondo (o con el teclado) corre al 100 %.")]
+        [Range(0.5f, 1f)] [SerializeField] private float runPaceAtThreshold = 0.72f;
+
+        [Header("Cadencia de los pasos")]
+        [Tooltip("La animación se acelera o se frena para que los pies pisen a la velocidad a la que Yari avanza de verdad. " +
+                 "Estos son los topes: por encima las piernas se verían a cámara rápida y se prefiere que patinen un poco.")]
+        [SerializeField] private float maxRunCadence = 1.05f;
+        [SerializeField] private float maxSprintCadence = 1.5f;
+        [SerializeField] private float maxCrouchCadence = 1.6f;
 
         [Header("Postura y Agachado")]
         [SerializeField] private float combatStanceDuration = 4.5f;
@@ -242,8 +249,16 @@ namespace Ayni.Player
         private Animator cachedParamsFor;
         private readonly System.Collections.Generic.HashSet<int> animatorParams = new System.Collections.Generic.HashSet<int>();
 
-        // Cadencia de los pasos: al caminar, la animación se reproduce al ritmo justo para que los pies no patinen
+        // Cadencia de los pasos: la animación se reproduce al ritmo justo para que los pies no patinen
+        // Metros por segundo que cubren los pasos de cada clip a velocidad normal. Los mide AyniAttackTimingBaker al
+        // generar el Animator y se leen de YariAttackTimings; estos valores solo valen si falta esa tabla.
+        private float walkStride = 1.07f;
+        private float runStride = 2.37f;
+        private float sprintStride = 2.95f;
+        private float crouchStride = 0.62f;
         private float runBlend = 1f;      // 0 = caminando, 1 = corriendo (suavizado)
+        private float paceRatio;
+        private int paceFrame = -10;
         private float locomotionCadence = 1f;
         private float appliedCadence = 1f;
 
@@ -286,6 +301,11 @@ namespace Ayni.Player
         public event Action OnAvoided;
         public bool IsCrouching => isCrouching;
         public bool IsSprinting => isSprinting;
+        /// <summary>
+        /// Ritmo al que Yari se desplaza por su propio pie en este fotograma: 0 parado, alrededor de 0.4 caminando,
+        /// 1 corriendo a fondo y más de 1 en sprint. Lo usa la cámara para dar sensación de velocidad.
+        /// </summary>
+        public float PaceRatio => Time.frameCount - paceFrame <= 1 ? paceRatio : 0f;
         public bool InCombatStance => inCombatStance;
 
         public float CurrentHealth => currentHealth;
@@ -322,6 +342,15 @@ namespace Ayni.Player
             }
 
             attackTimings = Resources.Load<AttackTimingTable>(AttackTimingTable.ResourceName);
+            if (attackTimings != null)
+            {
+                walkStride = attackTimings.GetGroundSpeed("Walk_Forward_InPlace", walkStride);
+                // Si no está el clip de carrera, el Animator usa el de trote en su lugar
+                runStride = attackTimings.GetGroundSpeed("Run_Forward_InPlace",
+                            attackTimings.GetGroundSpeed("Jog_Forward_InPlace", runStride));
+                sprintStride = attackTimings.GetGroundSpeed("Sprint_Run_InPlace", sprintStride);
+                crouchStride = attackTimings.GetGroundSpeed("Crouch_Walk_InPlace", crouchStride);
+            }
             ApplyVisualGroundOffset();
             footIK = FootIK.Attach(animator, characterController);
         }
@@ -501,8 +530,8 @@ namespace Ayni.Player
             if (animator == null || CinematicControl) return;
             if (animator.speed < 0.1f) return; // micro-pausa de un impacto en curso
 
-            bool walking = locomotionCadence < 0.999f || locomotionCadence > 1.001f;
-            bool canScale = walking && !isAttacking && !isDead && !isGuarding && !jumpInAir && !fallAnimPlaying &&
+            bool paced = locomotionCadence < 0.999f || locomotionCadence > 1.001f;
+            bool canScale = paced && !isAttacking && !isDead && !isGuarding && !jumpInAir && !fallAnimPlaying &&
                             !beingRescued && !IsStunned && !AyniGameState.InputLocked &&
                             characterController.isGrounded && InLocomotionState();
 
@@ -736,33 +765,50 @@ namespace Ayni.Player
                 float speedMul = talisman.GetSpeedMultiplier();
                 float currentSpeed = speedToUse * speedMul;
 
-                // Stick a medio camino (el teclado siempre da 1). La animación conserva la zancada completa
-                // y lo que cambia es la cadencia de los pasos, para que los pies sigan a la velocidad real.
+                // La animación conserva siempre la zancada completa; lo que cambia es la cadencia de los pasos
+                // (velocidad real / lo que cubre el clip), para que los pies pisen donde Yari avanza de verdad.
                 if (isSprinting)
                 {
                     runBlend = 1f;
+                    locomotionCadence = Mathf.Clamp(currentSpeed / sprintStride, 0.9f, maxSprintCadence);
                 }
-                else if (!isCrouching && !locked)
+                else if (isCrouching)
                 {
-                    // Dos marchas: caminar (pasos al ritmo exacto del suelo) y correr (igual que con el teclado)
+                    // Agachado: más despacio con el stick a medias
+                    currentSpeed *= Mathf.Lerp(0.45f, 1f, Mathf.InverseLerp(0.1f, 0.9f, analog));
+                    locomotionCadence = Mathf.Clamp(currentSpeed / crouchStride, 0.6f, maxCrouchCadence);
+                }
+                else if (!locked)
+                {
+                    // Dos marchas con el stick: caminar y correr (el teclado siempre da 1 = correr a fondo).
+                    // Pasado el umbral corre suave y acelera hasta el tope con el stick a fondo.
                     bool wantsRun = analog >= runStickThreshold;
                     runBlend = Mathf.MoveTowards(runBlend, wantsRun ? 1f : 0f, 4.5f * Time.deltaTime);
-                    float walkSpeed = Mathf.Lerp(walkSpeedMin, walkSpeedMax, Mathf.InverseLerp(0.1f, runStickThreshold, analog)) * speedMul;
                     float smooth = runBlend * runBlend * (3f - 2f * runBlend);
-                    float walkCadence = Mathf.Clamp(walkSpeed / Mathf.Max(0.1f, walkStrideSpeed), 0.7f, 1.3f);
-                    currentSpeed = Mathf.Lerp(walkSpeed, currentSpeed, smooth);
-                    locomotionCadence = Mathf.Lerp(walkCadence, 1f, smooth);
+
+                    float walkSpeed = Mathf.Lerp(walkPaceMin, walkPaceMax, Mathf.InverseLerp(0.1f, runStickThreshold, analog)) * speedMul;
+                    float runSpeed = currentSpeed * Mathf.Lerp(runPaceAtThreshold, 1f, Mathf.InverseLerp(runStickThreshold, 0.97f, analog));
+                    float walkCadence = Mathf.Clamp(walkSpeed / walkStride, 0.7f, 1.3f);
+                    float runCadence = Mathf.Clamp(runSpeed / runStride, 0.85f, maxRunCadence);
+
+                    currentSpeed = Mathf.Lerp(walkSpeed, runSpeed, smooth);
+                    locomotionCadence = Mathf.Lerp(walkCadence, runCadence, smooth);
                     targetAnimSpeedVal = Mathf.Lerp(0.5f, 1f, smooth);
                 }
                 else
                 {
-                    // Agachado o con el rival fijado: más despacio con el stick, y los pasos a ese mismo ritmo
+                    // Con el rival fijado: más despacio con el stick a medias. Hacia él se usa el clip de carrera y su
+                    // cadencia; de lado y hacia atrás, los pasos de combate al ritmo del stick.
                     float walk = Mathf.Lerp(0.45f, 1f, Mathf.InverseLerp(0.1f, 0.9f, analog));
                     currentSpeed *= walk;
-                    locomotionCadence = Mathf.Clamp(walk, 0.6f, 1f);
+                    float towards = Mathf.InverseLerp(0.5f, 0.9f, Vector3.Dot(moveDir, toTarget));
+                    locomotionCadence = Mathf.Lerp(Mathf.Clamp(walk, 0.6f, 1f),
+                                                   Mathf.Clamp(currentSpeed / runStride, 0.7f, maxRunCadence), towards);
                 }
 
                 characterController.Move(moveDir * (currentSpeed * Time.deltaTime));
+                paceRatio = currentSpeed / Mathf.Max(0.1f, baseMoveSpeed * speedMul);
+                paceFrame = Time.frameCount;
 
                 if (!locked)
                 {

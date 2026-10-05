@@ -1292,6 +1292,7 @@ MonoBehaviour:
   enemiesKilled: 0
   enemiesSpared: 0
   executionRange: 3
+  bossJudgmentRange: 9
 --- !u!4 &70156075
 Transform:
   m_ObjectHideFlags: 0
@@ -6418,6 +6419,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ayni.World.AyniAbyssRescue
   abyssY: -8
+  playerDeathY: -3
+  waterY: -18
   safeMinY: 0.5
   maxSafeSlope: 30
   sampleInterval: 0.3
@@ -13517,12 +13520,20 @@ MonoBehaviour:
   smoothSpeed: 10
   minPitch: -20
   maxPitch: 60
+  stickYawSpeed: 170
+  stickPitchSpeed: 110
+  invertStickY: 0
   collisionRadius: 0.25
   minDistance: 0.8
   lockYawSpeed: 6
   lockPitch: 14
   lockFraming: 0.35
   lockTargetHeight: 1.3
+  runFovKick: 4
+  sprintFovKick: 10
+  runPullBack: 0.06
+  sprintPullBack: 0.15
+  speedFeelTime: 0.45
   finisherZoom: 0.62
 --- !u!1 &964892306
 GameObject:
@@ -18284,12 +18295,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 432679efc71931e4382d074b2188233a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ayni.Player.YariCombatController
-  baseMoveSpeed: 4
-  sprintSpeed: 6.5
-  crouchSpeed: 2.4
+  baseMoveSpeed: 3.6
+  sprintSpeed: 5.5
+  crouchSpeed: 1
   jumpHeight: 1.1
   rotationSpeed: 12
   gravity: -20
+  runStickThreshold: 0.75
+  walkPaceMin: 0.85
+  walkPaceMax: 1.2
+  runPaceAtThreshold: 0.72
+  maxRunCadence: 1.05
+  maxSprintCadence: 1.5
+  maxCrouchCadence: 1.6
   combatStanceDuration: 4.5
   standingHeight: 2
   standingCenter: {x: 0, y: 1, z: 0}
@@ -18306,13 +18324,15 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   parryWindow: 0.22
-  lightLeadIn: 0.2
-  heavyLeadIn: 0.4
-  lightAnimSpeed: 1.4
-  heavyAnimSpeed: 1.25
-  comboCancelAfterContact: 0.1
-  lightRecovery: 0.32
-  heavyRecovery: 0.5
+  lightWindup: 0.26
+  heavyWindup: 0.46
+  lightStrikeSpeed: 1.3
+  heavyStrikeSpeed: 1.2
+  lightFollowThrough: 0.2
+  heavyFollowThrough: 0.3
+  lightRecoverTime: 0.46
+  heavyRecoverTime: 0.66
+  attackBlendTime: 0.09
   inputBufferTime: 0.3
   comboResetTime: 0.6
   attackRootMotionScale: 1
@@ -18322,12 +18342,24 @@ MonoBehaviour:
   attackArc: 120
   autoFaceRange: 3.5
   dodgeWindow: 0.45
+  swayWindow: 0.36
+  avoidCooldown: 0.38
+  avoidStickThreshold: 0.55
+  counterWindow: 0.8
+  counterStructureBonus: 1.6
   hitStunDuration: 0.35
   guardBreakStun: 1.5
   lockOnRange: 14
   lockOnBreakRange: 20
   lockStrafeSpeed: 2.4
   landBlendTime: 0.15
+  fallAnimSpeed: -7.5
+  fallAnimMinDrop: 1.2
+  hardLandingHeight: 3.5
+  fallDamageHeight: 9
+  fallDamagePerMeter: 6
+  abyssFallTimeScale: 0.55
+  abyssBlackoutTime: 1.7
   getUpDuration: 2
   cameraTransform: {fileID: 963194228}
   visualHeightOffset: 0
@@ -24961,7 +24993,10 @@ MonoBehaviour:
   parryStructureDamage: 35
   parryStaggerTime: 1
   hitStaggerTime: 0.3
+  dodgedExtraRecover: 0.4
   attackAnimSpeed: 1
+  judgmentHealthThreshold: 0.4
+  brokenDamageMultiplier: 1.6
   knockbackDeceleration: 14
   downedTime: 0.6
   moveSpeed: 3.4

@@ -40,20 +40,43 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
 - La pulsación hecha en mitad de un golpe **queda en cola** hasta ese momento: una pulsación = un golpe más, sin tener que acertar el instante.
 - Los ajustes están en `YariCombatController`, sección *Ritmo del Combo* (`lightFollowThrough`, `heavyFollowThrough`, `lightWindup`…). Tienen nombres nuevos a propósito: así valen los valores del código y no los que quedaron guardados en la escena.
 
-## Caminar con el stick
+## Caminar, correr y esprintar (los pies ya no patinan)
 
-- El stick tiene **dos marchas**: inclinado menos del 75 % Yari camina (0.8 a 1.1 m/s en base; ~0.92 a 1.26 m/s con Illa Youth); a fondo corre a 4.0 m/s (4.6 m/s con Illa Youth) igual que con el teclado.
-- **Animaciones integradas de Mixamo** (con rig de Yari, In Place, Without Skin, 30 fps):
-  - Caminar: **"Standard Walk"** (`Assets/Art/Characters/Animations/Walk_Forward_InPlace.fbx`, clip interno `Walk_Forward_InPlace`). Paso erguido y natural hacia adelante.
-  - Correr: **"Running"** (`Assets/Art/Characters/Animations/Run_Forward_InPlace.fbx`, clip interno `Run_Forward_InPlace`). Carrera atlética hacia adelante.
-- Al caminar la animación conserva la zancada completa y cambia la **cadencia** (velocidad del Animator entre 0.8x y 1.2x) para que los pies pisen a la velocidad real.
-- `walkStrideSpeed` = **1.05 m/s** (cobertura natural medida del paso de "Standard Walk"; ratio paso/animator $X / Y$).
-- Con `walkSpeedMin = 0.8 m/s` y `walkSpeedMax = 1.1 m/s`, la cadencia en los extremos se mantiene calibrada dentro de 0.85x–1.20x.
-- **Resultados de patinaje medidos en Play Mode (`AyniLocomotionProbe.MeasureSlide`)**:
-  - Stick al 20 % (caminar lento): **5 %** de patinaje (Yari 0.97 m/s · pies 0.93 m/s · Animator 0.93x).
-  - Stick al 45 % (caminar medio): **0 %** de patinaje (Yari 1.09 m/s · pies 1.10 m/s · Animator 1.00x).
-  - Stick al 70 % (caminar rápido): **0 %** de patinaje (Yari 1.24 m/s · pies 1.24 m/s · Animator 1.18x).
-  - Stick al 100 % (correr): **56 %** de patinaje (Yari 4.60 m/s · pies 2.03 m/s · Animator 1.00x). Bajó significativamente del 68 % anterior que daba el trote suave.
+- **Animaciones de Mixamo** (rig de Yari, In Place, sin malla, 30 fps), en `Assets/Art/Characters/Animations/`:
+  caminar **"Standard Walk"** (`Walk_Forward_InPlace.fbx`), correr **"Fast Run"** (`Run_Forward_InPlace.fbx`), sprint **"Two Cycle Sprint"** (`Sprint_Run_InPlace.fbx`),
+  laterales **"Left Strafe"** / **"Right Strafe"** (`Strafe_Left.fbx`, `Strafe_Right.fbx`) y retroceso **"Jog Backward"** (`Walk_Back.fbx`).
+  En el Animator, `Speed` = 0 reposo · 0.5 caminar · 1 correr · 2 sprint.
+- **La cadencia de los pasos se calcula sola.** Al generar el Animator, `AyniAttackTimingBaker` mide cuántos m/s cubren los pasos de
+  cada clip con el cuerpo de Yari y lo guarda en `Assets/Resources/YariAttackTimings.asset`. En cada fotograma `YariCombatController`
+  reproduce la animación a *velocidad real ÷ lo que cubre el clip*. Si se cambia un clip, basta con regenerar el Animator (menú **Ayni > 1**).
+
+  | Clip | Cubre a 1x | Tope de cadencia | Cubre como mucho |
+  |---|---|---|---|
+  | Caminar | 1.07 m/s | 0.7x – 1.3x | 1.39 m/s |
+  | Correr | 3.70 m/s | 1.05x | 3.88 m/s |
+  | Sprint | 3.86 m/s | 1.50x | 5.79 m/s |
+  | Agachado | 0.62 m/s | 1.6x | 1.0 m/s |
+
+- **Velocidades de Yari** (base; con la Illa joven va un 15 % más rápido y de anciano un 15 % más lento): correr **3.6 m/s**,
+  sprint **5.5 m/s**, agachado **1.0 m/s**. Antes eran 4.0, 6.5 y 2.4: casi el doble de lo que cubren las animaciones de un
+  personaje de 1.4 m, y por eso los pies patinaban (56 % al correr, 52 % en sprint, 78 % agachado). Están en
+  `Assets/Editor/AyniTuning.cs` (menú **Ayni > 5**); si se suben, vuelven a patinar.
+- **Stick en tres tramos:** hasta el 75 % camina (0.85 a 1.2 m/s); pasado el 75 % corre suave (72 % de la velocidad) y acelera
+  hasta el tope con el stick a fondo. El teclado corre siempre a fondo.
+- **Medido en Play** con `AyniLocomotionProbe.MeasureSlide` (Illa joven):
+
+  | Prueba | Yari avanza | Patinaje |
+  |---|---|---|
+  | Stick al 50 % (caminar) | 1.23 m/s | 1 % (cadencia 1.15x) |
+  | Stick a fondo / teclado (correr) | 4.14 m/s | 9 % (cadencia 1.05x) |
+  | Sprint | 6.33 m/s | 7 % (cadencia 1.50x) |
+  | Agachado | 1.15 m/s | 13 % |
+
+- **Sensación de velocidad:** al correr a fondo la cámara abre el campo de visión 4° y se aleja un 6 %; en sprint, 10° y un 15 %
+  (`ThirdPersonSifuCamera`, sección *Sensación de velocidad*). Yari no avanza más rápido, pero lo parece. No se aplica con el
+  rival fijado, en los remates ni en las caídas, y las escenas reciben la cámara con su campo de visión normal.
+- La consola muestra avisos amarillos *"Rig Error: Copied Avatar Rig Configuration mis-match"* al reimportar los clips de caminar
+  y correr: sus huesos difieren entre 1 y 7 mm de los de Yari. No afecta a la animación.
 
 ## Mando de Xbox
 

@@ -9,6 +9,7 @@ namespace Ayni.Editor
     /// <summary>
     /// Sondas de movimiento y combate para probar en Play desde el puente de agentes (AyniAgentBridge):
     ///   call Ayni.Editor.AyniLocomotionProbe.MeasureSlide 3     mide cuánto patinan los pies durante 3 s
+    ///   call Ayni.Editor.AyniLocomotionProbe.MeasureClips       (fuera de Play) lo que cubre cada clip de locomoción
     ///   call Ayni.Editor.AyniLocomotionProbe.TraceStates 4      registra los cambios de estado del Animator durante 4 s
     ///   call Ayni.Editor.AyniLocomotionProbe.RemoveEnemies      aparta a los rivales para probar sin que ataquen
     ///   call Ayni.Editor.AyniLocomotionProbe.SetYariField campo valor   cambia un ajuste de Yari durante el Play
@@ -31,12 +32,15 @@ namespace Ayni.Editor
         private static float slideEnd, slideStart;
         private static Vector3 lastLeftLocal, lastRightLocal, startPosition;
         private static int lastFrame;
-        private static readonly System.Collections.Generic.List<float> backSpeeds = new System.Collections.Generic.List<float>();
+        // Por cada pie: altura respecto al cuerpo y velocidad hacia atrás en cada fotograma
+        private static readonly System.Collections.Generic.List<Vector2> leftSamples = new System.Collections.Generic.List<Vector2>();
+        private static readonly System.Collections.Generic.List<Vector2> rightSamples = new System.Collections.Generic.List<Vector2>();
 
         /// <summary>
-        /// Compara la velocidad a la que avanza Yari con la que "pisan" sus pies. Mientras un pie apoya, se mueve
-        /// hacia atrás respecto al cuerpo justo a la velocidad que la animación cubre sobre el suelo; si esa velocidad
-        /// no coincide con la del cuerpo, el pie patina. No depende de la pendiente del terreno.
+        /// Compara la velocidad a la que avanza Yari con la que "pisan" sus pies. Mientras un pie apoya (está en la
+        /// parte más baja de su recorrido) se mueve hacia atrás respecto al cuerpo justo a la velocidad que la
+        /// animación cubre sobre el suelo; si no coincide con la del cuerpo, el pie patina. Es el mismo criterio que
+        /// usa AyniAttackTimingBaker.MeasureGroundSpeed sobre el clip, pero medido en el juego, con mezclas y cadencia.
         /// </summary>
         public static void MeasureSlide(float seconds)
         {
@@ -53,49 +57,159 @@ namespace Ayni.Editor
             startPosition = slideRoot.position;
             slideStart = Time.time;
             slideEnd = Time.time + seconds;
-            backSpeeds.Clear();
+            leftSamples.Clear();
+            rightSamples.Clear();
             lastFrame = Time.frameCount;
-            EditorApplication.update -= SlideTick;
-            EditorApplication.update += SlideTick;
+            // Una muestra por fotograma del juego, con la pose ya animada (EditorApplication.update no va al mismo ritmo)
+            Application.onBeforeRender -= SlideTick;
+            Application.onBeforeRender += SlideTick;
         }
 
         private static void SlideTick()
         {
             if (!Application.isPlaying || slideRoot == null)
             {
-                EditorApplication.update -= SlideTick;
+                Application.onBeforeRender -= SlideTick;
                 return;
             }
             if (Time.frameCount == lastFrame || Time.deltaTime <= 0f) return;
             lastFrame = Time.frameCount;
 
-            // Velocidad de cada pie hacia atrás, vista desde el cuerpo
             Vector3 l = slideRoot.InverseTransformPoint(leftFoot.position);
             Vector3 r = slideRoot.InverseTransformPoint(rightFoot.position);
-            float leftBack = -(l.z - lastLeftLocal.z) / Time.deltaTime;
-            float rightBack = -(r.z - lastRightLocal.z) / Time.deltaTime;
-            if (leftBack > 0.15f) backSpeeds.Add(leftBack);
-            if (rightBack > 0.15f) backSpeeds.Add(rightBack);
+            leftSamples.Add(new Vector2(l.y, -(l.z - lastLeftLocal.z) / Time.deltaTime));
+            rightSamples.Add(new Vector2(r.y, -(r.z - lastRightLocal.z) / Time.deltaTime));
             lastLeftLocal = l;
             lastRightLocal = r;
 
             if (Time.time < slideEnd) return;
-            EditorApplication.update -= SlideTick;
+            Application.onBeforeRender -= SlideTick;
 
             float elapsed = Mathf.Max(0.01f, Time.time - slideStart);
             Vector3 travelled = slideRoot.position - startPosition;
             travelled.y = 0f;
             float bodySpeed = travelled.magnitude / elapsed;
 
-            float covered = 0f;
-            if (backSpeeds.Count > 4)
+            var planted = new System.Collections.Generic.List<float>();
+            CollectPlanted(leftSamples, planted);
+            CollectPlanted(rightSamples, planted);
+            float covered = 0f, low = 0f, high = 0f;
+            if (planted.Count > 4)
             {
-                backSpeeds.Sort();
-                covered = backSpeeds[backSpeeds.Count / 2]; // mediana: la velocidad del pie mientras apoya
+                planted.Sort();
+                covered = planted[planted.Count / 2];
+                low = planted[planted.Count / 4];
+                high = planted[planted.Count * 3 / 4];
             }
+
             float slide = Mathf.Abs(bodySpeed - covered);
             Debug.Log($"[Ayni Paso] Yari avanza a {bodySpeed:F2} m/s · los pies pisan a {covered:F2} m/s · patinan {slide:F2} m/s " +
-                      $"({(bodySpeed > 0.05f ? slide / bodySpeed * 100f : 0f):F0} %) · velocidad del Animator {slideAnimator.speed:F2}");
+                      $"({(bodySpeed > 0.05f ? slide / bodySpeed * 100f : 0f):F0} %) · velocidad del Animator {slideAnimator.speed:F2} " +
+                      $"· {planted.Count} muestras de apoyo de {leftSamples.Count * 2} (entre {low:F2} y {high:F2} m/s)");
+        }
+
+        /// <summary>Velocidades hacia atrás de un pie mientras está apoyado (en el 10 % más bajo de su recorrido vertical).</summary>
+        private static void CollectPlanted(System.Collections.Generic.List<Vector2> samples, System.Collections.Generic.List<float> planted)
+        {
+            if (samples.Count < 8) return;
+            // Percentiles 3 y 97 en vez del mínimo y el máximo: un fotograma raro no mueve el umbral
+            var heights = new System.Collections.Generic.List<float>(samples.Count);
+            foreach (Vector2 s in samples) heights.Add(s.x);
+            heights.Sort();
+            float minY = heights[Mathf.FloorToInt((heights.Count - 1) * 0.03f)];
+            float maxY = heights[Mathf.FloorToInt((heights.Count - 1) * 0.97f)];
+            float below = minY + (maxY - minY) * 0.1f;
+            for (int i = 1; i < samples.Count; i++)
+            {
+                if (samples[i].x <= below && samples[i - 1].x <= below && samples[i].y > 0.05f) planted.Add(samples[i].y);
+            }
+        }
+
+        /// <summary>
+        /// Fuera de Play: escribe cuántos metros por segundo cubre cada clip de locomoción a velocidad normal
+        /// (lo que mide AyniAttackTimingBaker.MeasureGroundSpeed) y cuánto dura su ciclo.
+        /// </summary>
+        public static void MeasureClips()
+        {
+            var report = new StringBuilder("[Ayni Paso] Lo que cubre cada clip a velocidad normal:");
+            foreach (string name in new[] { "Walk_Forward_InPlace", "Jog_Forward_InPlace", "Run_Forward_InPlace", "Sprint_Run_InPlace", "Crouch_Walk_InPlace" })
+            {
+                AnimationClip clip = null;
+                foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath($"Assets/Art/Characters/Animations/{name}.fbx"))
+                {
+                    if (asset is AnimationClip c && !c.name.StartsWith("__preview__")) { clip = c; break; }
+                }
+                if (clip == null) { report.Append($"\n   {name}: no está"); continue; }
+                float speed = AyniAttackTimingBaker.MeasureGroundSpeed(clip);
+                report.Append($"\n   {name}: {speed:F2} m/s · ciclo de {clip.length:F2} s");
+            }
+            Debug.Log(report.ToString());
+        }
+
+        /// <summary>
+        /// Fuera de Play: guarda en DebugCaptures/foot_paths.csv la trayectoria de cada pie (respecto al cuerpo)
+        /// a lo largo de cada clip de locomoción, para analizar la zancada con calma.
+        /// </summary>
+        public static void DumpFootPaths()
+        {
+            const string rigPath = "Assets/Art/Characters/Yari_Rigged.fbx";
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(rigPath);
+            if (prefab == null) return;
+
+            GameObject go = Object.Instantiate(prefab);
+            go.hideFlags = HideFlags.HideAndDontSave;
+            go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            Animator anim = go.GetComponent<Animator>();
+            if (anim == null) anim = go.AddComponent<Animator>();
+            if (anim.avatar == null)
+            {
+                foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(rigPath))
+                {
+                    if (asset is Avatar av) { anim.avatar = av; break; }
+                }
+            }
+
+            var csv = new StringBuilder("clip,t,ly,lz,ry,rz,hy,hz,lx,rx\n");
+            bool started = !AnimationMode.InAnimationMode();
+            if (started) AnimationMode.StartAnimationMode();
+            try
+            {
+                Transform lf = anim.GetBoneTransform(HumanBodyBones.LeftFoot);
+                Transform rf = anim.GetBoneTransform(HumanBodyBones.RightFoot);
+                Transform hips = anim.GetBoneTransform(HumanBodyBones.Hips);
+                foreach (string name in new[] { "Walk_Forward_InPlace", "Jog_Forward_InPlace", "Run_Forward_InPlace", "Sprint_Run_InPlace",
+                                                "Crouch_Walk_InPlace", "Strafe_Left", "Strafe_Right", "Walk_Back" })
+                {
+                    AnimationClip clip = null;
+                    foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath($"Assets/Art/Characters/Animations/{name}.fbx"))
+                    {
+                        if (asset is AnimationClip c && !c.name.StartsWith("__preview__")) { clip = c; break; }
+                    }
+                    if (clip == null || lf == null || rf == null) continue;
+                    const float step = 1f / 240f;
+                    for (float t = 0f; t <= clip.length; t += step)
+                    {
+                        AnimationMode.BeginSampling();
+                        AnimationMode.SampleAnimationClip(go, clip, t);
+                        AnimationMode.EndSampling();
+                        Vector3 l = go.transform.InverseTransformPoint(lf.position);
+                        Vector3 r = go.transform.InverseTransformPoint(rf.position);
+                        Vector3 h = go.transform.InverseTransformPoint(hips.position);
+                        csv.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                            "{0},{1:F4},{2:F4},{3:F4},{4:F4},{5:F4},{6:F4},{7:F4},{8:F4},{9:F4}\n", name, t, l.y, l.z, r.y, r.z, h.y, h.z, l.x, r.x));
+                    }
+                }
+            }
+            finally
+            {
+                if (started) AnimationMode.StopAnimationMode();
+                Object.DestroyImmediate(go);
+            }
+
+            string dir = System.IO.Path.Combine(System.IO.Directory.GetParent(Application.dataPath).FullName, "DebugCaptures");
+            System.IO.Directory.CreateDirectory(dir);
+            System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "foot_paths.csv"), csv.ToString());
+            Debug.Log("[Ayni Paso] Trayectorias de los pies guardadas en DebugCaptures/foot_paths.csv");
         }
 
         // ───────────────────────── Traza de estados ─────────────────────────

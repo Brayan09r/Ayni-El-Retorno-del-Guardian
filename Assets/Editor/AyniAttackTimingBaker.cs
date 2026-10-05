@@ -25,7 +25,7 @@ namespace Ayni.Editor
 
         private static readonly string[] LocomotionClips =
         {
-            "Jog_Forward_InPlace", "Sprint_Run_InPlace", "Crouch_Walk_InPlace"
+            "Walk_Forward_InPlace", "Jog_Forward_InPlace", "Run_Forward_InPlace", "Sprint_Run_InPlace", "Crouch_Walk_InPlace"
         };
 
         [MenuItem("Ayni/Herramientas/Medir Tiempos de Impacto de los Ataques")]
@@ -323,7 +323,7 @@ namespace Ayni.Editor
 
         private static float GroundSpeedPass(GameObject go, Animator anim, AnimationClip clip, bool useAnimationMode)
         {
-            const float step = 1f / 60f;
+            const float step = 1f / 120f;
             int samples = Mathf.Max(8, Mathf.CeilToInt(clip.length / step));
             var speeds = new System.Collections.Generic.List<float>();
 
@@ -345,8 +345,9 @@ namespace Ayni.Editor
                     maxY = Mathf.Max(maxY, p.y);
                 }
 
-                // Pie apoyado = en el 20 % más bajo de su recorrido vertical
-                float plantedBelow = minY + (maxY - minY) * 0.2f;
+                // Pie apoyado = en el 10 % más bajo de su recorrido vertical. Con el 20 % entraban, al correr, los
+                // instantes en que el pie aún está posándose o ya despega, y la velocidad salía hasta un 20 % baja.
+                float plantedBelow = minY + (maxY - minY) * 0.1f;
                 for (int i = 0; i < samples - 1; i++)
                 {
                     if (y[i] <= plantedBelow && y[i + 1] <= plantedBelow)

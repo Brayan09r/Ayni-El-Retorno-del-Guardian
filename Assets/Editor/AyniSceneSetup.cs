@@ -515,15 +515,15 @@ namespace Ayni.Editor
             lockOnBlendTree.blendParameter = "MoveX";
             lockOnBlendTree.blendParameterY = "MoveY";
             if (combatIdleClip != null) lockOnBlendTree.AddChild(combatIdleClip, new Vector2(0f, 0f));
-            if (jogClip != null) lockOnBlendTree.AddChild(jogClip, new Vector2(0f, 1f));
+            // Hacia el rival se va al mismo paso que al correr sin fijarlo (y con su misma cadencia)
+            if (baseRunClip != null) lockOnBlendTree.AddChild(baseRunClip, new Vector2(0f, 1f));
             if (walkBackClip != null) lockOnBlendTree.AddChild(walkBackClip, new Vector2(0f, -1f));
             if (strafeLeftClip != null) lockOnBlendTree.AddChild(strafeLeftClip, new Vector2(-1f, 0f));
             if (strafeRightClip != null) lockOnBlendTree.AddChild(strafeRightClip, new Vector2(1f, 0f));
 
-            // Ajustar la cadencia de cada clip a la velocidad real de Yari para que los pies patinen menos
-            MatchLocomotionToMoveSpeed(new[] { relaxedBlendTree, combatBlendTree, crouchBlendTree },
-                                       baseRunClip, sprintClip, crouchWalkClip);
-            MatchLocomotionToMoveSpeed(new[] { lockOnBlendTree }, jogClip, sprintClip, crouchWalkClip);
+            // Los clips se reproducen a velocidad normal dentro de los BlendTrees. La cadencia de los pasos la pone
+            // YariCombatController en cada fotograma (velocidad real / lo que cubre el clip, medido por
+            // AyniAttackTimingBaker), así que sigue a la velocidad de Yari aunque cambie con la edad de la Illa.
 
             // El estado por defecto es la postura natural relajada
             rootStateMachine.defaultState = relaxedState;
@@ -781,58 +781,6 @@ namespace Ayni.Editor
             // Volver a poner las esquivas en el sitio, las caídas y el aterrizaje (Ayni > Animaciones)
             try { AyniAnimatorUpgrade.Apply(); }
             catch (System.Exception e) { Debug.LogWarning("[Ayni] No se pudieron añadir los estados generados: " + e.Message); }
-        }
-
-        /// <summary>
-        /// Mide la velocidad natural de los clips de trote, sprint y agachado y ajusta su velocidad de reproducción
-        /// dentro de los BlendTrees a la velocidad a la que Yari se mueve de verdad. Se limita a un rango razonable
-        /// (0.85x – 1.2x) para que las piernas no se vean a cámara rápida.
-        /// </summary>
-        private static void MatchLocomotionToMoveSpeed(BlendTree[] trees, AnimationClip jogClip, AnimationClip sprintClip, AnimationClip crouchWalkClip)
-        {
-            float jogSpeed = 5.2f, sprintSpeed = 8.8f, crouchSpeed = 2.4f;
-            GameObject sceneYari = GameObject.Find("Yari_Hero");
-            var ctrl = sceneYari != null ? sceneYari.GetComponent<YariCombatController>() : null;
-            if (ctrl != null)
-            {
-                var so = new SerializedObject(ctrl);
-                jogSpeed = so.FindProperty("baseMoveSpeed").floatValue;
-                sprintSpeed = so.FindProperty("sprintSpeed").floatValue;
-                crouchSpeed = so.FindProperty("crouchSpeed").floatValue;
-            }
-
-            var clips = new[] { jogClip, sprintClip, crouchWalkClip };
-            var targets = new[] { jogSpeed, sprintSpeed, crouchSpeed };
-            var scales = new float[clips.Length];
-            for (int i = 0; i < clips.Length; i++)
-            {
-                scales[i] = 1f;
-                if (clips[i] == null) continue;
-                float natural = 0f;
-                try { natural = AyniAttackTimingBaker.MeasureGroundSpeed(clips[i]); }
-                catch (System.Exception e) { Debug.LogWarning("[Ayni] No se pudo medir " + clips[i].name + ": " + e.Message); }
-                if (natural <= 0f) continue;
-
-                scales[i] = Mathf.Clamp(targets[i] / natural, 0.85f, 1.2f);
-                Debug.Log($"[Ayni] Locomoción '{clips[i].name}': velocidad natural {natural:0.00} m/s, Yari se mueve a " +
-                          $"{targets[i]:0.00} m/s → reproducción a {scales[i]:0.00}x" +
-                          (targets[i] / natural > 1.2f ? " (límite: Yari va más rápido de lo que el clip puede cubrir sin patinar)." : "."));
-            }
-
-            foreach (BlendTree tree in trees)
-            {
-                if (tree == null) continue;
-                var children = tree.children;
-                for (int c = 0; c < children.Length; c++)
-                {
-                    for (int i = 0; i < clips.Length; i++)
-                    {
-                        if (clips[i] != null && children[c].motion == clips[i]) children[c].timeScale = scales[i];
-                    }
-                }
-                tree.children = children;
-                EditorUtility.SetDirty(tree);
-            }
         }
 
         private static void AddConditionalTransition(AnimatorState from, AnimatorState to, float duration,

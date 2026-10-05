@@ -8,6 +8,7 @@ namespace Ayni.Player
     /// - Sigue al personaje sobre el hombro y gira con el ratón.
     /// - Si hay una montaña/roca entre la cámara y Yari, la cámara se acerca para no perderlo de vista.
     /// - Con un rival fijado (Lock-On) se coloca sola detrás de Yari mirando hacia el rival y encuadra a los dos.
+    /// - Al correr y al esprintar abre un poco el campo de visión y se aleja: Yari se siente más rápido sin serlo.
     /// </summary>
     public class ThirdPersonSifuCamera : MonoBehaviour
     {
@@ -41,6 +42,23 @@ namespace Ayni.Player
         [Range(0f, 1f)] [SerializeField] private float lockFraming = 0.35f;
         [SerializeField] private float lockTargetHeight = 1.3f;
 
+        [Header("Sensación de velocidad")]
+        [Tooltip("Grados que se abre el campo de visión al correr a fondo. Yari no va más rápido: solo lo parece.")]
+        [SerializeField] private float runFovKick = 4f;
+        [Tooltip("Grados que se abre el campo de visión en sprint (en total, no sumados a los de correr).")]
+        [SerializeField] private float sprintFovKick = 10f;
+        [Tooltip("Cuánto se aleja la cámara al correr a fondo (0.06 = un 6 % más lejos).")]
+        [SerializeField] private float runPullBack = 0.06f;
+        [Tooltip("Cuánto se aleja la cámara en sprint.")]
+        [SerializeField] private float sprintPullBack = 0.15f;
+        [Tooltip("Segundos que tarda en abrirse o cerrarse. Lento a propósito: que no se note el cambio, solo la velocidad.")]
+        [SerializeField] private float speedFeelTime = 0.45f;
+
+        private Camera cam;
+        private float baseFov = -1f;
+        private float speedFeel;          // 0 = quieto o caminando, 1 = corriendo a fondo, 2 = sprint (suavizado)
+        private float speedFeelVelocity;
+
         private float yaw;
         private float pitch;
         private bool initialized;
@@ -70,7 +88,36 @@ namespace Ayni.Player
         {
             Ayni.Combat.CombatFeedback.OnShake -= HandleShake;
             Ayni.Combat.CombatFeedback.OnFinisherCamera -= HandleFinisherCamera;
+
+            // Una escena toma la cámara: se le devuelve con su campo de visión normal
+            speedFeel = 0f;
+            speedFeelVelocity = 0f;
+            if (cam != null && baseFov > 0f) cam.fieldOfView = baseFov;
         }
+
+        /// <summary>
+        /// Abre el campo de visión según lo rápido que va Yari. Con un rival fijado, en los remates y en las
+        /// caídas se queda en el encuadre normal: ahí manda el combate.
+        /// </summary>
+        private void UpdateSpeedFeel(bool allowed)
+        {
+            float target = 0f;
+            if (allowed && yari != null && !yari.IsDead)
+            {
+                float pace = yari.PaceRatio;
+                target = yari.IsSprinting ? 2f : Mathf.InverseLerp(0.6f, 1f, pace);
+            }
+            speedFeel = Mathf.SmoothDamp(speedFeel, target, ref speedFeelVelocity, speedFeelTime);
+
+            if (cam != null && baseFov > 0f)
+            {
+                float kick = speedFeel <= 1f ? runFovKick * speedFeel : Mathf.Lerp(runFovKick, sprintFovKick, speedFeel - 1f);
+                cam.fieldOfView = baseFov + kick;
+            }
+        }
+
+        private float SpeedPullBack =>
+            speedFeel <= 1f ? runPullBack * speedFeel : Mathf.Lerp(runPullBack, sprintPullBack, speedFeel - 1f);
 
         private void HandleShake(float amplitude, float duration)
         {
@@ -138,6 +185,9 @@ namespace Ayni.Player
             }
             if (target != null) yari = target.GetComponent<YariCombatController>();
 
+            cam = GetComponent<Camera>();
+            if (cam != null) baseFov = cam.fieldOfView;
+
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
 
@@ -161,8 +211,10 @@ namespace Ayni.Player
         {
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
             Vector3 pivot = target.position + Vector3.up * lookAtHeight;
-            // En los remates la cámara se acerca
-            Vector3 desired = target.position + rotation * Vector3.Lerp(offset, new Vector3(offset.x, offset.y, offset.z * finisherZoom), finisherBlend);
+            // En los remates la cámara se acerca; al correr y esprintar se aleja un poco
+            Vector3 framing = Vector3.Lerp(offset, new Vector3(offset.x, offset.y, offset.z * finisherZoom), finisherBlend);
+            framing.z *= 1f + SpeedPullBack;
+            Vector3 desired = target.position + rotation * framing;
 
             // Evitar que la cámara atraviese el terreno o las rocas
             Vector3 dir = desired - pivot;
@@ -198,6 +250,7 @@ namespace Ayni.Player
                 if (Time.unscaledTime > watchUntil) watchingFall = false;
                 else
                 {
+                    UpdateSpeedFeel(false);
                     UpdateFallWatch();
                     return;
                 }
@@ -230,6 +283,7 @@ namespace Ayni.Player
             pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
             finisherBlend = Mathf.MoveTowards(finisherBlend, Time.unscaledTime < finisherUntil ? 1f : 0f, 4f * Time.unscaledDeltaTime);
+            UpdateSpeedFeel(lockTarget == null && Time.unscaledTime >= finisherUntil && !Ayni.Core.AyniGameState.InputLocked);
 
             Vector3 desiredPosition = ComputeCameraPosition();
             smoothedPosition = Vector3.Lerp(smoothedPosition, desiredPosition, smoothSpeed * Time.deltaTime);

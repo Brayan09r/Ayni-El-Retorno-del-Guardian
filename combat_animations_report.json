@@ -139,7 +139,7 @@
         {
             "fileName": "Strafe_Left.fbx",
             "originalMixamoName": "Walk Strafe Left",
-            "durationSec": 1.4666666984558106,
+            "durationSec": 0.6666666865348816,
             "contactSec": -1.0,
             "isAttack": false,
             "found": true
@@ -147,7 +147,7 @@
         {
             "fileName": "Strafe_Right.fbx",
             "originalMixamoName": "Walk Strafe Right",
-            "durationSec": 1.4666666984558106,
+            "durationSec": 0.6666666865348816,
             "contactSec": -1.0,
             "isAttack": false,
             "found": true
@@ -155,7 +155,7 @@
         {
             "fileName": "Walk_Back.fbx",
             "originalMixamoName": "Walking Backwards",
-            "durationSec": 0.8666667342185974,
+            "durationSec": 0.8000000715255737,
             "contactSec": -1.0,
             "isAttack": false,
             "found": true

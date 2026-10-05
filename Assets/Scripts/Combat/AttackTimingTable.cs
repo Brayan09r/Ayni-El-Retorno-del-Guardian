@@ -53,6 +53,19 @@ namespace Ayni.Combat
             return null;
         }
 
+        /// <summary>
+        /// Metros por segundo que cubren los pasos de un clip de locomoción a velocidad normal.
+        /// Devuelve <paramref name="fallback"/> si el clip no está medido.
+        /// </summary>
+        public float GetGroundSpeed(string clipName, float fallback)
+        {
+            for (int i = 0; i < locomotion.Count; i++)
+            {
+                if (locomotion[i].clipName == clipName && locomotion[i].groundSpeed > 0.05f) return locomotion[i].groundSpeed;
+            }
+            return fallback;
+        }
+
         public bool TryGetContact(string clipName, out float contactTime)
         {
             for (int i = 0; i < entries.Count; i++)
