@@ -1291,7 +1291,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Ayni.Core.AyniPurificationManager
   enemiesKilled: 0
   enemiesSpared: 0
-  executionRange: 3
+  executionRange: 4.5
 --- !u!4 &70156075
 Transform:
   m_ObjectHideFlags: 0
@@ -7578,7 +7578,7 @@ GameObject:
   m_Component:
   - component: {fileID: 528456706}
   m_Layer: 0
-  m_Name: mixamorig:LeftHandPinky2
+  m_Name: mixamorig:RightHandRing2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7592,8 +7592,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 528456705}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.003759246, y: 0.0000062776226, z: -0.03545266, w: 0.9993643}
-  m_LocalPosition: {x: -0.0000033492806, y: 0.022714363, z: 6.607246e-11}
+  m_LocalRotation: {x: 0.14431344, y: -0.000000096768765, z: -0.0201364, w: 0.98932713}
+  m_LocalPosition: {x: 0.0000036893102, y: 0.024725372, z: -3.0402011e-10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -11452,7 +11452,7 @@ GameObject:
   m_Component:
   - component: {fileID: 814141880}
   m_Layer: 0
-  m_Name: mixamorig:RightHandIndex1
+  m_Name: FinisherActions
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -18293,8 +18293,8 @@ MonoBehaviour:
   combatStanceDuration: 4.5
   standingHeight: 2
   standingCenter: {x: 0, y: 1, z: 0}
-  crouchHeight: 1.15
-  crouchCenter: {x: 0, y: 0.575, z: 0}
+  crouchHeight: 1.16
+  crouchCenter: {x: 0, y: 0.58, z: 0}
   crouchLerpSpeed: 10
   baseMaxHealth: 100
   reviveDelay: 2.2
@@ -18346,6 +18346,7 @@ MonoBehaviour:
   startingAge: 20
   maxAge: 75
   deathCounter: 0
+  currentAge: 20
 --- !u!114 &1250586624
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18383,10 +18384,10 @@ CharacterController:
   serializedVersion: 3
   m_Height: 2
   m_Radius: 0.5
-  m_SlopeLimit: 45
-  m_StepOffset: 0.3
+  m_SlopeLimit: 55
+  m_StepOffset: 0.4
   m_SkinWidth: 0.08
-  m_MinMoveDistance: 0.001
+  m_MinMoveDistance: 0
   m_Center: {x: 0, y: 1, z: 0}
 --- !u!1 &1256585234
 GameObject:
@@ -29047,7 +29048,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2000941442}
   m_Layer: 0
-  m_Name: mixamorig:RightForeArm
+  m_Name: mixamorig:Spine2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
