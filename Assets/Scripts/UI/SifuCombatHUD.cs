@@ -80,6 +80,8 @@ namespace Ayni.UI
         {
             // Durante el prólogo (y el desenlace) la pantalla es de la escena; en el Juicio Ayni, de la decisión
             if (AyniGameState.CinematicPlaying || AyniJudgment.Active) return;
+            // Caída mortal a la quebrada: la pantalla es de la escena (franjas de cine, fundido y título)
+            if (yari != null && yari.IsBeingRescued) return;
 
             GUI.skin.box.fontSize = 14;
             GUI.skin.label.fontSize = 14;

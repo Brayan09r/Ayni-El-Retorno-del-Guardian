@@ -82,6 +82,48 @@ namespace Ayni.Player
             shakeStart = Time.unscaledTime;
         }
 
+        // Caída al vacío: la cámara no sigue a Yari hacia abajo, se queda arriba y lo mira caer
+        private bool watchingFall;
+        private float watchHeight;
+        private float watchUntil;
+
+        /// <summary>
+        /// La cámara deja de seguir al personaje: sube a la altura indicada (la del borde), se coloca casi
+        /// encima de él y lo mira caer. Dura hasta StopWatchingFall o hasta que pasen los segundos indicados.
+        /// </summary>
+        public void WatchFall(float height, float maxSeconds)
+        {
+            watchingFall = true;
+            watchHeight = height;
+            watchUntil = Time.unscaledTime + maxSeconds;
+        }
+
+        public void StopWatchingFall()
+        {
+            watchingFall = false;
+        }
+
+        private void UpdateFallWatch()
+        {
+            // Sobre el vacío, un poco por detrás de donde venía la cámara para no mirar en vertical pura
+            Vector3 back = transform.position - target.position;
+            back.y = 0f;
+            back = back.sqrMagnitude > 0.01f ? back.normalized : -target.forward;
+            Vector3 vantage = new Vector3(target.position.x, watchHeight, target.position.z) + back * 1.6f;
+            vantage.y = Mathf.Max(vantage.y, target.position.y + 3.5f);
+
+            smoothedPosition = Vector3.Lerp(smoothedPosition, vantage, 5f * Time.unscaledDeltaTime);
+            transform.position = smoothedPosition;
+
+            Vector3 toTarget = target.position + Vector3.up * 0.9f - smoothedPosition;
+            if (toTarget.sqrMagnitude > 0.01f)
+            {
+                Quaternion look = Quaternion.LookRotation(toTarget, back * -1f + Vector3.up * 0.35f);
+                transform.rotation = Quaternion.Slerp(transform.rotation, look, 7f * Time.unscaledDeltaTime);
+            }
+            ApplyShake();
+        }
+
         private void HandleFinisherCamera(float duration)
         {
             finisherUntil = Time.unscaledTime + duration;
@@ -136,10 +178,30 @@ namespace Ayni.Player
             return desired;
         }
 
+        /// <summary>Sacudida de impacto (en tiempo real, para que se note también durante la micro-pausa del golpe).</summary>
+        private void ApplyShake()
+        {
+            float shakeT = (Time.unscaledTime - shakeStart) / Mathf.Max(0.01f, shakeDuration);
+            if (shakeT >= 1f) return;
+            float strength = shakeAmplitude * (1f - shakeT);
+            Vector2 jitter = Random.insideUnitCircle * strength;
+            transform.position = smoothedPosition + transform.right * jitter.x + transform.up * jitter.y;
+        }
+
         private void LateUpdate()
         {
             if (target == null) return;
             if (!initialized) SnapBehindTarget();
+
+            if (watchingFall)
+            {
+                if (Time.unscaledTime > watchUntil) watchingFall = false;
+                else
+                {
+                    UpdateFallWatch();
+                    return;
+                }
+            }
 
             Transform lockTarget = (yari != null && yari.LockTarget != null) ? yari.LockTarget.transform : null;
 
@@ -179,14 +241,7 @@ namespace Ayni.Player
             if (lockBlend > 0f) lookPoint = Vector3.Lerp(lookPoint, lastEnemyPoint, lockFraming * lockBlend);
             transform.LookAt(lookPoint);
 
-            // Sacudida de impacto (en tiempo real, para que se note también durante la micro-pausa del golpe)
-            float shakeT = (Time.unscaledTime - shakeStart) / Mathf.Max(0.01f, shakeDuration);
-            if (shakeT < 1f)
-            {
-                float strength = shakeAmplitude * (1f - shakeT);
-                Vector2 jitter = Random.insideUnitCircle * strength;
-                transform.position = smoothedPosition + transform.right * jitter.x + transform.up * jitter.y;
-            }
+            ApplyShake();
 
             // Escape libera el cursor (útil para salir del Play en el Editor)
             if (Input.GetKeyDown(KeyCode.Escape))

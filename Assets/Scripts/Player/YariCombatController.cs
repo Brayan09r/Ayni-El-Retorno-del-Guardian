@@ -21,6 +21,18 @@ namespace Ayni.Player
         [SerializeField] private float rotationSpeed = 12f;
         [SerializeField] private float gravity = -18f;
 
+        [Header("Caminar con el stick")]
+        [Tooltip("Por debajo de esta inclinación del stick Yari camina; por encima, corre como con el teclado.")]
+        [Range(0.3f, 0.95f)] [SerializeField] private float runStickThreshold = 0.75f;
+        [Tooltip("Velocidad al caminar con el stick apenas inclinado (m/s).")]
+        [SerializeField] private float walkSpeedMin = 1.0f;
+        [Tooltip("Velocidad al caminar con el stick justo por debajo del umbral de correr (m/s).")]
+        [SerializeField] private float walkSpeedMax = 1.6f;
+        [Tooltip("Metros por segundo que cubren los pasos de la animación de trote a velocidad normal. Al caminar, la animación " +
+                 "se acelera o se frena para que los pies pisen a la velocidad real. Medido en Play con " +
+                 "Ayni.Editor.AyniLocomotionProbe.MeasureSlide (volver a medir si cambia el clip de trote).")]
+        [SerializeField] private float walkStrideSpeed = 1.4f;
+
         [Header("Postura y Agachado")]
         [SerializeField] private float combatStanceDuration = 4.5f;
         [SerializeField] private float standingHeight = 2.0f;
@@ -44,20 +56,25 @@ namespace Ayni.Player
         [SerializeField] private float parryWindow = 0.22f; // Ventana para desvío perfecto (parry)
 
         [Header("Ritmo del Combo")]
-        [Tooltip("Segundos de preparación del clip que se conservan antes del impacto en los golpes ligeros (menos = más seco).")]
-        [SerializeField] private float lightLeadIn = 0.20f;
-        [Tooltip("Segundos de preparación del clip que se conservan antes del impacto en los golpes pesados.")]
-        [SerializeField] private float heavyLeadIn = 0.40f;
+        [Tooltip("Segundos de preparación del clip que se ven antes del impacto en los golpes ligeros (menos = más seco).")]
+        [SerializeField] private float lightWindup = 0.26f;
+        [Tooltip("Segundos de preparación del clip que se ven antes del impacto en los golpes pesados.")]
+        [SerializeField] private float heavyWindup = 0.46f;
         [Tooltip("Velocidad de reproducción de los golpes ligeros.")]
-        [SerializeField] private float lightAnimSpeed = 1.4f;
+        [SerializeField] private float lightStrikeSpeed = 1.3f;
         [Tooltip("Velocidad de reproducción de los golpes pesados.")]
-        [SerializeField] private float heavyAnimSpeed = 1.25f;
-        [Tooltip("Segundos tras el impacto a partir de los cuales se puede encadenar el siguiente golpe.")]
-        [SerializeField] private float comboCancelAfterContact = 0.10f;
+        [SerializeField] private float heavyStrikeSpeed = 1.2f;
+        [Tooltip("Segundos que el golpe ligero sigue su recorrido tras el impacto antes de poder encadenar el siguiente. " +
+                 "Con poco tiempo el golpe siguiente corta al anterior nada más conectar.")]
+        [SerializeField] private float lightFollowThrough = 0.20f;
+        [Tooltip("Segundos que el golpe pesado sigue su recorrido tras el impacto antes de poder encadenar el siguiente.")]
+        [SerializeField] private float heavyFollowThrough = 0.30f;
         [Tooltip("Segundos tras el impacto en que Yari recupera el control si no encadena (ligero).")]
-        [SerializeField] private float lightRecovery = 0.32f;
+        [SerializeField] private float lightRecoverTime = 0.46f;
         [Tooltip("Segundos tras el impacto en que Yari recupera el control si no encadena (pesado).")]
-        [SerializeField] private float heavyRecovery = 0.50f;
+        [SerializeField] private float heavyRecoverTime = 0.66f;
+        [Tooltip("Segundos de mezcla al entrar en cada golpe. Muy corto se ve como un salto de pose.")]
+        [SerializeField] private float attackBlendTime = 0.09f;
         [Tooltip("Segundos que una pulsación de ataque queda en memoria para encadenar el combo.")]
         [SerializeField] private float inputBufferTime = 0.30f;
         [Tooltip("Segundos sin atacar tras los que el combo vuelve al primer golpe.")]
@@ -115,8 +132,10 @@ namespace Ayni.Player
         [Tooltip("Desde esta altura de caída el golpe contra el suelo le quita vida.")]
         [SerializeField] private float fallDamageHeight = 9f;
         [SerializeField] private float fallDamagePerMeter = 6f;
-        [Tooltip("Parte de la vida máxima que cuesta caer a la quebrada (el Illa lo devuelve al camino).")]
-        [Range(0f, 1f)] [SerializeField] private float abyssRescueHealthCost = 0.2f;
+        [Tooltip("Cámara lenta mientras Yari cae a la quebrada (1 = velocidad normal).")]
+        [Range(0.2f, 1f)] [SerializeField] private float abyssFallTimeScale = 0.55f;
+        [Tooltip("Segundos (reales) que la pantalla queda en negro antes de que el Illa lo devuelva al camino.")]
+        [SerializeField] private float abyssBlackoutTime = 1.7f;
 
         [Header("Resurrección")]
         [Tooltip("Segundos que tarda Yari en levantarse del suelo (debe coincidir con el estado GetUp del Animator).")]
@@ -223,6 +242,11 @@ namespace Ayni.Player
         private Animator cachedParamsFor;
         private readonly System.Collections.Generic.HashSet<int> animatorParams = new System.Collections.Generic.HashSet<int>();
 
+        // Cadencia de los pasos: al caminar, la animación se reproduce al ritmo justo para que los pies no patinen
+        private float runBlend = 1f;      // 0 = caminando, 1 = corriendo (suavizado)
+        private float locomotionCadence = 1f;
+        private float appliedCadence = 1f;
+
         private bool isCrouching;
         private bool isSprinting;
         private bool inCombatStance;
@@ -254,7 +278,7 @@ namespace Ayni.Player
         public bool IsGuarding => isGuarding;
         /// <summary>Yari cae por el aire con la animación de caída.</summary>
         public bool IsFalling => fallAnimPlaying;
-        /// <summary>El Illa lo está devolviendo al camino tras caer a la quebrada.</summary>
+        /// <summary>Yari cae a la quebrada y muere; el Illa lo devolverá al camino. Durante la secuencia no hay control.</summary>
         public bool IsBeingRescued => beingRescued;
         /// <summary>Una escena cinemática controla a Yari: no lee la entrada ni aplica la física.</summary>
         public bool CinematicControl { get; set; }
@@ -467,6 +491,53 @@ namespace Ayni.Player
             UpdateUpperGuardLayer();
         }
 
+        /// <summary>
+        /// Aplica la cadencia de los pasos (velocidad del Animator) solo mientras Yari está en un estado de
+        /// locomoción. En cualquier otro caso la devuelve a 1 y no vuelve a tocarla: los golpes, las escenas
+        /// y la micro-pausa de los impactos usan su propia velocidad.
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (animator == null || CinematicControl) return;
+            if (animator.speed < 0.1f) return; // micro-pausa de un impacto en curso
+
+            bool walking = locomotionCadence < 0.999f || locomotionCadence > 1.001f;
+            bool canScale = walking && !isAttacking && !isDead && !isGuarding && !jumpInAir && !fallAnimPlaying &&
+                            !beingRescued && !IsStunned && !AyniGameState.InputLocked &&
+                            characterController.isGrounded && InLocomotionState();
+
+            if (canScale)
+            {
+                appliedCadence = Mathf.MoveTowards(appliedCadence, locomotionCadence, 3f * Time.deltaTime);
+                animator.speed = appliedCadence;
+            }
+            else if (appliedCadence != 1f)
+            {
+                // Solo se restaura si la velocidad sigue siendo la que puso este script
+                if (Mathf.Abs(animator.speed - appliedCadence) < 0.002f) animator.speed = 1f;
+                appliedCadence = 1f;
+            }
+        }
+
+        private static readonly int[] LocomotionStates =
+        {
+            Animator.StringToHash("Relaxed_Locomotion"), Animator.StringToHash("Combat_Locomotion"),
+            Animator.StringToHash("Crouch_Locomotion"), Animator.StringToHash("LockOn_Locomotion")
+        };
+
+        private bool InLocomotionState()
+        {
+            int current = animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+            int next = animator.IsInTransition(0) ? animator.GetNextAnimatorStateInfo(0).shortNameHash : current;
+            bool currentOk = false, nextOk = false;
+            for (int i = 0; i < LocomotionStates.Length; i++)
+            {
+                if (LocomotionStates[i] == current) currentOk = true;
+                if (LocomotionStates[i] == next) nextOk = true;
+            }
+            return currentOk && nextOk;
+        }
+
         // ───────────────────────── Fijación de blanco ─────────────────────────
 
         /// <summary>Tab o clic central fijan al rival más cercano; se suelta al pulsar de nuevo, si muere o si se aleja.</summary>
@@ -617,6 +688,7 @@ namespace Ayni.Player
             }
 
             Vector3 animMoveDir = Vector3.zero;
+            locomotionCadence = 1f;
 
             // Sprint (Shift, RT o L3) cuando se mueve, sin estar en guardia ni con el rival fijado
             if (hasMoveInput && analog > 0.5f && AyniInput.Held(AyniInput.Action.Sprint) && !locked)
@@ -661,15 +733,34 @@ namespace Ayni.Player
                     speedToUse = Mathf.Lerp(lockStrafeSpeed, baseMoveSpeed, Mathf.Clamp01(Vector3.Dot(moveDir, toTarget)));
                 }
 
-                // Stick a medio camino: camina más despacio (el teclado siempre da 1)
-                if (!isSprinting)
+                float speedMul = talisman.GetSpeedMultiplier();
+                float currentSpeed = speedToUse * speedMul;
+
+                // Stick a medio camino (el teclado siempre da 1). La animación conserva la zancada completa
+                // y lo que cambia es la cadencia de los pasos, para que los pies sigan a la velocidad real.
+                if (isSprinting)
                 {
-                    float walk = Mathf.Lerp(0.35f, 1f, Mathf.InverseLerp(0.1f, 0.9f, analog));
-                    speedToUse *= walk;
-                    targetAnimSpeedVal *= walk;
+                    runBlend = 1f;
+                }
+                else if (!isCrouching && !locked)
+                {
+                    // Dos marchas: caminar (pasos al ritmo exacto del suelo) y correr (igual que con el teclado)
+                    bool wantsRun = analog >= runStickThreshold;
+                    runBlend = Mathf.MoveTowards(runBlend, wantsRun ? 1f : 0f, 4.5f * Time.deltaTime);
+                    float walkSpeed = Mathf.Lerp(walkSpeedMin, walkSpeedMax, Mathf.InverseLerp(0.1f, runStickThreshold, analog)) * speedMul;
+                    float smooth = runBlend * runBlend * (3f - 2f * runBlend);
+                    float walkCadence = Mathf.Clamp(walkSpeed / Mathf.Max(0.1f, walkStrideSpeed), 0.7f, 1.3f);
+                    currentSpeed = Mathf.Lerp(walkSpeed, currentSpeed, smooth);
+                    locomotionCadence = Mathf.Lerp(walkCadence, 1f, smooth);
+                }
+                else
+                {
+                    // Agachado o con el rival fijado: más despacio con el stick, y los pasos a ese mismo ritmo
+                    float walk = Mathf.Lerp(0.45f, 1f, Mathf.InverseLerp(0.1f, 0.9f, analog));
+                    currentSpeed *= walk;
+                    locomotionCadence = Mathf.Clamp(walk, 0.6f, 1f);
                 }
 
-                float currentSpeed = speedToUse * talisman.GetSpeedMultiplier();
                 characterController.Move(moveDir * (currentSpeed * Time.deltaTime));
 
                 if (!locked)
@@ -684,6 +775,8 @@ namespace Ayni.Player
             else
             {
                 currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 10f * Time.deltaTime);
+                // Desde parado: con el stick se arranca caminando y se acelera; con el teclado, corriendo
+                runBlend = AyniInput.UsingGamepad ? 0f : 1f;
             }
 
             if (animator) animator.SetFloat("Speed", currentAnimSpeed);
@@ -709,6 +802,7 @@ namespace Ayni.Player
         private void HoldGuardStance()
         {
             isSprinting = false;
+            locomotionCadence = 1f;
             currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 14f * Time.deltaTime);
             if (animator)
             {
@@ -947,56 +1041,161 @@ namespace Ayni.Player
         }
 
         /// <summary>
-        /// Yari cayó a la quebrada: el Illa brilla, la pantalla se cubre de luz dorada y lo devuelve al último
-        /// suelo firme, donde se levanta. Cuesta una parte de la vida (sin llegar a matarlo).
+        /// Yari cae a la quebrada y muere. La cámara se queda arriba, en el borde, y lo ve caer de espaldas hasta
+        /// el agua; la pantalla se va a negro y el Illa lo resucita en el último suelo firme a cambio de años de
+        /// vida, igual que cuando muere en combate (si la edad llega al límite, es el final).
         /// Lo llama AyniAbyssRescue.
         /// </summary>
-        public void RescueFromAbyss(Vector3 safePosition)
+        /// <param name="safePosition">Último suelo firme que pisó: ahí reaparece.</param>
+        /// <param name="rimY">Altura del borde desde el que cayó (para colocar la cámara).</param>
+        /// <param name="waterY">Altura del agua del fondo.</param>
+        public void FallToDeath(Vector3 safePosition, float rimY, float waterY)
         {
-            if (beingRescued || isDead) return;
-            StartCoroutine(AbyssRescueRoutine(safePosition));
+            if (beingRescued) return;
+
+            if (isDead)
+            {
+                // Ya había muerto en combate y el cuerpo rodó al vacío: resucitará arriba, no en el fondo
+                Teleport(safePosition);
+                return;
+            }
+            StartCoroutine(AbyssDeathRoutine(safePosition, rimY, waterY));
         }
 
-        private IEnumerator AbyssRescueRoutine(Vector3 safePosition)
+        private IEnumerator AbyssDeathRoutine(Vector3 safePosition, float rimY, float waterY)
         {
             beingRescued = true;
+            isDead = true;
             CancelPendingAttack();
             SetGuard(false);
+            SetCrouch(false);
+            isSprinting = false;
             lockTarget = null;
-
-            Ayni.UI.AyniScreenFX.FadeTo(new Color(1f, 0.82f, 0.35f), 1f, 0.35f);
-            // Sigue cayendo mientras la luz cubre la pantalla
-            float t = 0f;
-            while (t < 0.35f)
+            currentAnimSpeed = 0f;
+            currentHealth = 0f;
+            fallAnimPlaying = true;   // sin apoyo de pies ni postura de pelea mientras cae
+            if (poisonRoutine != null)
             {
+                StopCoroutine(poisonRoutine);
+                poisonRoutine = null;
+                Ayni.UI.AyniScreenFX.Tint(Color.clear, 0f);
+            }
+
+            if (animator)
+            {
+                animator.speed = 1f;
+                animator.SetFloat("Speed", 0f);
+                animator.ResetTrigger("Hit");
+                string fallState = HasState("Fall_Back") ? "Fall_Back" : "Fall_Loop";
+                if (HasState(fallState)) animator.CrossFadeInFixedTime(fallState, 0.18f);
+            }
+
+            // La cámara deja de seguirlo: se queda sobre el vacío, a la altura del borde, mirándolo caer
+            var cam = cameraTransform != null ? cameraTransform.GetComponent<ThirdPersonSifuCamera>() : null;
+            if (cam != null) cam.WatchFall(rimY + 2.2f, 30f);
+            Ayni.UI.AyniScreenFX.Letterbox(true);
+            CombatFeedback.Shake(0.06f, 0.25f);
+
+            // Caída a cámara lenta hasta el agua (o el fondo)
+            float startTime = Time.unscaledTime;
+            bool splashed = false;
+            while (Time.unscaledTime - startTime < 3.5f)
+            {
+                Time.timeScale = abyssFallTimeScale; // cada fotograma: la micro-pausa de un golpe la devolvería a 1
+                velocity.x = Mathf.MoveTowards(velocity.x, 0f, 4f * Time.deltaTime);
+                velocity.z = Mathf.MoveTowards(velocity.z, 0f, 4f * Time.deltaTime);
                 velocity.y += gravity * Time.deltaTime;
                 characterController.Move(velocity * Time.deltaTime);
-                t += Time.deltaTime;
+
+                if (transform.position.y <= waterY + 0.9f)
+                {
+                    splashed = true;
+                    break;
+                }
+                if (characterController.isGrounded && Time.unscaledTime - startTime > 0.25f) break;
                 yield return null;
             }
 
-            characterController.enabled = false;
-            transform.position = safePosition;
-            characterController.enabled = true;
-            velocity = Vector3.zero;
+            Time.timeScale = 1f;
+            Vector3 impact = transform.position;
+            if (splashed)
+            {
+                impact.y = waterY + 0.15f;
+                CombatFeedback.Flash(impact, new Color(0.82f, 0.95f, 1f, 0.9f), 5.5f, 0.45f);
+            }
+            else
+            {
+                CombatFeedback.Flash(impact + Vector3.up * 0.2f, new Color(1f, 0.3f, 0.25f, 0.9f), 2.6f, 0.3f);
+            }
+            CombatFeedback.Shake(0.2f, 0.4f);
+
+            Ayni.UI.AyniScreenFX.FadeTo(Color.black, 1f, 0.45f);
+            yield return new WaitForSecondsRealtime(0.5f);
+            Ayni.UI.AyniScreenFX.Title("YARI HA CAÍDO", "El abismo reclama su cuerpo... y el Illa, sus años.", abyssBlackoutTime + 0.4f);
+            yield return new WaitForSecondsRealtime(abyssBlackoutTime);
+
+            // La muerte se paga igual que en combate
+            Teleport(safePosition);
             airborne = false;
             fallAnimPlaying = false;
             jumpInAir = false;
-
-            float cost = MaxHealth * abyssRescueHealthCost;
-            currentHealth = Mathf.Max(1f, currentHealth - cost);
-
-            if (HasState("GetUp"))
+            if (cam != null)
             {
-                animator.CrossFade("GetUp", 0.02f, 0, GetUpStartNormalized);
-                stunnedUntil = Time.time + getUpDuration * 0.85f;
-                invulnerableUntil = Time.time + getUpDuration + reviveInvulnerability;
+                cam.StopWatchingFall();
+                cam.SnapBehindTarget();
             }
-            Ayni.UI.AyniScreenFX.FadeTo(new Color(1f, 0.82f, 0.35f), 0f, 0.9f);
-            Ayni.UI.AyniScreenFX.Caption("El Illa te devuelve al camino...  <color=#ff8c7a>(-" + Mathf.RoundToInt(abyssRescueHealthCost * 100f) + "% de vida)</color>", 2.6f);
+            Ayni.UI.AyniScreenFX.Letterbox(false);
 
-            yield return new WaitForSeconds(0.2f);
+            if (talisman.TriggerResurrection())
+            {
+                structure.ResetStructure();
+                currentHealth = MaxHealth; // La vida máxima baja con la edad
+                isDead = false;
+                if (animator)
+                {
+                    animator.ResetTrigger("Die");
+                    animator.ResetTrigger("Hit");
+                }
+
+                if (HasState("GetUp"))
+                {
+                    animator.CrossFade("GetUp", 0.02f, 0, GetUpStartNormalized);
+                    stunnedUntil = Time.time + getUpDuration;
+                    invulnerableUntil = Time.time + getUpDuration + reviveInvulnerability;
+                }
+                else
+                {
+                    stunnedUntil = 0f;
+                    invulnerableUntil = Time.time + reviveInvulnerability;
+                    if (animator && HasState("Combat_Locomotion")) animator.CrossFadeInFixedTime("Combat_Locomotion", 0.25f);
+                }
+                EnterCombatStance();
+
+                Ayni.UI.AyniScreenFX.FadeTo(Color.black, 0f, 1.1f);
+                Ayni.UI.AyniScreenFX.Caption("El Illa te devuelve al camino.  <color=#ffcf6a>Ahora tienes " + talisman.CurrentAge + " años.</color>", 3.2f);
+            }
+            else
+            {
+                // El talismán se rompió por exceso de edad: muerte definitiva (el HUD ofrece reintentar)
+                if (animator)
+                {
+                    if (HasState("Defeat_Death")) animator.CrossFadeInFixedTime("Defeat_Death", 0.02f);
+                    else animator.SetTrigger("Die");
+                }
+                isGameOver = true;
+                Ayni.UI.AyniScreenFX.FadeTo(Color.black, 0f, 1.6f);
+            }
+
+            yield return new WaitForSecondsRealtime(0.2f);
             beingRescued = false;
+        }
+
+        private void Teleport(Vector3 position)
+        {
+            characterController.enabled = false;
+            transform.position = position;
+            characterController.enabled = true;
+            velocity = Vector3.zero;
         }
 
         private void HandleDefense()
@@ -1081,15 +1280,15 @@ namespace Ayni.Player
             // 1. Leer la entrada y guardarla un instante (buffer) para poder encadenar golpes con fluidez
             if (!isGuarding)
             {
-                if (AyniInput.Down(AyniInput.Action.LightAttack))
+                int pressed = AyniInput.Down(AyniInput.Action.LightAttack) ? 1
+                            : AyniInput.Down(AyniInput.Action.HeavyAttack) ? 2 : 0;
+                if (pressed != 0)
                 {
-                    bufferedAttack = 1;
+                    bufferedAttack = pressed;
                     bufferedUntil = Time.time + inputBufferTime;
-                }
-                else if (AyniInput.Down(AyniInput.Action.HeavyAttack))
-                {
-                    bufferedAttack = 2;
-                    bufferedUntil = Time.time + inputBufferTime;
+                    // Pulsado en mitad de un golpe: queda en cola hasta que ese golpe termine su recorrido,
+                    // así el siguiente sale encadenado en vez de cortarlo (o de perderse la pulsación)
+                    if (isAttacking) bufferedUntil = Mathf.Max(bufferedUntil, attackCancelTime + 0.08f);
                 }
             }
             if (bufferedAttack != 0 && Time.time > bufferedUntil) bufferedAttack = 0;
@@ -1122,7 +1321,7 @@ namespace Ayni.Player
                     string idleState = lockTarget != null && HasState("LockOn_Locomotion") ? "LockOn_Locomotion" : "Combat_Locomotion";
                     if (animator && HasState(currentAttack.state) && HasState(idleState))
                     {
-                        animator.CrossFadeInFixedTime(idleState, 0.15f);
+                        animator.CrossFadeInFixedTime(idleState, 0.2f);
                     }
                 }
                 return;
@@ -1174,16 +1373,17 @@ namespace Ayni.Player
             if (attackTimings != null && attackTimings.TryGetContact(def.clip, out float measured)) contact = measured;
 
             // Se entra al clip poco antes del impacto (sin la preparación larga) y se reproduce acelerado
-            float leadIn = def.heavy ? heavyLeadIn : lightLeadIn;
-            float speed = Mathf.Max(0.1f, def.heavy ? heavyAnimSpeed : lightAnimSpeed);
+            float leadIn = def.heavy ? heavyWindup : lightWindup;
+            float speed = Mathf.Max(0.1f, def.heavy ? heavyStrikeSpeed : lightStrikeSpeed);
             float startOffset = Mathf.Max(0f, contact - leadIn);
 
             currentAttack = def;
             isAttacking = true;
             attackHitDone = false;
             attackHitTime = Time.time + (contact - startOffset) / speed;
-            attackCancelTime = attackHitTime + comboCancelAfterContact;
-            attackEndTime = attackHitTime + (def.heavy ? heavyRecovery : lightRecovery);
+            // El golpe conecta, sigue su recorrido y solo entonces deja paso al siguiente
+            attackCancelTime = attackHitTime + (def.heavy ? heavyFollowThrough : lightFollowThrough);
+            attackEndTime = attackHitTime + (def.heavy ? heavyRecoverTime : lightRecoverTime);
 
             // Ayuda de alcance: solo cuando el rival queda justo fuera, para que el golpe no falle por centímetros
             reachAssistRemaining = 0f;
@@ -1207,7 +1407,7 @@ namespace Ayni.Player
                 if (HasState(def.state))
                 {
                     animator.SetFloat("AttackSpeed", speed);
-                    animator.CrossFadeInFixedTime(def.state, 0.05f, 0, startOffset);
+                    animator.CrossFadeInFixedTime(def.state, attackBlendTime, 0, startOffset);
                 }
                 else
                 {

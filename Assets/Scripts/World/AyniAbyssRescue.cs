@@ -8,14 +8,19 @@ using Ayni.Player;
 namespace Ayni.World
 {
     /// <summary>
-    /// Red de seguridad de las quebradas: si Yari o un rival cae al fondo, vuelve al último suelo firme
-    /// que pisó (un segundo antes de caer). Así nadie queda atrapado bajo el agua.
+    /// Las quebradas matan: si Yari cae al vacío muere en la caída y el Illa lo resucita en el último suelo
+    /// firme que pisó, a cambio de años (YariCombatController.FallToDeath). Los rivales que caen vuelven sin más
+    /// a su último suelo firme, para que nadie quede atrapado bajo el agua.
     /// La herramienta de entorno (Ayni > Entorno) lo añade al objeto "Ayni_Entorno".
     /// </summary>
     public class AyniAbyssRescue : MonoBehaviour
     {
-        [Tooltip("Por debajo de esta altura (mundo) se considera que el personaje cayó a la quebrada.")]
+        [Tooltip("Por debajo de esta altura (mundo) un rival se considera caído a la quebrada y vuelve arriba.")]
         [SerializeField] private float abyssY = -8f;
+        [Tooltip("Por debajo de esta altura Yari ya no tiene salvación: empieza la caída mortal. Solo el interior de las quebradas baja de aquí.")]
+        [SerializeField] private float playerDeathY = -3f;
+        [Tooltip("Altura del agua del fondo de la garganta.")]
+        [SerializeField] private float waterY = -18f;
         [Tooltip("Solo se recuerdan como suelo firme las posiciones por encima de esta altura.")]
         [SerializeField] private float safeMinY = 0.5f;
         [Tooltip("Pendiente máxima (grados) del suelo para recordarlo como firme: las paredes de la quebrada no cuentan.")]
@@ -31,6 +36,7 @@ namespace Ayni.World
         {
             public Transform transform;
             public CharacterController controller;
+            public YariCombatController yari;
             public readonly Vector3[] history = new Vector3[HistorySize];
             public int count;
             public float timer;
@@ -38,7 +44,6 @@ namespace Ayni.World
 
         private readonly List<Tracked> tracked = new List<Tracked>();
         private float refreshTimer;
-        private float messageUntil;
 
         public void Configure(float newAbyssY, float newSafeMinY)
         {
@@ -72,7 +77,12 @@ namespace Ayni.World
                 if (tracked[i].transform == target) return;
             }
 
-            var entry = new Tracked { transform = target, controller = target.GetComponent<CharacterController>() };
+            var entry = new Tracked
+            {
+                transform = target,
+                controller = target.GetComponent<CharacterController>(),
+                yari = target.GetComponent<YariCombatController>()
+            };
             Push(entry, target.position);
             tracked.Add(entry);
         }
@@ -105,7 +115,7 @@ namespace Ayni.World
 
                 Vector3 position = entry.transform.position;
 
-                if (position.y < abyssY)
+                if (position.y < (entry.yari != null ? playerDeathY : abyssY))
                 {
                     Rescue(entry);
                     continue;
@@ -151,12 +161,13 @@ namespace Ayni.World
             // La posición más antigua guardada: aproximadamente un segundo y medio antes de caer
             Vector3 target = entry.history[Mathf.Max(0, entry.count - 1)] + Vector3.up * 0.15f;
 
-            // Yari: el Illa lo rescata con su propia escena (destello dorado, se levanta, cuesta vida)
-            var yari = entry.transform.GetComponent<YariCombatController>();
+            // Yari: la caída es mortal. Su propia escena lo ve caer y el Illa lo resucita en el suelo firme
+            YariCombatController yari = entry.yari;
             if (yari != null)
             {
                 if (yari.IsBeingRescued) return;
-                yari.RescueFromAbyss(target);
+                float rimY = Mathf.Max(entry.history[0].y, target.y);
+                yari.FallToDeath(target, rimY, waterY);
                 for (int i = 0; i < HistorySize; i++) entry.history[i] = target;
                 entry.count = HistorySize;
                 entry.timer = sampleInterval;
@@ -173,20 +184,7 @@ namespace Ayni.World
             for (int i = 0; i < HistorySize; i++) entry.history[i] = target;
             entry.count = HistorySize;
             entry.timer = sampleInterval;
-
-            if (entry.transform.CompareTag("Player")) messageUntil = Time.unscaledTime + 2.5f;
             OnRescued?.Invoke(entry.transform);
-        }
-
-        private void OnGUI()
-        {
-            if (Time.unscaledTime > messageUntil) return;
-
-            var style = new GUIStyle(GUI.skin.box) { fontSize = 18, alignment = TextAnchor.MiddleCenter, richText = true };
-            GUI.color = new Color(1f, 0.85f, 0.4f);
-            GUI.Box(new Rect(Screen.width / 2f - 280f, Screen.height * 0.72f, 560f, 44f),
-                "Yari cae a la quebrada... el Illa lo devuelve al camino.", style);
-            GUI.color = Color.white;
         }
     }
 }

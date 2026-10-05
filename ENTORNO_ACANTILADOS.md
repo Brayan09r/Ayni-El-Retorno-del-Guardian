@@ -36,7 +36,7 @@ Puntos a tener en cuenta:
 4. Todo cuelga del objeto **`Ayni_Entorno`** de la escena (agua, niebla, cordillera, puente, red de seguridad). `Crear Acantilados y Quebradas` se puede repetir: lo reconstruye sin duplicar y aplica también la atmósfera.
 5. **La atmósfera cambia ajustes compartidos**: la luz direccional, el cielo (`Ayni_Cielo.mat`), la niebla y la luz ambiente de la escena, el perfil `Assets/Art/Ayni_PostProcess_Profile.asset`, el plano lejano de la cámara (6000) y, en el asset de URP, la textura de profundidad, la distancia de sombras (140 m) y 4 cascadas. `Ayni > 4. Mejorar Iluminación y Contraste` pisa parte de esto; después hay que volver a aplicar `Ayni > Entorno > Aplicar Atmósfera de Hora Dorada`.
 6. **Copia del terreno original** en `EnvironmentBackups/Terrain.asset.original` (fuera de Assets e ignorada por git). `Ayni > Entorno > Restaurar Terreno Original` devuelve el relieve y el material; no deshace la atmósfera.
-7. Quien cae por debajo de y = -8 vuelve al último suelo firme que pisó. Hoy no tiene coste para el jugador.
+7. La garganta mata: si Yari baja de y = -3 muere en la caída y la Illa lo resucita en el último suelo firme a cambio de años (ver `NIVEL_1_PROLOGO_Y_JUGABILIDAD.md`, sección Caídas). Un rival que baja de y = -8 vuelve sin más a su último suelo firme.
 
 ## Pendiente
 
@@ -44,4 +44,3 @@ Puntos a tener en cuenta:
 - Vegetación (ichu, queñuales), rocas sueltas, antorchas y cascadas.
 - Rayos de sol volumétricos.
 - El rival persigue en línea recta: puede caer a la garganta si Yari cruza el puente.
-- Decidir si caer debe costar vida o años del Illa.

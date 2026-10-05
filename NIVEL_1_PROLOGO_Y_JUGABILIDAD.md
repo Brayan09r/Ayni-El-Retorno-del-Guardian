@@ -32,7 +32,20 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
 
 - Al caer más de 1.2 m a buena velocidad, Yari pasa a la animación de **caída en el aire** (`Fall_Loop`) y tiene un poco de control de dirección.
 - Desde 3.5 m aterriza **pesado** (`Land_Hard`) y queda clavado un instante. Desde 9 m además pierde vida (6 por metro extra).
-- Si cae a la quebrada, **la Illa lo rescata**: destello dorado, vuelve al último suelo firme y se levanta. Cuesta el 20 % de la vida, pero nunca lo mata.
+- Si cae a la quebrada, **muere en la caída**: la cámara se queda arriba y lo ve caer de espaldas (`Fall_Back`) a cámara lenta hasta el agua, la pantalla se va a negro y la Illa lo resucita en el último suelo firme. Se paga como una muerte en combate: suma años y cuenta para el contador de muertes; si la edad llega al límite, es el final. (`YariCombatController.FallToDeath`, lo lanza `AyniAbyssRescue` cuando Yari baja de y = -3.)
+
+## Ritmo de los golpes
+
+- Cada golpe **termina su recorrido antes de dejar paso al siguiente**: tras el impacto sigue 0.20 s (ligero) o 0.30 s (pesado) y solo entonces se puede encadenar. Antes el siguiente golpe cortaba al anterior a los 0.10 s de conectar.
+- La pulsación hecha en mitad de un golpe **queda en cola** hasta ese momento: una pulsación = un golpe más, sin tener que acertar el instante.
+- Los ajustes están en `YariCombatController`, sección *Ritmo del Combo* (`lightFollowThrough`, `heavyFollowThrough`, `lightWindup`…). Tienen nombres nuevos a propósito: así valen los valores del código y no los que quedaron guardados en la escena.
+
+## Caminar con el stick
+
+- El stick tiene **dos marchas**: inclinado menos del 75 % Yari camina (1.0 a 1.6 m/s); a fondo corre igual que con el teclado.
+- Al caminar la animación conserva la zancada completa y cambia la **cadencia** (velocidad del Animator entre 0.7x y 1.3x) para que los pies pisen a la velocidad real. Antes se mezclaba el trote con la pose de reposo y los pies patinaban casi el 100 %.
+- `walkStrideSpeed` (1.4 m/s) es lo que cubren los pasos del clip de trote; se midió en Play con `Ayni.Editor.AyniLocomotionProbe.MeasureSlide`. Si se cambia el clip de trote, hay que volver a medirlo.
+- Al correr los pies siguen patinando (el clip cubre 1.4 m/s y Yari corre a 4.6): hace falta un clip de carrera de verdad.
 
 ## Mando de Xbox
 

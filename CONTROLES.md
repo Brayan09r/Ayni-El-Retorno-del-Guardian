@@ -9,7 +9,7 @@
 
 | Acción | Mando de Xbox | Teclado y ratón |
 | :--- | :--- | :--- |
-| Moverse | Stick izquierdo (inclinarlo poco = caminar despacio) | `W` `A` `S` `D` |
+| Moverse | Stick izquierdo (inclinado a medias = caminar; a fondo = correr) | `W` `A` `S` `D` |
 | Cámara | Stick derecho | Ratón |
 | Correr | Mantener `RT` (o pulsar el stick izquierdo, `L3`) | `Shift Izq.` |
 | Saltar | `A` | `Espacio` |
