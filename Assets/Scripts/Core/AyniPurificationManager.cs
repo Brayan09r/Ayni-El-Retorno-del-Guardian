@@ -16,15 +16,10 @@ namespace Ayni.Core
         [Header("Estadísticas del Viaje")]
         [SerializeField] private int enemiesKilled = 0;
         [SerializeField] private int enemiesSpared = 0;
-        [SerializeField] private float executionRange = 4.5f;
+        [SerializeField] private float executionRange = 3.0f;
 
         public int EnemiesKilled => enemiesKilled;
         public int EnemiesSpared => enemiesSpared;
-        public float ExecutionRange
-        {
-            get => executionRange >= 4.5f ? executionRange : (executionRange = 4.5f);
-            set => executionRange = value;
-        }
 
         public event Action<EnemyController, bool> OnCombatResolved;
 
@@ -34,50 +29,28 @@ namespace Ayni.Core
             {
                 Instance = this;
             }
-            else if (Instance != this)
+            else
             {
-                Destroy(this);
-                return;
+                Destroy(gameObject);
             }
-
-            if (executionRange < 4.5f) executionRange = 4.5f;
         }
 
-        public bool TriggerExecutionAction(Vector3 playerPos, bool isAyniMercy)
+        public void TriggerExecutionAction(Vector3 playerPos, bool isAyniMercy)
         {
-            return TriggerExecutionAction(playerPos, isAyniMercy, out _);
-        }
-
-        public bool TriggerExecutionAction(Vector3 playerPos, bool isAyniMercy, out EnemyController resolvedEnemy)
-        {
-            resolvedEnemy = null;
-            EnemyController bestEnemy = null;
-            float closestDist = float.MaxValue;
-            float maxRange = ExecutionRange;
-
-            // Buscar el enemigo con postura rota más cercano en el radio de ejecución
+            // Buscar si hay algún enemigo cercano con la postura rota
             EnemyController[] enemies = FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
             foreach (var enemy in enemies)
             {
-                if (enemy != null && !enemy.IsDead && enemy.Structure != null && enemy.Structure.IsBroken)
+                if (!enemy.IsDead && enemy.Structure.IsBroken)
                 {
                     float dist = Vector3.Distance(playerPos, enemy.transform.position);
-                    if (dist <= maxRange && dist < closestDist)
+                    if (dist <= executionRange)
                     {
-                        bestEnemy = enemy;
-                        closestDist = dist;
+                        ResolveDilemma(enemy, isAyniMercy);
+                        return;
                     }
                 }
             }
-
-            if (bestEnemy != null)
-            {
-                resolvedEnemy = bestEnemy;
-                ResolveDilemma(bestEnemy, isAyniMercy);
-                return true;
-            }
-
-            return false;
         }
 
         private void ResolveDilemma(EnemyController enemy, bool isAyniMercy)
@@ -89,8 +62,8 @@ namespace Ayni.Core
                 enemy.Defeat(killed: false, reactionDelay: 0.45f);
 
                 // Reducir el contador de muerte del talismán como recompensa por restaurar el Ayni
-                var talisman = FindFirstObjectByType<IllaTalismanSystem>();
-                if (talisman != null)
+                var player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null && player.TryGetComponent<IllaTalismanSystem>(out var talisman))
                 {
                     talisman.DecreaseDeathCounter();
                 }
@@ -103,12 +76,6 @@ namespace Ayni.Core
             }
 
             OnCombatResolved?.Invoke(enemy, isAyniMercy);
-        }
-
-        public void ResetStats()
-        {
-            enemiesKilled = 0;
-            enemiesSpared = 0;
         }
     }
 }

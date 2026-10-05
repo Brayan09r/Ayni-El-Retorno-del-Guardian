@@ -13,13 +13,8 @@ namespace Ayni.Core
         [SerializeField] private int startingAge = 20;
         [SerializeField] private int maxAge = 75;
         [SerializeField] private int deathCounter = 0; // Incrementa los años sumados por cada muerte consecutiva
-        [SerializeField] private int currentAge = 20;
 
-        public int CurrentAge
-        {
-            get => currentAge > 0 ? currentAge : startingAge;
-            private set => currentAge = value;
-        }
+        public int CurrentAge { get; private set; }
         public int DeathCounter => deathCounter;
 
         public event Action<int> OnAgeChanged;
@@ -34,7 +29,7 @@ namespace Ayni.Core
 
         private void Awake()
         {
-            if (currentAge <= 0) currentAge = startingAge;
+            CurrentAge = startingAge;
         }
 
         public AgeStage GetCurrentStage()
@@ -110,20 +105,6 @@ namespace Ayni.Core
                 AgeStage.Elder => 0.60f, // Barra de vida reducida
                 _ => 1.0f
             };
-        }
-
-        public void ResetTalisman(int initialAge = 20)
-        {
-            startingAge = initialAge;
-            currentAge = initialAge;
-            deathCounter = 0;
-            OnAgeChanged?.Invoke(currentAge);
-        }
-
-        public void SetAgeForDebug(int age)
-        {
-            currentAge = age;
-            OnAgeChanged?.Invoke(currentAge);
         }
     }
 }

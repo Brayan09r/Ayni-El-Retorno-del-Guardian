@@ -74,13 +74,6 @@ namespace Ayni.Editor
                 return;
             }
 
-            // Asegurar que el Canvas tenga asignada la cámara si está en ScreenSpaceCamera
-            var canvas = Object.FindAnyObjectByType<Canvas>();
-            if (canvas != null && canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera == null)
-            {
-                canvas.worldCamera = cam;
-            }
-
             const int w = 1280, h = 720;
             var rt = new RenderTexture(w, h, 24);
             var prevTarget = cam.targetTexture;
@@ -105,23 +98,12 @@ namespace Ayni.Editor
             Object.DestroyImmediate(tex);
 
             var player = GameObject.FindGameObjectWithTag("Player");
-            if (player == null) player = GameObject.Find("Yari_Hero");
             string info = player != null
                 ? $"Yari pos {player.transform.position}, cam pos {cam.transform.position}, cam rot {cam.transform.eulerAngles}, fov {cam.fieldOfView}"
                 : "Yari no encontrado";
 
-            if (canvas != null)
-            {
-                info += $"\n   [Canvas HUD] '{canvas.name}' Modo={canvas.renderMode} Activo={canvas.gameObject.activeInHierarchy}";
-            }
-
             if (player != null)
             {
-                if (player.TryGetComponent<Player.YariCombatController>(out var yariCombat))
-                {
-                    info += $"\n   [Combate Yari] Salud={yariCombat.CurrentHealth:F0}/{yariCombat.MaxHealth:F0}, Postura={(yariCombat.Structure != null ? yariCombat.Structure.CurrentStructure : 0):F0}/{(yariCombat.Structure != null ? yariCombat.Structure.MaxStructure : 100):F0}, Edad={(yariCombat.Talisman != null ? yariCombat.Talisman.CurrentAge : 20)} años, Muertes/Caídas={(yariCombat.Talisman != null ? yariCombat.Talisman.DeathCounter : 0)}";
-                }
-
                 foreach (var smr in player.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 {
                     info += $"\n   SMR '{smr.name}' activo={smr.gameObject.activeInHierarchy} enabled={smr.enabled} visible={smr.isVisible} " +
@@ -150,13 +132,6 @@ namespace Ayni.Editor
                     }
                 }
             }
-
-            var enemies = Object.FindObjectsByType<Enemy.EnemyController>(FindObjectsSortMode.None);
-            foreach (var enemy in enemies)
-            {
-                info += $"\n   [Rival/Jefe] '{enemy.CharacterName}' Estructura={(enemy.Structure != null ? enemy.Structure.CurrentStructure : 0):F0} PosturaRota={(enemy.Structure != null && enemy.Structure.IsBroken)} Muerto={enemy.IsDead}";
-            }
-
             File.AppendAllText(Path.Combine(dir, "capture_log.txt"), $"{System.DateTime.Now:HH:mm:ss} {fileName}: {info}\n");
             Debug.Log($"[Ayni Debug] Captura guardada: {path} | {info}");
         }

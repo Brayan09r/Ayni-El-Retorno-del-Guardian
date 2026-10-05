@@ -168,58 +168,17 @@ namespace Ayni.Enemy
             All.Remove(this);
         }
 
-        private void OnEnable()
-        {
-            EnsureReferences();
-            if (structure != null)
-            {
-                structure.OnStructureBroken -= HandleStructureBroken;
-                structure.OnStructureRecovered -= HandleStructureRecovered;
-                structure.OnStructureBroken += HandleStructureBroken;
-                structure.OnStructureRecovered += HandleStructureRecovered;
-            }
-        }
-
-        private void OnDisable()
-        {
-            if (structure != null)
-            {
-                structure.OnStructureBroken -= HandleStructureBroken;
-                structure.OnStructureRecovered -= HandleStructureRecovered;
-            }
-        }
-
-        public void EnsureReferences()
-        {
-            if (structure == null) structure = GetComponent<StructureSystem>();
-            if (animator == null) animator = GetComponentInChildren<Animator>();
-            if (currentHealth <= 0f) currentHealth = maxHealth;
-        }
-
-        public void FindPlayerTarget()
+        private void Start()
         {
             var playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj == null) playerObj = GameObject.Find("Yari_Hero");
             if (playerObj != null)
             {
                 playerTarget = playerObj.transform;
                 player = playerObj.GetComponent<YariCombatController>();
             }
-        }
 
-        private void Start()
-        {
-            EnsureReferences();
-            FindPlayerTarget();
-        }
-
-        private void OnDestroy()
-        {
-            if (structure != null)
-            {
-                structure.OnStructureBroken -= HandleStructureBroken;
-                structure.OnStructureRecovered -= HandleStructureRecovered;
-            }
+            structure.OnStructureBroken += HandleStructureBroken;
+            structure.OnStructureRecovered += HandleStructureRecovered;
         }
 
         private void OnDestroy()
@@ -808,27 +767,6 @@ namespace Ayni.Enemy
         private void SetAnimSpeed(float value)
         {
             if (HasAnimParam("Speed")) animator.SetFloat("Speed", value);
-        }
-
-        public void ResetEnemy(Vector3? position = null)
-        {
-            isDead = false;
-            currentHealth = maxHealth;
-            if (position.HasValue) transform.position = position.Value;
-            var col = GetComponent<Collider>();
-            if (col != null) col.enabled = true;
-            if (structure != null)
-            {
-                structure.ResetStructure();
-                structure.OnStructureBroken -= HandleStructureBroken;
-                structure.OnStructureRecovered -= HandleStructureRecovered;
-                structure.OnStructureBroken += HandleStructureBroken;
-                structure.OnStructureRecovered += HandleStructureRecovered;
-            }
-            if (animator)
-            {
-                animator.SetBool("IsStunned", false);
-            }
         }
     }
 }

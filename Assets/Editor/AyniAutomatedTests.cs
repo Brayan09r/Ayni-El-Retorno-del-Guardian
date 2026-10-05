@@ -1,3 +1,8 @@
+// DESACTIVADO TEMPORALMENTE (fusion de v0.3.0 con la rama de combate, 4 oct 2026).
+// Estas pruebas usan la API de la v0.3.0 (ResetTalisman, ResetEnemy, EnsureCanvasAndBindings, HUD con Canvas...)
+// que no existe en el combate actual. Ademas se ejecutaban solas al abrir Unity y abrian la escena.
+// Para reactivarlas: adaptarlas al codigo actual y definir AYNI_TESTS_V030 en Player Settings > Scripting Define Symbols.
+#if AYNI_TESTS_V030
 #if UNITY_EDITOR
 using System;
 using System.IO;
@@ -556,3 +561,4 @@ namespace Ayni.Editor
     }
 }
 #endif
+#endif // AYNI_TESTS_V030

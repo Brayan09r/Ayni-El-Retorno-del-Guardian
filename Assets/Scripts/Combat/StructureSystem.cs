@@ -24,7 +24,7 @@ namespace Ayni.Combat
 
         public float CurrentStructure => currentStructure;
         public float MaxStructure => maxStructure;
-        public float StructureRatio => maxStructure > 0f ? currentStructure / maxStructure : 0f;
+        public float StructureRatio => currentStructure / maxStructure;
 
         /// <summary>Segundos que quedan de aturdimiento (0 si no está rota o si no se recupera sola).</summary>
         public float BrokenTimeRemaining =>
@@ -76,7 +76,6 @@ namespace Ayni.Combat
             brokenTime = Time.time;
             Debug.Log($"[StructureSystem] ¡Estructura Rota en {gameObject.name}! Estado de aturdimiento.");
             OnStructureBroken?.Invoke();
-            OnStructureChanged?.Invoke(currentStructure, maxStructure);
         }
 
         public void ResetStructure()

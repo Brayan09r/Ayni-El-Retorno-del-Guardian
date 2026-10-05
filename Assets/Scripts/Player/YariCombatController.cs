@@ -19,8 +19,7 @@ namespace Ayni.Player
         [SerializeField] private float crouchSpeed = 2.4f;
         [SerializeField] private float jumpHeight = 1.6f;
         [SerializeField] private float rotationSpeed = 12f;
-        [SerializeField] private float gravity = -20f;
-        [SerializeField] private float groundStickForce = -6.5f;
+        [SerializeField] private float gravity = -18f;
 
         [Header("Postura y Agachado")]
         [SerializeField] private float combatStanceDuration = 4.5f;
@@ -28,11 +27,7 @@ namespace Ayni.Player
         [SerializeField] private Vector3 standingCenter = new Vector3(0f, 1f, 0f);
         [SerializeField] private float crouchHeight = 1.15f;
         [SerializeField] private Vector3 crouchCenter = new Vector3(0f, 0.575f, 0f);
-        [SerializeField] private float crouchLerpSpeed = 12f;
-
-        [Header("Salud y Vitalidad")]
-        [SerializeField] private float baseMaxHealth = 100f;
-        [SerializeField] private float currentHealth = 100f;
+        [SerializeField] private float crouchLerpSpeed = 10f;
 
         [Header("Vida y Talismán Illa")]
         [SerializeField] private float baseMaxHealth = 100f;
@@ -114,8 +109,7 @@ namespace Ayni.Player
         private IllaTalismanSystem talisman;
         private Animator animator;
 
-        private float verticalVelocity;
-        private Vector3 horizontalVelocity;
+        private Vector3 velocity;
         private bool isGuarding;
         private float guardStartTime;
         private bool isAttacking;
@@ -225,16 +219,6 @@ namespace Ayni.Player
         public bool IsCrouching => isCrouching;
         public bool IsSprinting => isSprinting;
         public bool InCombatStance => inCombatStance;
-        public bool IsAttacking => isAttacking;
-        public bool IsStunned => isStunned;
-        public bool IsDead => isDead;
-
-        public float CurrentHealth => currentHealth;
-        public float MaxHealth => baseMaxHealth * (talisman != null ? talisman.GetMaxHealthMultiplier() : 1f);
-        public float HealthRatio => MaxHealth > 0f ? Mathf.Clamp01(currentHealth / MaxHealth) : 0f;
-        public StructureSystem Structure => structure != null ? structure : (structure = GetComponent<StructureSystem>());
-        public IllaTalismanSystem Talisman => talisman != null ? talisman : (talisman = GetComponent<IllaTalismanSystem>());
-        public CharacterController Controller => characterController != null ? characterController : (characterController = GetComponent<CharacterController>());
 
         public float CurrentHealth => currentHealth;
         public float MaxHealth => baseMaxHealth * (talisman != null ? talisman.GetMaxHealthMultiplier() : 1f);
@@ -251,54 +235,17 @@ namespace Ayni.Player
 
         private void Awake()
         {
-            EnsureComponentReferences();
-        }
-
-        private void OnEnable()
-        {
-            EnsureComponentReferences();
-            BindStructureEvents();
-        }
-
-        private void OnDisable()
-        {
-            UnbindStructureEvents();
-        }
-
-        public void EnsureComponentReferences()
-        {
-            if (characterController == null) characterController = GetComponent<CharacterController>();
-            if (structure == null) structure = GetComponent<StructureSystem>();
-            if (talisman == null) talisman = GetComponent<IllaTalismanSystem>();
-            if (animator == null) animator = GetComponentInChildren<Animator>();
+            characterController = GetComponent<CharacterController>();
+            structure = GetComponent<StructureSystem>();
+            talisman = GetComponent<IllaTalismanSystem>();
+            animator = GetComponentInChildren<Animator>();
 
             if (characterController != null)
             {
-                if (!isCrouching && characterController.height >= 1.6f)
-                {
-                    standingHeight = characterController.height;
-                    standingCenter = characterController.center;
-                    crouchHeight = Mathf.Max(0.8f, standingHeight * 0.58f);
-                    crouchCenter = new Vector3(standingCenter.x, crouchHeight * 0.5f, standingCenter.z);
-                }
-                else if (standingHeight < 1.6f)
-                {
-                    standingHeight = 2.0f;
-                    standingCenter = new Vector3(0f, 1f, 0f);
-                    crouchHeight = 1.15f;
-                    crouchCenter = new Vector3(0f, 0.575f, 0f);
-                }
-
-                // Configuración óptima para terreno irregular y pendientes
-                characterController.stepOffset = 0.4f;
-                characterController.slopeLimit = 55f;
-                characterController.skinWidth = 0.08f;
-                characterController.minMoveDistance = 0f;
-            }
-
-            if (currentHealth <= 0f && !isDead)
-            {
-                currentHealth = MaxHealth;
+                standingHeight = characterController.height;
+                standingCenter = characterController.center;
+                crouchHeight = standingHeight * 0.58f;
+                crouchCenter = new Vector3(standingCenter.x, standingCenter.y * 0.58f, standingCenter.z);
             }
 
             if (cameraTransform == null && Camera.main != null)
@@ -404,86 +351,6 @@ namespace Ayni.Player
             if (structure != null) structure.OnStructureBroken -= HandleGuardBroken;
         }
 
-        public void BindStructureEvents()
-        {
-            var s = Structure;
-            if (s != null)
-            {
-                s.OnStructureBroken -= HandleStructureBroken;
-                s.OnStructureRecovered -= HandleStructureRecovered;
-                s.OnStructureBroken += HandleStructureBroken;
-                s.OnStructureRecovered += HandleStructureRecovered;
-            }
-        }
-
-        public void UnbindStructureEvents()
-        {
-            if (structure != null)
-            {
-                structure.OnStructureBroken -= HandleStructureBroken;
-                structure.OnStructureRecovered -= HandleStructureRecovered;
-            }
-        }
-
-        private void OnDestroy()
-        {
-            UnbindStructureEvents();
-        }
-
-        private void HandleStructureBroken()
-        {
-            isStunned = true;
-            isGuarding = false;
-            isAttacking = false;
-            isSprinting = false;
-            if (animator)
-            {
-                animator.SetBool("IsGuarding", false);
-                animator.SetBool("IsStunned", true);
-                animator.ResetTrigger("Hit");
-                animator.SetTrigger("Hit");
-            }
-            Debug.Log("[Ayni] ¡Estructura de Yari ROTA! Yari está aturdido y vulnerable.");
-        }
-
-        private void HandleStructureRecovered()
-        {
-            isStunned = false;
-            if (animator)
-            {
-                animator.SetBool("IsStunned", false);
-            }
-            Debug.Log("[Ayni] Yari recupera su postura y equilibrio.");
-        }
-
-        /// <summary>
-        /// Comprueba si hay espacio vertical libre para pararse sin atravesar techos u obstáculos.
-        /// Ignora los propios colliders de Yari y a los enemigos para evitar falsos positivos.
-        /// </summary>
-        public bool CanStandUp()
-        {
-            var cc = Controller;
-            if (cc == null) return true;
-            float castRadius = cc.radius * 0.85f;
-            float castDist = standingHeight - cc.height;
-            if (castDist <= 0.01f) return true;
-
-            Vector3 origin = transform.position + Vector3.up * (cc.height - castRadius);
-            int layerMask = ~LayerMask.GetMask("Ignore Raycast");
-
-            RaycastHit[] hits = Physics.SphereCastAll(origin, castRadius, Vector3.up, castDist, layerMask, QueryTriggerInteraction.Ignore);
-            foreach (var hit in hits)
-            {
-                if (hit.collider == null) continue;
-                if (hit.collider.transform.root == transform.root) continue;
-                if (hit.collider.GetComponentInParent<Enemy.EnemyController>() != null) continue;
-
-                // Obstáculo sólido detectado sobre la cabeza de Yari
-                return false;
-            }
-            return true;
-        }
-
         private void Update()
         {
             // El componente Animator puede residir en el hijo Visual_Yari_3D
@@ -537,7 +404,6 @@ namespace Ayni.Player
             ApplyGravity();
             HandleDefense();
             HandleAttacks();
-            HandleMovementAndGravity();
             HandleCombatStanceTimer();
             HandleDilemmaInputs();
             UpdateUpperGuardLayer();
@@ -627,33 +493,12 @@ namespace Ayni.Player
 
         private void HandleCrouch()
         {
-            var cc = Controller;
-            if (cc == null) return;
-            if (isStunned || isDead) return;
-
-            // Si se presiona agachado mientras se atacaba, permitir cancelación limpia de ataque a cuclillas
-            if (isAttacking && Time.time < attackRecoveryTime)
-            {
-                if (Input.GetKeyDown(KeyCode.C) || Input.GetKey(KeyCode.LeftControl))
-                {
-                    CancelAttackForDefenseOrCrouch();
-                    SetCrouch(true);
-                }
-                return;
-            }
+            if (isAttacking) return;
 
             // Alternar con tecla C o mantener con Control Izquierdo
             if (Input.GetKeyDown(KeyCode.C))
             {
-                if (isCrouching)
-                {
-                    if (CanStandUp()) SetCrouch(false);
-                    else Debug.Log("[Ayni] Techo u obstáculo bajo encima: permanece agachado.");
-                }
-                else
-                {
-                    SetCrouch(true);
-                }
+                SetCrouch(!isCrouching);
             }
             else if (Input.GetKey(KeyCode.LeftControl) && !isCrouching)
             {
@@ -661,26 +506,15 @@ namespace Ayni.Player
             }
             else if (Input.GetKeyUp(KeyCode.LeftControl) && isCrouching)
             {
-                if (CanStandUp()) SetCrouch(false);
-                else Debug.Log("[Ayni] Techo u obstáculo bajo encima: permanece agachado.");
+                SetCrouch(false);
             }
 
-            // Comprobar espacio vertical antes de pararse si hay obstáculos arriba
+            // Suavizar la altura y el centro del CharacterController al agacharse
             float targetHeight = isCrouching ? crouchHeight : standingHeight;
-            if (!isCrouching && cc.height < standingHeight)
-            {
-                if (!CanStandUp())
-                {
-                    // Techo bajo o roca encima: permanecer agachado y sincronizar animator
-                    targetHeight = crouchHeight;
-                    SetCrouch(true);
-                }
-            }
+            Vector3 targetCenter = isCrouching ? crouchCenter : standingCenter;
 
-            // Ajustar suavemente la altura manteniendo siempre la BASE DEL COLLIDER en Y = 0 (suelo)
-            float newHeight = Mathf.MoveTowards(cc.height, targetHeight, crouchLerpSpeed * Time.deltaTime);
-            cc.height = newHeight;
-            cc.center = new Vector3(standingCenter.x, newHeight * 0.5f, standingCenter.z);
+            characterController.height = Mathf.Lerp(characterController.height, targetHeight, crouchLerpSpeed * Time.deltaTime);
+            characterController.center = Vector3.Lerp(characterController.center, targetCenter, crouchLerpSpeed * Time.deltaTime);
         }
 
         private void SetCrouch(bool crouch)
@@ -690,14 +524,14 @@ namespace Ayni.Player
             if (animator) animator.SetBool("IsCrouching", isCrouching);
         }
 
-        private void HandleMovementAndGravity()
+        private void HandleMovement()
         {
-            var cc = Controller;
-            if (cc == null) return;
+            if (isAttacking) return;
 
             if (cameraTransform == null)
             {
                 if (Camera.main != null) cameraTransform = Camera.main.transform;
+                else return;
             }
 
             float horizontal = Input.GetAxisRaw("Horizontal");
@@ -720,53 +554,30 @@ namespace Ayni.Player
             // Sprint con LeftShift cuando se mueve, sin estar en guardia ni con el rival fijado
             if (hasMoveInput && Input.GetKey(KeyCode.LeftShift) && !isGuarding && !locked)
             {
-                if (isCrouching)
-                {
-                    if (CanStandUp())
-                    {
-                        SetCrouch(false);
-                        isSprinting = true;
-                    }
-                    else
-                    {
-                        isSprinting = false; // Techo bajo bloquea pararse: no puede sprintar agachado
-                    }
-                }
-                else
-                {
-                    isSprinting = true;
-                }
+                if (isCrouching) SetCrouch(false); // Salir de cuclillas al correr
+                isSprinting = true;
             }
             else
             {
                 isSprinting = false;
             }
 
-            // 1. Cálculo de Desplazamiento Horizontal
-            bool isLockedInStrike = isAttacking && Time.time < attackRecoveryTime;
-
-            if (hasMoveInput && !isLockedInStrike && !isDead)
+            if (hasMoveInput)
             {
-                // Mover relativo a la cámara estilo Sifu (o espacio mundial si la cámara no está asignada)
-                Vector3 camForward = cameraTransform != null ? cameraTransform.forward : Vector3.forward;
-                Vector3 camRight = cameraTransform != null ? cameraTransform.right : Vector3.right;
+                // Mover relativo a la cámara estilo Sifu
+                Vector3 camForward = cameraTransform.forward;
+                Vector3 camRight = cameraTransform.right;
                 camForward.y = 0f;
                 camRight.y = 0f;
                 camForward.Normalize();
                 camRight.Normalize();
 
                 Vector3 moveDir = camForward * direction.z + camRight * direction.x;
-                if (moveDir.sqrMagnitude < 0.001f) moveDir = transform.forward;
 
                 float speedToUse = baseMoveSpeed;
                 float targetAnimSpeedVal = 1f;
 
-                if (isStunned)
-                {
-                    speedToUse = 1.4f; // Tambaleo con postura rota
-                    targetAnimSpeedVal = 0.4f;
-                }
-                else if (isCrouching)
+                if (isCrouching)
                 {
                     speedToUse = crouchSpeed;
                     targetAnimSpeedVal = 1f;
@@ -783,15 +594,15 @@ namespace Ayni.Player
                     speedToUse = Mathf.Lerp(lockStrafeSpeed, baseMoveSpeed, Mathf.Clamp01(Vector3.Dot(moveDir, toTarget)));
                 }
 
-                // Reducción de velocidad si está en guardia
-                if (isGuarding && !isStunned)
+                // Si está defendiendo, reduce la velocidad de paso
+                if (isGuarding)
                 {
                     speedToUse *= 0.45f;
                     targetAnimSpeedVal = 0.5f;
                 }
 
-                float currentSpeed = speedToUse * (talisman != null ? talisman.GetSpeedMultiplier() : 1f);
-                horizontalVelocity = moveDir * currentSpeed;
+                float currentSpeed = speedToUse * talisman.GetSpeedMultiplier();
+                characterController.Move(moveDir * (currentSpeed * Time.deltaTime));
 
                 if (!locked)
                 {
@@ -804,7 +615,6 @@ namespace Ayni.Player
             }
             else
             {
-                horizontalVelocity = Vector3.zero;
                 currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 10f * Time.deltaTime);
             }
 
@@ -894,19 +704,16 @@ namespace Ayni.Player
 
         private void HandleDefense()
         {
-            if (isStunned || isDead)
+            // Bloqueo / Guardia (Click derecho o tecla G)
+            if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.G))
             {
-                if (isGuarding)
-                {
-                    isGuarding = false;
-                    if (animator) animator.SetBool("IsGuarding", false);
-                }
-                return;
+                if (isCrouching) SetCrouch(false);
+                isGuarding = true;
+                guardStartTime = Time.time;
+                EnterCombatStance();
+                if (animator) animator.SetBool("IsGuarding", true);
             }
-
-            bool wantsGuard = Input.GetMouseButton(1) || Input.GetKey(KeyCode.G);
-
-            if (wantsGuard)
+            else if (Input.GetMouseButtonUp(1) || Input.GetKeyUp(KeyCode.G))
             {
                 SetGuard(false);
             }
@@ -1277,7 +1084,7 @@ namespace Ayni.Player
 
         private void HandleCombatStanceTimer()
         {
-            if (inCombatStance && !isGuarding && !isAttacking)
+            if (inCombatStance && !isGuarding)
             {
                 combatStanceTimer -= Time.deltaTime;
                 if (combatStanceTimer <= 0f)
@@ -1352,7 +1159,6 @@ namespace Ayni.Player
 
         public void PlayHitReaction()
         {
-            if (isDead) return;
             EnterCombatStance();
             // Alterna golpe a la cabeza y al cuerpo
             nextHitToBody = !nextHitToBody;
@@ -1449,97 +1255,15 @@ namespace Ayni.Player
 
         private void HandleDilemmaInputs()
         {
-            if (isStunned || isDead) return;
-
             // Interacción de ejecución o perdón cuando un jefe/rival tiene la postura rota
             if (Input.GetKeyDown(KeyCode.F))
             {
-                if (isCrouching)
-                {
-                    if (CanStandUp()) SetCrouch(false);
-                    else return;
-                }
-
-                if (AyniPurificationManager.Instance != null &&
-                    AyniPurificationManager.Instance.TriggerExecutionAction(transform.position, isAyniMercy: false, out var executedEnemy))
-                {
-                    if (executedEnemy != null)
-                    {
-                        Vector3 targetLook = new Vector3(executedEnemy.transform.position.x, transform.position.y, executedEnemy.transform.position.z);
-                        transform.LookAt(targetLook);
-                    }
-                    ExecuteAttack(isHeavy: true);
-                }
+                AyniPurificationManager.Instance?.TriggerExecutionAction(transform.position, isAyniMercy: false);
             }
             else if (Input.GetKeyDown(KeyCode.X))
             {
-                if (isCrouching)
-                {
-                    if (CanStandUp()) SetCrouch(false);
-                    else return;
-                }
-
-                if (AyniPurificationManager.Instance != null &&
-                    AyniPurificationManager.Instance.TriggerExecutionAction(transform.position, isAyniMercy: true, out var executedEnemy))
-                {
-                    if (executedEnemy != null)
-                    {
-                        Vector3 targetLook = new Vector3(executedEnemy.transform.position.x, transform.position.y, executedEnemy.transform.position.z);
-                        transform.LookAt(targetLook);
-                    }
-                    ExecuteAttack(isHeavy: false);
-                    if (structure != null) structure.ResetStructure();
-                    Heal(25f);
-                }
+                AyniPurificationManager.Instance?.TriggerExecutionAction(transform.position, isAyniMercy: true);
             }
-        }
-
-        /// <summary>
-        /// Restablece completamente el estado de combate, salud, colisiones y animaciones de Yari.
-        /// </summary>
-        public void ResetCombatState()
-        {
-            isDead = false;
-            enabled = true;
-            isAttacking = false;
-            isGuarding = false;
-            isStunned = false;
-            isCrouching = false;
-            isSprinting = false;
-            attackRecoveryTime = 0f;
-            attackCooldown = 0f;
-            verticalVelocity = 0f;
-            horizontalVelocity = Vector3.zero;
-            currentHealth = MaxHealth;
-            if (structure != null) structure.ResetStructure();
-            if (characterController != null)
-            {
-                characterController.height = standingHeight;
-                characterController.center = standingCenter;
-            }
-            if (animator)
-            {
-                animator.SetBool("IsGuarding", false);
-                animator.SetBool("IsStunned", false);
-                animator.SetBool("IsCrouching", false);
-                animator.SetBool("InCombatStance", false);
-                animator.SetFloat("Speed", 0f);
-                animator.ResetTrigger("LightAttack");
-                animator.ResetTrigger("HeavyAttack");
-                animator.ResetTrigger("DuckAvoid");
-                animator.ResetTrigger("JumpAvoid");
-                animator.ResetTrigger("Hit");
-            }
-        }
-
-        /// <summary>
-        /// Simula el inicio de un ataque para pruebas automatizadas y validación de cancelación.
-        /// </summary>
-        public void SimulateAttackForTest(float recoveryOffset = 0.42f, float cooldownOffset = 0.68f)
-        {
-            isAttacking = true;
-            attackRecoveryTime = Time.time + recoveryOffset;
-            attackCooldown = Time.time + cooldownOffset;
         }
     }
 }

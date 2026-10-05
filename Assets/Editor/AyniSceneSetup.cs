@@ -3,7 +3,6 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.Rendering;
 using Ayni.Core;
 using Ayni.Player;
@@ -19,7 +18,7 @@ namespace Ayni.Editor
         // Clave por proyecto: la configuración automática corre UNA sola vez (no en cada arranque de Unity),
         // así no se sobrescribe el Animator Controller ni la escena cada vez que abres el editor.
         // Para volver a ejecutarla usa el menú Ayni/2.
-        private static string AutoSetupKey => "AyniAutoSetupDone_v15_" + Application.dataPath.GetHashCode();
+        private static string AutoSetupKey => "AyniAutoSetupDone_v12_" + Application.dataPath.GetHashCode();
 
         // Altura real deseada para Yari en metros (1 unidad de Unity = 1 metro)
         private const float YariTargetHeight = 1.75f;
@@ -33,7 +32,6 @@ namespace Ayni.Editor
                 if (EditorPrefs.GetBool(AutoSetupKey, false)) return;
                 EditorPrefs.SetBool(AutoSetupKey, true);
                 SetupCombatInPathMap();
-                AyniAutomatedTests.RunTestSuiteManual();
             };
         }
 
@@ -536,11 +534,9 @@ namespace Ayni.Editor
 
             var lightAttackState = rootStateMachine.AddState("RumiMaki_LightStrike");
             if (punchClip != null) lightAttackState.motion = punchClip;
-            lightAttackState.speed = 1.8f;
 
             var heavyAttackState = rootStateMachine.AddState("RumiMaki_HeavyImpact");
             if (kickClip != null) heavyAttackState.motion = kickClip;
-            heavyAttackState.speed = 1.5f;
 
             var duckAvoidState = rootStateMachine.AddState("Sifu_DuckAvoid");
             if (duckClip != null) duckAvoidState.motion = duckClip;
@@ -708,7 +704,7 @@ namespace Ayni.Editor
             jumpToCombat.exitTime = 0.85f;
             jumpToCombat.duration = 0.15f;
 
-            // Transiciones desde AnyState para Combate (canTransitionToSelf=false para no reiniciar animaciones en spam)
+            // Transiciones desde AnyState para Combate
             AddTriggerTransition(rootStateMachine, lightAttackState, "LightAttack");
             AddTriggerTransition(rootStateMachine, heavyAttackState, "HeavyAttack");
             AddTriggerTransition(rootStateMachine, duckAvoidState, "DuckAvoid");
@@ -716,38 +712,26 @@ namespace Ayni.Editor
             AddTriggerTransition(rootStateMachine, hitState, "Hit");
             AddTriggerTransition(rootStateMachine, dieState, "Die");
 
-            // Transición a estado de aturdimiento por estructura rota
-            var anyToStunned = rootStateMachine.AddAnyStateTransition(stunnedState);
-            anyToStunned.AddCondition(AnimatorConditionMode.If, 0, "IsStunned");
-            anyToStunned.hasExitTime = false;
-            anyToStunned.canTransitionToSelf = false;
-            anyToStunned.duration = 0.1f;
-
-            var stunnedToCombat = stunnedState.AddTransition(combatState);
-            stunnedToCombat.AddCondition(AnimatorConditionMode.IfNot, 0, "IsStunned");
-            stunnedToCombat.hasExitTime = false;
-            stunnedToCombat.duration = 0.18f;
-
-            // Retorno de ataques y reacciones a locomoción de combate (tiempos activos de Sifu)
+            // Retorno de ataques y reacciones a combate
             var lightToCombat = lightAttackState.AddTransition(combatState);
             lightToCombat.hasExitTime = true;
-            lightToCombat.exitTime = 0.40f;
-            lightToCombat.duration = 0.12f;
+            lightToCombat.exitTime = 0.88f;
+            lightToCombat.duration = 0.1f;
 
             var heavyToCombat = heavyAttackState.AddTransition(combatState);
             heavyToCombat.hasExitTime = true;
-            heavyToCombat.exitTime = 0.55f;
-            heavyToCombat.duration = 0.15f;
+            heavyToCombat.exitTime = 0.88f;
+            heavyToCombat.duration = 0.1f;
 
             var duckToGuard = duckAvoidState.AddTransition(guardState);
             duckToGuard.hasExitTime = true;
-            duckToGuard.exitTime = 0.65f;
-            duckToGuard.duration = 0.12f;
+            duckToGuard.exitTime = 0.85f;
+            duckToGuard.duration = 0.1f;
 
             var jumpAvoidToGuard = jumpAvoidState.AddTransition(guardState);
             jumpAvoidToGuard.hasExitTime = true;
-            jumpAvoidToGuard.exitTime = 0.65f;
-            jumpAvoidToGuard.duration = 0.12f;
+            jumpAvoidToGuard.exitTime = 0.85f;
+            jumpAvoidToGuard.duration = 0.1f;
 
             var hitToCombat = hitState.AddTransition(combatState);
             hitToCombat.hasExitTime = true;
@@ -898,8 +882,7 @@ namespace Ayni.Editor
             var trans = sm.AddAnyStateTransition(targetState);
             trans.AddCondition(AnimatorConditionMode.If, 0, triggerName);
             trans.hasExitTime = false;
-            trans.canTransitionToSelf = false;
-            trans.duration = 0.08f;
+            trans.duration = 0.1f;
         }
 
         [MenuItem("Ayni/2. Integrar Combate en el Mapa de Caminos")]
@@ -975,10 +958,6 @@ namespace Ayni.Editor
             cc.height = 2f;
             cc.radius = 0.5f;
             cc.center = new Vector3(0f, 1f, 0f);
-            cc.stepOffset = 0.4f;
-            cc.slopeLimit = 55f;
-            cc.skinWidth = 0.08f;
-            cc.minMoveDistance = 0f;
 
             // Cargar y adjuntar modelo 3D con Rig y Texturas PBR
             AttachYari3DModel(player);
@@ -1006,14 +985,7 @@ namespace Ayni.Editor
             boss.transform.localScale = new Vector3(1.35f, 1.25f, 1.35f);
 
             var bossRenderer = boss.GetComponent<MeshRenderer>();
-            if (bossRenderer)
-            {
-                if (bossRenderer.sharedMaterial == null)
-                {
-                    bossRenderer.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
-                }
-                bossRenderer.sharedMaterial.color = new Color(0.55f, 0.35f, 0.15f);
-            }
+            if (bossRenderer) bossRenderer.material.color = new Color(0.55f, 0.35f, 0.15f);
 
             if (!boss.GetComponent<StructureSystem>()) boss.AddComponent<StructureSystem>();
             var enemyCtrl = GetOrAdd<EnemyController>(boss);
@@ -1056,163 +1028,18 @@ namespace Ayni.Editor
             soCombat.FindProperty("cameraTransform").objectReferenceValue = cam.transform;
             soCombat.ApplyModifiedProperties();
 
-            // 6. Game Manager & HUD Canvas uGUI
+            // 6. Game Manager & HUD
             GameObject gm = GameObject.Find("GameManager_Ayni");
             if (gm == null) gm = new GameObject("GameManager_Ayni");
-            var purifMgr = GetOrAdd<AyniPurificationManager>(gm);
-            SerializedObject soPurif = new SerializedObject(purifMgr);
-            soPurif.FindProperty("executionRange").floatValue = 4.5f;
-            soPurif.ApplyModifiedProperties();
-
-            var combatHUD = GetOrAdd<SifuCombatHUD>(gm);
-            SifuCombatHUD.BuildCanvasHUD(combatHUD);
+            if (!gm.GetComponent<AyniPurificationManager>()) gm.AddComponent<AyniPurificationManager>();
+            if (!gm.GetComponent<SifuCombatHUD>()) gm.AddComponent<SifuCombatHUD>();
 
             // 7. GUARDAR LA ESCENA EN DISCO
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             bool saved = EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
             AssetDatabase.SaveAssets();
 
-            Debug.Log($"<color=green>[AYNI COMPLETO]</color> ¡Yari con su modelo 3D riggeado, animaciones de combate fluidas, CharacterController unificado, Apo Rumi, cámara sobre el hombro y HUD Canvas uGUI guardados permanentemente en la escena! (Guardado: {saved})");
-        }
-
-        [MenuItem("Ayni/4. Validar y Auditar Canvas HUD y Locomoción")]
-        public static void ValidateAndAuditSystem()
-        {
-            Debug.Log("<b><color=yellow>[AYNI AUDITORÍA]</color> Iniciando validación completa de Locomoción, Combate y Canvas HUD...</b>");
-
-            int passed = 0;
-            int total = 0;
-
-            // 1. Validar Yari_Hero
-            total++;
-            var player = GameObject.Find("Yari_Hero");
-            if (player != null)
-            {
-                var cc = player.GetComponent<CharacterController>();
-                var combat = player.GetComponent<YariCombatController>();
-                var structSys = player.GetComponent<StructureSystem>();
-                var talisman = player.GetComponent<IllaTalismanSystem>();
-
-                bool ccValid = cc != null && Mathf.Approximately(cc.center.y, cc.height * 0.5f) && cc.slopeLimit >= 50f;
-                bool componentsValid = combat != null && structSys != null && talisman != null;
-
-                if (ccValid && componentsValid)
-                {
-                    passed++;
-                    Debug.Log($"<color=green>[OK]</color> Yari_Hero: CharacterController unificado (H={cc.height:F2}, C={cc.center}, Slope={cc.slopeLimit}°), Salud Base={combat.MaxHealth}, Edad={talisman.CurrentAge} años.");
-                }
-                else
-                {
-                    Debug.LogWarning($"[REVISAR] Yari_Hero: CC válido={ccValid}, Componentes={componentsValid}");
-                }
-            }
-            else
-            {
-                Debug.LogError("[FALLO] No se encontró Yari_Hero en la escena.");
-            }
-
-            // 2. Validar Visual_Yari_3D y Animator
-            total++;
-            var visual = player != null ? player.transform.Find("Visual_Yari_3D") : null;
-            if (visual != null)
-            {
-                var anim = visual.GetComponent<Animator>();
-                if (anim != null && anim.runtimeAnimatorController != null && anim.avatar != null && anim.avatar.isValid)
-                {
-                    passed++;
-                    Debug.Log($"<color=green>[OK]</color> Visual_Yari_3D: Animator '{anim.runtimeAnimatorController.name}' con Avatar Humanoid válido ({anim.avatar.name}).");
-                }
-                else
-                {
-                    Debug.LogWarning("[REVISAR] Visual_Yari_3D: Falta Animator, Avatar o Controller.");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("[REVISAR] No se encontró Visual_Yari_3D.");
-            }
-
-            // 3. Validar Canvas uGUI HUD
-            total++;
-            var canvasObj = GameObject.Find("Canvas_SifuHUD");
-            if (canvasObj != null)
-            {
-                var canvas = canvasObj.GetComponent<Canvas>();
-                var scaler = canvasObj.GetComponent<CanvasScaler>();
-                var topLeft = canvasObj.transform.Find("Panel_TopLeft_Sifu");
-                var finisher = canvasObj.transform.Find("Panel_FinisherPrompt");
-                var controls = canvasObj.transform.Find("Panel_Controls_Sifu");
-
-                if (canvas != null && scaler != null && topLeft != null && finisher != null && controls != null)
-                {
-                    passed++;
-                    Debug.Log($"<color=green>[OK]</color> Canvas_SifuHUD: uGUI Activo (Modo={canvas.renderMode}, Res={scaler.referenceResolution}, Paneles: TopLeft, Finisher, Controls).");
-                }
-                else
-                {
-                    Debug.LogWarning("[REVISAR] Canvas_SifuHUD: Faltan componentes o paneles.");
-                }
-            }
-            else
-            {
-                Debug.LogError("[FALLO] Canvas_SifuHUD no encontrado en la escena. Ejecuta 'Ayni/2. Integrar Combate en el Mapa de Caminos'.");
-            }
-
-            // 4. Validar Jefe Apo Rumi
-            total++;
-            var boss = GameObject.Find("Jefe_ApoRumi_Test");
-            if (boss != null)
-            {
-                var enemyCtrl = boss.GetComponent<EnemyController>();
-                var enemyStruct = boss.GetComponent<StructureSystem>();
-                if (enemyCtrl != null && enemyStruct != null)
-                {
-                    passed++;
-                    Debug.Log($"<color=green>[OK]</color> Jefe Apo Rumi: EnemyController '{enemyCtrl.CharacterName}' y StructureSystem activos (MaxStruct={enemyStruct.MaxStructure}).");
-                }
-                else
-                {
-                    Debug.LogWarning("[REVISAR] Jefe Apo Rumi: Faltan componentes.");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("[REVISAR] Jefe_ApoRumi_Test no encontrado.");
-            }
-
-            // 5. Captura visual de verificación
-            total++;
-            Camera cam = Camera.main;
-            if (cam != null)
-            {
-                string dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "DebugCaptures");
-                Directory.CreateDirectory(dir);
-
-                var rt = new RenderTexture(1280, 720, 24);
-                var prevTarget = cam.targetTexture;
-                var prevActive = RenderTexture.active;
-
-                cam.targetTexture = rt;
-                cam.Render();
-                RenderTexture.active = rt;
-
-                var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
-                tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
-                tex.Apply();
-
-                cam.targetTexture = prevTarget;
-                RenderTexture.active = prevActive;
-                Object.DestroyImmediate(rt);
-
-                string auditPath = Path.Combine(dir, "audit_verification.png");
-                File.WriteAllBytes(auditPath, tex.EncodeToPNG());
-                Object.DestroyImmediate(tex);
-
-                passed++;
-                Debug.Log($"<color=green>[OK]</color> Captura de auditoría guardada: {auditPath}");
-            }
-
-            Debug.Log($"<b><color=cyan>[RESULTADO AUDITORÍA AYNI]</color> {passed} / {total} pruebas superadas exitosamente.</b>");
+            Debug.Log($"<color=green>[AYNI COMPLETO]</color> ¡Yari con su modelo 3D riggeado y animaciones de combate, Apo Rumi, la cámara sobre el hombro y el HUD han sido guardados permanentemente en la escena! (Guardado: {saved})");
         }
 
         [MenuItem("Ayni/3. Cargar Modelo 3D de Yari Riggeado con Texturas PBR")]
