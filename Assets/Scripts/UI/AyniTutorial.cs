@@ -1,11 +1,14 @@
 using UnityEngine;
 using Ayni.Core;
+using Ayni.Story;
 
 namespace Ayni.UI
 {
     /// <summary>
-    /// Tutorial de inicio: pausa la partida y muestra, en tres páginas cortas, los botones de ataque,
-    /// los combos y la defensa. Se abre solo al empezar y se puede volver a ver con F1.
+    /// Tutorial de inicio: pausa la partida y muestra, en páginas cortas, los botones de ataque, los combos,
+    /// la defensa estilo Sifu y el Juicio Ayni. Los botones que enseña son los del dispositivo en uso
+    /// (mando de Xbox o teclado y ratón) y cambian solos si el jugador cambia de uno a otro.
+    /// Se abre solo al empezar (después del prólogo) y se puede volver a ver con F1 / View.
     /// SifuCombatHUD lo añade automáticamente al mismo objeto.
     /// </summary>
     public class AyniTutorial : MonoBehaviour
@@ -25,51 +28,80 @@ namespace Ayni.UI
             public string tip;
         }
 
-        private static readonly Page[] Pages =
+        private static string K(AyniInput.Action action) => AyniInput.Label(action);
+
+        /// <summary>Las páginas se construyen con los botones del dispositivo en uso.</summary>
+        private static Page[] BuildPages()
         {
-            new Page
+            bool pad = AyniInput.UsingGamepad;
+            string light = K(AyniInput.Action.LightAttack);
+            string heavy = K(AyniInput.Action.HeavyAttack);
+            string guard = K(AyniInput.Action.Guard);
+            string lightShort = pad ? "X" : "Clic";
+            string heavyShort = pad ? "Y" : "Q";
+            string guardShort = pad ? "LB" : "Guardia";
+
+            return new[]
             {
-                title = "ATAQUES",
-                intro = "Yari pelea con los puños, al estilo de la lucha ritual andina.",
-                rows = new[]
+                new Page
                 {
-                    new Row("Clic Izquierdo", "<b>Golpe ligero.</b> Rápido; se puede encadenar hasta 4 veces."),
-                    new Row("Q  o  E", "<b>Golpe pesado.</b> Más lento, pero daña mucho la postura del rival."),
-                    new Row("Tab  o  Clic central", "<b>Fijar al rival.</b> Yari lo encara siempre y la cámara los encuadra."),
+                    title = "ATAQUES",
+                    intro = "Yari pelea con los puños, al estilo de la lucha ritual andina (Rumi Maki).",
+                    rows = new[]
+                    {
+                        new Row(light, "<b>Golpe ligero.</b> Rápido; se puede encadenar hasta 4 veces."),
+                        new Row(heavy, "<b>Golpe pesado.</b> Más lento, pero daña mucho la postura del rival."),
+                        new Row(K(AyniInput.Action.LockOn), "<b>Fijar al rival.</b> Yari lo encara siempre y la cámara los encuadra."),
+                        new Row(K(AyniInput.Action.Sprint), "<b>Correr.</b> " + (pad ? "Mantén RT (o pulsa el stick izquierdo)." : "Mantén Shift.")),
+                    },
+                    tip = "Al golpear, Yari se gira solo hacia el rival más cercano y da un paso hacia él."
                 },
-                tip = "Al golpear, Yari se gira solo hacia el rival más cercano y da un paso hacia él."
-            },
-            new Page
-            {
-                title = "COMBOS",
-                intro = "Pulsa el siguiente golpe justo cuando conecta el anterior.",
-                rows = new[]
+                new Page
                 {
-                    new Row("Clic · Clic · Clic · Clic", "<b>Cadena de puños:</b> directo, directo, gancho y remate (+30 % de daño)."),
-                    new Row("Q · Q · Q", "<b>Cadena pesada:</b> puñetazo descendente, gancho ascendente y codazo."),
-                    new Row("Clic · Clic · Q", "<b>Cabezazo.</b> Remate tras 2 o 3 golpes ligeros; castiga la postura."),
-                    new Row("Clic ×4 · Q", "<b>Patada de empuje.</b> Remate tras la cadena completa; el que más postura rompe."),
+                    title = "COMBOS",
+                    intro = "Pulsa el siguiente golpe justo cuando conecta el anterior.",
+                    rows = new[]
+                    {
+                        new Row($"{lightShort} · {lightShort} · {lightShort} · {lightShort}", "<b>Cadena de puños:</b> directo, directo, gancho y remate (+30 % de daño)."),
+                        new Row($"{heavyShort} · {heavyShort} · {heavyShort}", "<b>Cadena pesada:</b> puñetazo descendente, gancho ascendente y codazo."),
+                        new Row($"{lightShort} · {lightShort} · {heavyShort}", "<b>Cabezazo.</b> Remate tras 2 o 3 golpes ligeros; castiga la postura."),
+                        new Row($"{lightShort} ×4 · {heavyShort}", "<b>Patada de empuje.</b> Remate tras la cadena completa; el que más postura rompe."),
+                    },
+                    tip = "Si dejas pasar más de medio segundo sin atacar, el combo vuelve a empezar."
                 },
-                tip = "Si dejas pasar más de medio segundo sin atacar, el combo vuelve a empezar."
-            },
-            new Page
-            {
-                title = "DEFENSA Y JUICIO AYNI",
-                intro = "Cuando el rival se tiñe de color, va a atacar: rojo es golpe alto, amarillo es barrido.",
-                rows = new[]
+                new Page
                 {
-                    new Row("Clic Derecho  o  G", "<b>Guardia.</b> Si la levantas justo antes del impacto, desvías el golpe (parry)."),
-                    new Row("Guardia + S", "<b>Agacharse:</b> esquiva los golpes altos (aviso rojo)."),
-                    new Row("Guardia + W", "<b>Saltar:</b> esquiva los barridos (aviso amarillo)."),
-                    new Row("F   /   X", "Con la postura del rival rota: <b>F</b> lo remata, <b>X</b> lo perdona (Ayni)."),
+                    title = "DEFENSA ESTILO SIFU",
+                    intro = "En guardia Yari <b>se planta</b>: no camina. La dirección sirve para esquivar sin moverse del sitio.\nRojo = golpe alto · amarillo = barrido.",
+                    rows = new[]
+                    {
+                        new Row(guard + " (mantener)", "<b>Guardia.</b> Si la subes justo antes del impacto, desvías el golpe (parry)."),
+                        new Row(pad ? $"{guardShort} + Stick ↓" : "Guardia + S", "<b>Agacharse:</b> esquiva los golpes altos (aviso rojo)."),
+                        new Row(pad ? $"{guardShort} + Stick ↑ / A" : "Guardia + W / Espacio", "<b>Saltito:</b> esquiva los barridos (aviso amarillo)."),
+                        new Row(pad ? $"{guardShort} + Stick ← →" : "Guardia + A / D", "<b>Balanceo:</b> esquiva cualquier golpe, pero con menos margen."),
+                    },
+                    tip = "Tras esquivar o desviar, tu siguiente golpe es un CONTRAATAQUE que rompe mucho más la postura."
                 },
-                tip = "Si Yari cae, el Talismán Illa lo resucita... a cambio de años de vida."
-            },
-        };
+                new Page
+                {
+                    title = "JUICIO AYNI Y LA ILLA",
+                    intro = "Cuando la postura del rival se rompe, el combate se detiene y tú decides.",
+                    rows = new[]
+                    {
+                        new Row(K(AyniInput.Action.Execute), "<b>Venganza:</b> lo rematas. La violencia deja la tierra marchita."),
+                        new Row(K(AyniInput.Action.Mercy), "<b>Ayni:</b> lo desarmas y perdonas. Restauras el equilibrio y la Illa te cobra menos años."),
+                        new Row("Caer en combate", "El Talismán Illa resucita a Yari... a cambio de años de vida."),
+                        new Row("Caer a la quebrada", "La Illa te devuelve al camino, pero te cuesta vida."),
+                    },
+                    tip = pad ? "Botón rojo (B) = Venganza · Botón verde (A) = Ayni." : "Más adelante también podrás jugar con un mando de Xbox."
+                },
+            };
+        }
 
         private static bool shownThisSession;
 
         private bool open;
+        private bool pendingOpen;
         private int page;
         private float previousTimeScale = 1f;
 
@@ -87,7 +119,9 @@ namespace Ayni.UI
             if (!shownThisSession)
             {
                 shownThisSession = true;
-                Open();
+                // Si el prólogo está en marcha, el tutorial espera a que termine
+                if (AyniPrologue.IsRunning) pendingOpen = true;
+                else Open();
             }
         }
 
@@ -114,23 +148,33 @@ namespace Ayni.UI
 
         private void Update()
         {
-            if (!open)
+            if (pendingOpen)
             {
-                if (Input.GetKeyDown(KeyCode.F1) && !AyniGameState.InputLocked) Open();
+                if (!AyniPrologue.IsRunning)
+                {
+                    pendingOpen = false;
+                    Open();
+                }
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
-                Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0))
+            if (!open)
             {
-                if (page < Pages.Length - 1) page++;
+                if (AyniInput.Down(AyniInput.Action.Tutorial) && !AyniGameState.InputLocked) Open();
+                return;
+            }
+
+            int count = BuildPages().Length;
+            if (AyniInput.Down(AyniInput.Action.Confirm))
+            {
+                if (page < count - 1) page++;
                 else Close();
             }
-            else if (Input.GetKeyDown(KeyCode.Backspace))
+            else if (AyniInput.Down(AyniInput.Action.Back))
             {
                 page = Mathf.Max(0, page - 1);
             }
-            else if (Input.GetKeyDown(KeyCode.Tab))
+            else if (AyniInput.Down(AyniInput.Action.Skip) || AyniInput.Down(AyniInput.Action.Tutorial))
             {
                 Close();
             }
@@ -162,14 +206,16 @@ namespace Ayni.UI
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
 
             Color gold = new Color(1f, 0.82f, 0.3f);
-            Page p = Pages[page];
+            Page[] pages = BuildPages();
+            page = Mathf.Clamp(page, 0, pages.Length - 1);
+            Page p = pages[page];
 
             // Fondo oscurecido
             Fill(new Rect(0, 0, screenW, screenH), new Color(0f, 0f, 0f, 0.72f));
 
             const float rowHeight = 46f;
-            float panelW = Mathf.Min(820f, screenW - 60f);
-            float panelH = 70f + 40f + p.rows.Length * rowHeight + 20f + 44f + 40f;
+            float panelW = Mathf.Min(860f, screenW - 60f);
+            float panelH = 70f + 52f + p.rows.Length * rowHeight + 20f + 44f + 40f;
             var panel = new Rect((screenW - panelW) / 2f, (screenH - panelH) / 2f, panelW, panelH);
 
             Fill(new Rect(panel.x - 2, panel.y - 2, panel.width + 4, panel.height + 4), gold);
@@ -181,10 +227,10 @@ namespace Ayni.UI
             GUI.color = Color.white;
             y += 46f;
 
-            GUI.Label(new Rect(panel.x + 30f, y, panel.width - 60f, 36f), p.intro, introStyle);
-            y += 44f;
+            GUI.Label(new Rect(panel.x + 30f, y, panel.width - 60f, 48f), p.intro, introStyle);
+            y += 56f;
 
-            float keyW = Mathf.Min(230f, panel.width * 0.34f);
+            float keyW = Mathf.Min(250f, panel.width * 0.34f);
             foreach (Row row in p.rows)
             {
                 var keyRect = new Rect(panel.x + 28f, y + 4f, keyW, rowHeight - 10f);
@@ -203,9 +249,11 @@ namespace Ayni.UI
             GUI.Label(new Rect(panel.x + 30f, y, panel.width - 60f, 40f), p.tip, tipStyle);
             GUI.color = Color.white;
 
-            string next = page < Pages.Length - 1 ? "Siguiente" : "¡A pelear!";
-            string footer = $"<b>{page + 1} / {Pages.Length}</b>      [Enter / Clic] {next}" +
-                            (page > 0 ? "      [Retroceso] Anterior" : "") + "      [Tab] Saltar tutorial";
+            string next = page < pages.Length - 1 ? "Siguiente" : "¡A pelear!";
+            string confirm = AyniInput.UsingGamepad ? "A" : "Enter / Clic";
+            string footer = $"<b>{page + 1} / {pages.Length}</b>      [{confirm}] {next}" +
+                            (page > 0 ? $"      [{K(AyniInput.Action.Back)}] Anterior" : "") +
+                            $"      [{K(AyniInput.Action.Skip)}] Saltar tutorial";
             GUI.color = new Color(1f, 1f, 1f, 0.8f);
             GUI.Label(new Rect(panel.x, panel.yMax - 36f, panel.width, 28f), footer, footerStyle);
             GUI.color = Color.white;

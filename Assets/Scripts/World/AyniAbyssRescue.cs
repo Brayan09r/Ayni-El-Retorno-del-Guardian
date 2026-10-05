@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Ayni.Core;
 using Ayni.Enemy;
+using Ayni.Player;
 
 namespace Ayni.World
 {
@@ -85,6 +87,9 @@ namespace Ayni.World
 
         private void Update()
         {
+            // Durante el prólogo Yari cae a la garganta a propósito
+            if (AyniGameState.CinematicPlaying) return;
+
             refreshTimer -= Time.deltaTime;
             if (refreshTimer <= 0f)
             {
@@ -145,6 +150,19 @@ namespace Ayni.World
         {
             // La posición más antigua guardada: aproximadamente un segundo y medio antes de caer
             Vector3 target = entry.history[Mathf.Max(0, entry.count - 1)] + Vector3.up * 0.15f;
+
+            // Yari: el Illa lo rescata con su propia escena (destello dorado, se levanta, cuesta vida)
+            var yari = entry.transform.GetComponent<YariCombatController>();
+            if (yari != null)
+            {
+                if (yari.IsBeingRescued) return;
+                yari.RescueFromAbyss(target);
+                for (int i = 0; i < HistorySize; i++) entry.history[i] = target;
+                entry.count = HistorySize;
+                entry.timer = sampleInterval;
+                OnRescued?.Invoke(entry.transform);
+                return;
+            }
 
             bool wasEnabled = entry.controller != null && entry.controller.enabled;
             if (entry.controller != null) entry.controller.enabled = false;

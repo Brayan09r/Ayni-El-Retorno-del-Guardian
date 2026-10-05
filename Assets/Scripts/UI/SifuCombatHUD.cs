@@ -3,6 +3,7 @@ using Ayni.Core;
 using Ayni.Combat;
 using Ayni.Enemy;
 using Ayni.Player;
+using Ayni.Story;
 
 namespace Ayni.UI
 {
@@ -23,6 +24,10 @@ namespace Ayni.UI
         private static readonly Color StructureDangerColor = new Color(1f, 0.6f, 0.1f);
         private static readonly Color BarBackColor = new Color(0f, 0f, 0f, 0.6f);
 
+        private float avoidMessageUntil;
+
+        private static string Key(AyniInput.Action action) => AyniInput.Label(action);
+
         private void Start()
         {
             var player = GameObject.FindGameObjectWithTag("Player");
@@ -31,22 +36,51 @@ namespace Ayni.UI
                 yari = player.GetComponent<YariCombatController>();
                 talisman = player.GetComponent<IllaTalismanSystem>();
                 playerStructure = player.GetComponent<StructureSystem>();
+                if (yari != null) yari.OnAvoided += HandleAvoided;
             }
 
-            // Tutorial de inicio (se añade solo; no hace falta configurarlo en la escena)
+            // Prólogo, tutorial y prueba del mando (se añaden solos; no hace falta configurarlos en la escena).
+            // El prólogo va primero: el tutorial espera a que termine.
+            if (GetComponent<AyniPrologue>() == null) gameObject.AddComponent<AyniPrologue>();
             if (GetComponent<AyniTutorial>() == null) gameObject.AddComponent<AyniTutorial>();
+            if (GetComponent<AyniGamepadTester>() == null) gameObject.AddComponent<AyniGamepadTester>();
+            // Juicio Ayni del jefe y desenlace del nivel
+            if (GetComponent<AyniJudgment>() == null) gameObject.AddComponent<AyniJudgment>();
+            if (GetComponent<AyniLevelOutcome>() == null) gameObject.AddComponent<AyniLevelOutcome>();
+
+            // Amaru el Cazador: segunda fase con salto atrás y dardos envenenados
+            foreach (EnemyController boss in EnemyController.All)
+            {
+                if (boss != null && boss.IsBoss && boss.CharacterName.Contains("Amaru") && boss.GetComponent<AmaruHunter>() == null)
+                {
+                    boss.gameObject.AddComponent<AmaruHunter>();
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (yari != null) yari.OnAvoided -= HandleAvoided;
+        }
+
+        private void HandleAvoided()
+        {
+            avoidMessageUntil = Time.unscaledTime + 0.7f;
         }
 
         private bool showControls = true;
 
         private void Update()
         {
-            // H muestra u oculta el panel de controles (en ventanas pequeñas tapa a Yari)
-            if (Input.GetKeyDown(KeyCode.H)) showControls = !showControls;
+            // H (cruceta arriba en el mando) muestra u oculta el panel de controles (en ventanas pequeñas tapa a Yari)
+            if (AyniInput.Down(AyniInput.Action.ToggleHud) && !AyniGameState.InputLocked) showControls = !showControls;
         }
 
         private void OnGUI()
         {
+            // Durante el prólogo (y el desenlace) la pantalla es de la escena; en el Juicio Ayni, de la decisión
+            if (AyniGameState.CinematicPlaying || AyniJudgment.Active) return;
+
             GUI.skin.box.fontSize = 14;
             GUI.skin.label.fontSize = 14;
             GUI.skin.label.richText = true;
@@ -71,7 +105,7 @@ namespace Ayni.UI
             if (talisman != null)
             {
                 GUI.color = Color.yellow;
-                GUILayout.Label($"<b>EDAD DE YARI:</b> {talisman.CurrentAge} años  |  Etapa: {talisman.GetCurrentStage()}");
+                GUILayout.Label($"<b>EDAD DE YARI:</b> {talisman.CurrentAge} años  |  Etapa: {StageName(talisman.GetCurrentStage())}");
                 GUILayout.Label($"<b>ILLA SAGRADA:</b> próxima caída +{talisman.DeathCounter + 1} años");
                 GUI.color = Color.white;
             }
@@ -91,23 +125,38 @@ namespace Ayni.UI
             GUILayout.EndArea();
         }
 
+        private static string StageName(IllaTalismanSystem.AgeStage stage)
+        {
+            switch (stage)
+            {
+                case IllaTalismanSystem.AgeStage.Youth: return "Joven";
+                case IllaTalismanSystem.AgeStage.Prime: return "Maduro";
+                default: return "Anciano";
+            }
+        }
+
         private void DrawControlsPanel()
         {
+            bool pad = AyniInput.UsingGamepad;
             if (!showControls)
             {
-                GUILayout.BeginArea(new Rect(20, Screen.height - 50, 300, 30), GUI.skin.box);
-                GUILayout.Label("<b>[H]</b> Mostrar controles   <b>[F1]</b> Tutorial");
+                GUILayout.BeginArea(new Rect(20, Screen.height - 50, 360, 30), GUI.skin.box);
+                GUILayout.Label($"<b>[{Key(AyniInput.Action.ToggleHud)}]</b> Mostrar controles   <b>[{Key(AyniInput.Action.Tutorial)}]</b> Tutorial");
                 GUILayout.EndArea();
                 return;
             }
 
-            GUILayout.BeginArea(new Rect(20, Screen.height - 195, Mathf.Min(620f, Screen.width - 40f), 175), GUI.skin.box);
-            GUILayout.Label("<b>CONTROLES DE COMBATE RUMI MAKI</b>  ([H] ocultar · [F1] tutorial)");
-            GUILayout.Label("• <b>[Clic Izq]:</b> Golpe Ligero  |  <b>[Q / E]:</b> Golpe Pesado  |  <b>[LShift]:</b> Sprint");
-            GUILayout.Label("• <b>[Tab / Clic central]:</b> Fijar o soltar al rival (Lock-On)");
-            GUILayout.Label("• <b>[Clic Der / G]:</b> Guardia — púlsala justo antes del impacto para el Parry");
-            GUILayout.Label("• <b>[Guardia + S / Espacio]:</b> Agacharse (evita ataques altos)  |  <b>[Guardia + W]:</b> Saltar (evita barridos)");
-            GUILayout.Label("• <b>Postura del rival rota:</b> [F] Venganza (Matar)  |  [X] Restaurar Ayni (Perdonar)");
+            string down = pad ? "Stick ↓" : "S";
+            string up = pad ? "Stick ↑ / A" : "W / Espacio";
+            string sides = pad ? "Stick ← →" : "A / D";
+
+            GUILayout.BeginArea(new Rect(20, Screen.height - 195, Mathf.Min(680f, Screen.width - 40f), 175), GUI.skin.box);
+            GUILayout.Label($"<b>CONTROLES RUMI MAKI — {(pad ? "MANDO" : "TECLADO Y RATÓN")}</b>  ([{Key(AyniInput.Action.ToggleHud)}] ocultar · [{Key(AyniInput.Action.Tutorial)}] tutorial)");
+            GUILayout.Label($"• <b>[{Key(AyniInput.Action.LightAttack)}]:</b> Golpe Ligero  |  <b>[{Key(AyniInput.Action.HeavyAttack)}]:</b> Golpe Pesado  |  <b>[{Key(AyniInput.Action.Sprint)}]:</b> Correr");
+            GUILayout.Label($"• <b>[{Key(AyniInput.Action.LockOn)}]:</b> Fijar o soltar al rival (Lock-On)");
+            GUILayout.Label($"• <b>[{Key(AyniInput.Action.Guard)}] mantener:</b> Guardia (Yari se planta) — púlsala justo antes del impacto para el Parry");
+            GUILayout.Label($"• <b>Guardia + {down}:</b> Agacharse (evita altos)  |  <b>+ {up}:</b> Saltito (evita barridos)  |  <b>+ {sides}:</b> Balanceo (evita todo)");
+            GUILayout.Label($"• <b>Postura del rival rota:</b> [{Key(AyniInput.Action.Execute)}] Venganza (Matar)  |  [{Key(AyniInput.Action.Mercy)}] Restaurar Ayni (Perdonar)");
             GUILayout.EndArea();
         }
 
@@ -133,31 +182,54 @@ namespace Ayni.UI
             if (yari != null && yari.IsGameOver)
             {
                 GUI.color = Color.red;
-                GUI.Box(center, "EL TALISMÁN ILLA SE HA ROTO\n[R] Reintentar");
+                GUI.Box(center, $"EL TALISMÁN ILLA SE HA ROTO\n[{Key(AyniInput.Action.Restart)}] Reintentar");
             }
             else if (yari != null && yari.IsDead)
             {
                 GUI.color = Color.yellow;
                 GUI.Box(center, "YARI HA CAÍDO\nEl Talismán Illa reclama sus años...");
             }
+            else if (AyniJudgment.Active)
+            {
+                // El Juicio Ayni dibuja su propia pantalla
+            }
+            else if (enemy != null && enemy.Structure.IsBroken && !enemy.CanBeJudged)
+            {
+                GUI.color = new Color(0.4f, 0.9f, 1f);
+                GUI.Box(center, $"¡POSTURA DE {enemy.CharacterName.ToUpper()} ROTA! ({enemy.Structure.BrokenTimeRemaining:F1} s)\n" +
+                                "¡Castígalo ahora! Sus golpes recibidos duelen más");
+            }
             else if (enemy != null && enemy.Structure.IsBroken)
             {
                 GUI.color = Color.red;
                 GUI.Box(center, $"¡POSTURA DE {enemy.CharacterName.ToUpper()} ROTA! ({enemy.Structure.BrokenTimeRemaining:F1} s)\n" +
-                                "[F] Golpe Letal (Venganza)  |  [X] Desarme y Perdón (Ayni)");
+                                $"[{Key(AyniInput.Action.Execute)}] Golpe Letal (Venganza)  |  [{Key(AyniInput.Action.Mercy)}] Desarme y Perdón (Ayni)");
+            }
+            else if (AmaruHunter.DartWarning)
+            {
+                bool pad = AyniInput.UsingGamepad;
+                GUI.color = new Color(0.45f, 1f, 0.35f);
+                GUI.Box(new Rect(center.x + 60, center.y, 400, 36), "¡DARDO ENVENENADO!  (" + (pad ? "LB + ↓ o ← →" : "Guardia + S o A/D") + ")");
+            }
+            else if (Time.unscaledTime < avoidMessageUntil)
+            {
+                GUI.color = new Color(0.6f, 0.92f, 1f);
+                GUI.Box(new Rect(center.x + 110, center.y, 300, 36), "¡ESQUIVA!  Contraataca ya");
             }
             else if (enemy != null && enemy.IsWindingUp)
             {
                 bool high = enemy.PendingAttackHeight == AttackHeight.High;
+                bool pad = AyniInput.UsingGamepad;
                 GUI.color = high ? new Color(1f, 0.4f, 0.3f) : Color.yellow;
-                GUI.Box(new Rect(center.x + 110, center.y, 300, 36), high ? "¡ATAQUE ALTO!" : "¡BARRIDO BAJO!");
+                string tip = high ? (pad ? "LB + ↓" : "Guardia + S") : (pad ? "LB + ↑" : "Guardia + W");
+                GUI.Box(new Rect(center.x + 80, center.y, 360, 36), (high ? "¡ATAQUE ALTO!" : "¡BARRIDO BAJO!") + $"  ({tip})");
             }
 
             GUI.color = Color.white;
             GUI.skin.box.fontSize = 14;
         }
 
-        /// <summary>Marca roja que late sobre cada rival con la postura rota: momento de rematar (F) o perdonar (X).</summary>
+        /// <summary>Marca roja que late sobre cada rival con la postura rota: momento de rematar (F / B) o perdonar (X / A).</summary>
         private void DrawBrokenPostureMarkers()
         {
             Camera cam = Camera.main;
@@ -167,7 +239,7 @@ namespace Ayni.UI
             for (int i = 0; i < enemies.Count; i++)
             {
                 EnemyController e = enemies[i];
-                if (e == null || e.IsDead || !e.Structure.IsBroken) continue;
+                if (e == null || !e.CanBeJudged) continue;
 
                 Vector3 screen = cam.WorldToScreenPoint(e.transform.position + Vector3.up * 2.05f);
                 if (screen.z <= 0f) continue;
@@ -186,7 +258,7 @@ namespace Ayni.UI
                 GUI.color = Color.white;
                 var label = new Rect(screen.x - 40f, Screen.height - screen.y - size - 22f, 80f, 20f);
                 var style = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold, fontSize = 14 };
-                GUI.Label(label, "F  /  X", style);
+                GUI.Label(label, $"{Key(AyniInput.Action.Execute)}  /  {Key(AyniInput.Action.Mercy)}", style);
                 GUI.color = prevColor;
             }
         }

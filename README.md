@@ -33,12 +33,14 @@
 | **Agacharse / Cuclillas** | `C` (alternar) o `Ctrl Izq` (mantener) | Reduce el perfil de colisión y permite avanzar sigilosamente |
 | **Saltar** | `Espacio` | Salto vertical dinámico con impulso y gravedad |
 | **Postura Relajada / Combate** | Automático | Brazos abajo en descanso; al combatir o defender levanta la guardia |
-| **Guardia / Bloqueo** | `Clic Derecho` o `G` | Posición defensiva activa; desvío perfecto (parry) si es en el último instante |
-| **Esquivas Estilo Sifu** | En Guardia + `S` / `Espacio` / `W` | Esquivar ataques altos agachándose o saltar sobre barridos |
+| **Guardia / Bloqueo** | `Clic Derecho` o `G` (mando: `LB`) | Yari se planta en el sitio; desvío perfecto (parry) si es en el último instante |
+| **Esquivas Estilo Sifu** | En Guardia + `S` / `W` o `Espacio` / `A`·`D` | Agacharse (golpes altos), saltito (barridos) o balanceo (cualquiera), sin moverse del sitio |
 | **Ataque Ligero Rumi Maki** | `Clic Izquierdo` | Combinación fluida de puñetazos rápidos |
 | **Ataque Pesado Rumi Maki** | `Q` o `E` | Patada circular contundente con alto daño a la postura |
-| **Juicio Ayni (Venganza / Perdón)** | `F` (Ejecutar) / `X` (Perdonar) | Acciones morales cuando la estructura del rival está rota |
+| **Juicio Ayni (Venganza / Perdón)** | `F` (Ejecutar) / `X` (Perdonar) — mando: `B` / `A` | Acciones morales cuando la estructura del rival está rota |
 | **Liberar Cursor** | `Escape` | Muestra el puntero del ratón |
+
+**Mando de Xbox:** totalmente compatible (stick izq. moverse, stick der. cámara, `X`/`Y` golpes, `A` saltar, `LB` guardia, `RB` fijar, `RT` correr). Tabla completa en [CONTROLES.md](CONTROLES.md).
 
 ---
 

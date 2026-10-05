@@ -78,6 +78,16 @@ namespace Ayni.Player
         [Header("Defensa")]
         [Tooltip("Segundos de invulnerabilidad de cada esquiva (Duck evita ataques altos, Jump evita bajos).")]
         [SerializeField] private float dodgeWindow = 0.45f;
+        [Tooltip("Segundos de invulnerabilidad del balanceo lateral (Guardia + izquierda/derecha): evita golpes altos y bajos.")]
+        [SerializeField] private float swayWindow = 0.36f;
+        [Tooltip("Segundos tras una esquiva antes de poder hacer la siguiente.")]
+        [SerializeField] private float avoidCooldown = 0.38f;
+        [Tooltip("Cuánto hay que inclinar el stick (o la tecla) en guardia para que cuente como esquiva.")]
+        [Range(0.2f, 0.95f)] [SerializeField] private float avoidStickThreshold = 0.55f;
+        [Tooltip("Segundos tras una esquiva o desvío logrados en los que el siguiente golpe es un contraataque (más daño a la postura).")]
+        [SerializeField] private float counterWindow = 0.8f;
+        [Tooltip("Multiplicador del daño a la postura del contraataque.")]
+        [SerializeField] private float counterStructureBonus = 1.6f;
         [Tooltip("Segundos sin control tras recibir un golpe directo.")]
         [SerializeField] private float hitStunDuration = 0.35f;
         [Tooltip("Segundos sin control cuando la guardia de Yari se rompe.")]
@@ -94,6 +104,19 @@ namespace Ayni.Player
         [Header("Salto")]
         [Tooltip("Segundos de mezcla al aterrizar para volver a la locomoción.")]
         [SerializeField] private float landBlendTime = 0.15f;
+
+        [Header("Caídas")]
+        [Tooltip("Velocidad de caída (m/s, negativa) a partir de la que Yari pasa a la animación de caída en el aire.")]
+        [SerializeField] private float fallAnimSpeed = -7.5f;
+        [Tooltip("Metros que tiene que haber caído desde su punto más alto para usar la animación de caída.")]
+        [SerializeField] private float fallAnimMinDrop = 1.2f;
+        [Tooltip("Desde esta altura de caída Yari aterriza pesado (rodilla y mano al suelo) y tarda un instante en recuperarse.")]
+        [SerializeField] private float hardLandingHeight = 3.5f;
+        [Tooltip("Desde esta altura de caída el golpe contra el suelo le quita vida.")]
+        [SerializeField] private float fallDamageHeight = 9f;
+        [SerializeField] private float fallDamagePerMeter = 6f;
+        [Tooltip("Parte de la vida máxima que cuesta caer a la quebrada (el Illa lo devuelve al camino).")]
+        [Range(0f, 1f)] [SerializeField] private float abyssRescueHealthCost = 0.2f;
 
         [Header("Resurrección")]
         [Tooltip("Segundos que tarda Yari en levantarse del suelo (debe coincidir con el estado GetUp del Animator).")]
@@ -214,8 +237,29 @@ namespace Ayni.Player
         private float stunnedUntil;
         private float dodgeUntil;
         private AttackHeight dodgeEvades;
+        private bool dodgeEvadesAll;
+
+        // Esquivas estilo Sifu: en guardia Yari no se desplaza; la dirección del stick elige la esquiva
+        private enum AvoidKind { None, Duck, Jump, SwayLeft, SwayRight }
+        private int lastAvoidDir;          // 0 = neutro, 1 = abajo, 2 = arriba, 3 = izquierda, 4 = derecha
+        private float avoidReadyTime;
+        private float counterUntil;
+
+        // Caídas
+        private bool airborne;
+        private float airPeakY;
+        private bool fallAnimPlaying;
+        private bool beingRescued;
 
         public bool IsGuarding => isGuarding;
+        /// <summary>Yari cae por el aire con la animación de caída.</summary>
+        public bool IsFalling => fallAnimPlaying;
+        /// <summary>El Illa lo está devolviendo al camino tras caer a la quebrada.</summary>
+        public bool IsBeingRescued => beingRescued;
+        /// <summary>Una escena cinemática controla a Yari: no lee la entrada ni aplica la física.</summary>
+        public bool CinematicControl { get; set; }
+        /// <summary>Se dispara cuando Yari esquiva un golpe (para sonido, cámara lenta, etc.).</summary>
+        public event Action OnAvoided;
         public bool IsCrouching => isCrouching;
         public bool IsSprinting => isSprinting;
         public bool InCombatStance => inCombatStance;
@@ -360,22 +404,36 @@ namespace Ayni.Player
             }
             HookRootMotion();
 
-            if (footIK != null) footIK.Suspended = isDead || jumpInAir;
+            if (footIK != null) footIK.Suspended = isDead || jumpInAir || fallAnimPlaying || CinematicControl;
 
             // Postura andina: solo en guardia de pelea, no al pasear, correr, agacharse, saltar o caer
             if (andeanStance == null && animator != null) andeanStance = animator.GetComponent<AndeanCombatStanceModifier>();
             if (andeanStance != null)
             {
-                bool fighting = inCombatStance && !isDead && !jumpInAir && !isCrouching && !isSprinting;
+                bool fighting = inCombatStance && !isDead && !jumpInAir && !fallAnimPlaying && !isCrouching && !isSprinting && !CinematicControl;
                 andeanStance.SetStanceWeight(fighting ? 1f : 0f);
             }
+
+            // Escena cinemática: la escena mueve y anima a Yari
+            if (CinematicControl) return;
 
             // Tutorial o pausa: no se procesa ninguna entrada
             if (AyniGameState.InputLocked) return;
 
             if (isGameOver)
             {
-                if (Input.GetKeyDown(KeyCode.R)) RestartScene();
+                if (AyniInput.Down(AyniInput.Action.Restart)) RestartScene();
+                ApplyGravity();
+                return;
+            }
+
+            // Rescate del Illa en curso: la rutina mueve a Yari
+            if (beingRescued) return;
+
+            // Cayendo por el aire: solo un poco de control de dirección
+            if (fallAnimPlaying)
+            {
+                HandleAirControl();
                 ApplyGravity();
                 return;
             }
@@ -421,7 +479,7 @@ namespace Ayni.Player
                 if (lockTarget.IsDead || !lockTarget.isActiveAndEnabled || to.magnitude > lockOnBreakRange) lockTarget = null;
             }
 
-            if (Input.GetKeyDown(KeyCode.Tab) || Input.GetMouseButtonDown(2))
+            if (AyniInput.Down(AyniInput.Action.LockOn))
             {
                 lockTarget = lockTarget != null ? null : FindLockCandidate();
             }
@@ -495,16 +553,18 @@ namespace Ayni.Player
         {
             if (isAttacking) return;
 
-            // Alternar con tecla C o mantener con Control Izquierdo
-            if (Input.GetKeyDown(KeyCode.C))
+            // Alternar con C (B en el mando) o mantener con Control Izquierdo.
+            // Con un rival listo para el Juicio Ayni, B del mando es "rematar" y no agacha.
+            if (AyniInput.Down(AyniInput.Action.CrouchToggle) && !isGuarding &&
+                !(AyniInput.UsingGamepad && HasJudgeableEnemy()))
             {
                 SetCrouch(!isCrouching);
             }
-            else if (Input.GetKey(KeyCode.LeftControl) && !isCrouching)
+            else if (AyniInput.Held(AyniInput.Action.CrouchHold) && !isCrouching)
             {
                 SetCrouch(true);
             }
-            else if (Input.GetKeyUp(KeyCode.LeftControl) && isCrouching)
+            else if (AyniInput.Up(AyniInput.Action.CrouchHold) && isCrouching)
             {
                 SetCrouch(false);
             }
@@ -534,11 +594,18 @@ namespace Ayni.Player
                 else return;
             }
 
-            float horizontal = Input.GetAxisRaw("Horizontal");
-            float vertical = Input.GetAxisRaw("Vertical");
-            Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
+            // En guardia Yari se planta como en Sifu: no camina; la dirección solo sirve para esquivar (HandleDefense)
+            if (isGuarding)
+            {
+                HoldGuardStance();
+                return;
+            }
 
-            bool hasMoveInput = direction.magnitude >= 0.1f;
+            Vector2 move = AyniInput.Move;
+            float analog = Mathf.Clamp01(move.magnitude); // con el stick, inclinarlo poco = caminar despacio
+            Vector3 direction = analog > 0.001f ? new Vector3(move.x, 0f, move.y) / analog : Vector3.zero;
+
+            bool hasMoveInput = analog >= 0.1f;
 
             bool locked = lockTarget != null;
             Vector3 toTarget = Vector3.zero;
@@ -551,8 +618,8 @@ namespace Ayni.Player
 
             Vector3 animMoveDir = Vector3.zero;
 
-            // Sprint con LeftShift cuando se mueve, sin estar en guardia ni con el rival fijado
-            if (hasMoveInput && Input.GetKey(KeyCode.LeftShift) && !isGuarding && !locked)
+            // Sprint (Shift, RT o L3) cuando se mueve, sin estar en guardia ni con el rival fijado
+            if (hasMoveInput && analog > 0.5f && AyniInput.Held(AyniInput.Action.Sprint) && !locked)
             {
                 if (isCrouching) SetCrouch(false); // Salir de cuclillas al correr
                 isSprinting = true;
@@ -594,11 +661,12 @@ namespace Ayni.Player
                     speedToUse = Mathf.Lerp(lockStrafeSpeed, baseMoveSpeed, Mathf.Clamp01(Vector3.Dot(moveDir, toTarget)));
                 }
 
-                // Si está defendiendo, reduce la velocidad de paso
-                if (isGuarding)
+                // Stick a medio camino: camina más despacio (el teclado siempre da 1)
+                if (!isSprinting)
                 {
-                    speedToUse *= 0.45f;
-                    targetAnimSpeedVal = 0.5f;
+                    float walk = Mathf.Lerp(0.35f, 1f, Mathf.InverseLerp(0.1f, 0.9f, analog));
+                    speedToUse *= walk;
+                    targetAnimSpeedVal *= walk;
                 }
 
                 float currentSpeed = speedToUse * talisman.GetSpeedMultiplier();
@@ -609,7 +677,7 @@ namespace Ayni.Player
                     Quaternion targetRot = Quaternion.LookRotation(moveDir);
                     transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
                 }
-                animMoveDir = moveDir * (isGuarding ? 0.6f : 1f);
+                animMoveDir = moveDir;
 
                 currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, targetAnimSpeedVal, 8f * Time.deltaTime);
             }
@@ -634,12 +702,94 @@ namespace Ayni.Player
             }
         }
 
+        /// <summary>
+        /// Guardia plantada estilo Sifu: los pies no se mueven del sitio. Yari solo gira para encarar al rival
+        /// (el fijado o el más cercano) y la locomoción se detiene.
+        /// </summary>
+        private void HoldGuardStance()
+        {
+            isSprinting = false;
+            currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 14f * Time.deltaTime);
+            if (animator)
+            {
+                animator.SetFloat("Speed", currentAnimSpeed);
+                if (HasParam("MoveX"))
+                {
+                    animator.SetFloat("MoveX", 0f, 0.1f, Time.deltaTime);
+                    animator.SetFloat("MoveY", 0f, 0.1f, Time.deltaTime);
+                }
+            }
+
+            EnemyController target = lockTarget != null && !lockTarget.IsDead ? lockTarget : NearestEnemy(autoFaceRange + 1f);
+            if (target == null) return;
+            Vector3 to = target.transform.position - transform.position;
+            to.y = 0f;
+            if (to.sqrMagnitude > 0.0001f)
+            {
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(to), rotationSpeed * 0.8f * Time.deltaTime);
+            }
+        }
+
+        private EnemyController NearestEnemy(float range)
+        {
+            EnemyController nearest = null;
+            float best = range;
+            var enemies = EnemyController.All;
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyController enemy = enemies[i];
+                if (enemy == null || enemy.IsDead) continue;
+                Vector3 to = enemy.transform.position - transform.position;
+                to.y = 0f;
+                float dist = to.magnitude;
+                if (dist < best)
+                {
+                    best = dist;
+                    nearest = enemy;
+                }
+            }
+            return nearest;
+        }
+
+        /// <summary>Hay un rival con la postura rota a distancia de Juicio Ayni (A / B del mando cambian de función).</summary>
+        public bool HasJudgeableEnemy()
+        {
+            var enemies = EnemyController.All;
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyController enemy = enemies[i];
+                if (enemy == null || !enemy.CanBeJudged) continue;
+                if (Vector3.Distance(transform.position, enemy.transform.position) <= (enemy.IsBoss ? 9f : 3.2f)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>En plena caída Yari puede corregir un poco la dirección, pero no correr ni girar en seco.</summary>
+        private void HandleAirControl()
+        {
+            if (cameraTransform == null) return;
+            Vector2 move = AyniInput.Move;
+            if (move.sqrMagnitude < 0.01f) return;
+
+            Vector3 camForward = cameraTransform.forward;
+            Vector3 camRight = cameraTransform.right;
+            camForward.y = 0f;
+            camRight.y = 0f;
+            Vector3 dir = camForward.normalized * move.y + camRight.normalized * move.x;
+            characterController.Move(dir * (baseMoveSpeed * 0.35f * Time.deltaTime));
+            if (dir.sqrMagnitude > 0.01f)
+            {
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), rotationSpeed * 0.25f * Time.deltaTime);
+            }
+        }
+
         private void HandleJump()
         {
             if (!characterController.isGrounded) return;
 
-            // Salto estándar (Espacio sin estar en guardia)
-            if (Input.GetKeyDown(KeyCode.Space) && !isGuarding && !isAttacking)
+            // Salto estándar (Espacio / A sin estar en guardia). Con un rival para el Juicio Ayni, A del mando es "perdonar".
+            if (AyniInput.Down(AyniInput.Action.Jump) && !isGuarding && !isAttacking &&
+                !(AyniInput.UsingGamepad && HasJudgeableEnemy()))
             {
                 if (isCrouching)
                 {
@@ -700,45 +850,223 @@ namespace Ayni.Player
 
             if (animator) animator.SetBool("IsGrounded", characterController.isGrounded);
             HandleLanding();
+            UpdateFalling();
+        }
+
+        // ───────────────────────── Caídas ─────────────────────────
+
+        /// <summary>
+        /// Al caer de una cornisa (o al final de un salto largo) Yari pasa a la animación de caída en el aire;
+        /// al tocar el suelo aterriza normal, pesado (rodilla y mano al suelo) o se hace daño según la altura.
+        /// </summary>
+        private void UpdateFalling()
+        {
+            float y = transform.position.y;
+            if (!characterController.isGrounded)
+            {
+                if (!airborne)
+                {
+                    airborne = true;
+                    airPeakY = y;
+                }
+                airPeakY = Mathf.Max(airPeakY, y);
+
+                if (!fallAnimPlaying && !isDead && velocity.y < fallAnimSpeed && airPeakY - y > fallAnimMinDrop && HasState("Fall_Loop"))
+                {
+                    fallAnimPlaying = true;
+                    CancelPendingAttack();
+                    if (isGuarding) SetGuard(false);
+                    if (isCrouching) SetCrouch(false);
+                    isSprinting = false;
+                    animator.CrossFadeInFixedTime("Fall_Loop", 0.25f);
+                }
+                return;
+            }
+
+            if (!airborne) return;
+            airborne = false;
+            float drop = airPeakY - y;
+            if (!fallAnimPlaying) return;
+
+            fallAnimPlaying = false;
+            jumpInAir = false;
+            Land(drop);
+        }
+
+        private void Land(float drop)
+        {
+            if (isDead) return;
+
+            if (drop >= hardLandingHeight && HasState("Land_Hard"))
+            {
+                // Aterrizaje pesado: queda clavado un instante, como en Sifu al saltar desde lo alto
+                animator.CrossFadeInFixedTime("Land_Hard", 0.04f);
+                stunnedUntil = Mathf.Max(stunnedUntil, Time.time + Mathf.Lerp(0.35f, 0.7f, Mathf.InverseLerp(hardLandingHeight, fallDamageHeight, drop)));
+                CombatFeedback.Shake(Mathf.Lerp(0.05f, 0.14f, Mathf.InverseLerp(hardLandingHeight, 14f, drop)), 0.22f);
+                CombatFeedback.Flash(transform.position + Vector3.up * 0.1f, new Color(0.85f, 0.75f, 0.6f, 0.8f), 1.6f, 0.2f);
+            }
+            else
+            {
+                string landState = lockTarget != null && HasState("LockOn_Locomotion") ? "LockOn_Locomotion"
+                                 : inCombatStance ? "Combat_Locomotion" : "Relaxed_Locomotion";
+                if (HasState(landState)) animator.CrossFadeInFixedTime(landState, 0.12f);
+            }
+
+            if (drop > fallDamageHeight)
+            {
+                float damage = (drop - fallDamageHeight) * fallDamagePerMeter;
+                currentHealth = Mathf.Max(0f, currentHealth - damage);
+                CombatFeedback.PlayerHurt(transform.position + Vector3.up * 0.5f);
+                Debug.Log($"[Ayni] Yari cae desde {drop:F1} m y pierde {damage:F0} de vida.");
+                if (currentHealth <= 0f) Die();
+            }
+        }
+
+        private Coroutine poisonRoutine;
+
+        /// <summary>Veneno de los dardos del Cazador: pierde vida poco a poco (sin llegar a matarlo) y la vista se nubla de verde.</summary>
+        public void ApplyPoison(float seconds, float damagePerSecond)
+        {
+            if (isDead) return;
+            if (poisonRoutine != null) StopCoroutine(poisonRoutine);
+            poisonRoutine = StartCoroutine(PoisonRoutine(seconds, damagePerSecond));
+        }
+
+        private IEnumerator PoisonRoutine(float seconds, float damagePerSecond)
+        {
+            Ayni.UI.AyniScreenFX.Tint(new Color(0.18f, 0.55f, 0.12f), 0.22f);
+            float t = 0f;
+            while (t < seconds && !isDead)
+            {
+                currentHealth = Mathf.Max(1f, currentHealth - damagePerSecond * Time.deltaTime);
+                t += Time.deltaTime;
+                yield return null;
+            }
+            Ayni.UI.AyniScreenFX.Tint(new Color(0.18f, 0.55f, 0.12f), 0f);
+            poisonRoutine = null;
+        }
+
+        /// <summary>
+        /// Yari cayó a la quebrada: el Illa brilla, la pantalla se cubre de luz dorada y lo devuelve al último
+        /// suelo firme, donde se levanta. Cuesta una parte de la vida (sin llegar a matarlo).
+        /// Lo llama AyniAbyssRescue.
+        /// </summary>
+        public void RescueFromAbyss(Vector3 safePosition)
+        {
+            if (beingRescued || isDead) return;
+            StartCoroutine(AbyssRescueRoutine(safePosition));
+        }
+
+        private IEnumerator AbyssRescueRoutine(Vector3 safePosition)
+        {
+            beingRescued = true;
+            CancelPendingAttack();
+            SetGuard(false);
+            lockTarget = null;
+
+            Ayni.UI.AyniScreenFX.FadeTo(new Color(1f, 0.82f, 0.35f), 1f, 0.35f);
+            // Sigue cayendo mientras la luz cubre la pantalla
+            float t = 0f;
+            while (t < 0.35f)
+            {
+                velocity.y += gravity * Time.deltaTime;
+                characterController.Move(velocity * Time.deltaTime);
+                t += Time.deltaTime;
+                yield return null;
+            }
+
+            characterController.enabled = false;
+            transform.position = safePosition;
+            characterController.enabled = true;
+            velocity = Vector3.zero;
+            airborne = false;
+            fallAnimPlaying = false;
+            jumpInAir = false;
+
+            float cost = MaxHealth * abyssRescueHealthCost;
+            currentHealth = Mathf.Max(1f, currentHealth - cost);
+
+            if (HasState("GetUp"))
+            {
+                animator.CrossFade("GetUp", 0.02f, 0, GetUpStartNormalized);
+                stunnedUntil = Time.time + getUpDuration * 0.85f;
+                invulnerableUntil = Time.time + getUpDuration + reviveInvulnerability;
+            }
+            Ayni.UI.AyniScreenFX.FadeTo(new Color(1f, 0.82f, 0.35f), 0f, 0.9f);
+            Ayni.UI.AyniScreenFX.Caption("El Illa te devuelve al camino...  <color=#ff8c7a>(-" + Mathf.RoundToInt(abyssRescueHealthCost * 100f) + "% de vida)</color>", 2.6f);
+
+            yield return new WaitForSeconds(0.2f);
+            beingRescued = false;
         }
 
         private void HandleDefense()
         {
-            // Bloqueo / Guardia (Click derecho o tecla G)
-            if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.G))
+            // Guardia mientras se mantiene pulsada (clic derecho, G o LB del mando)
+            bool guardHeld = AyniInput.Held(AyniInput.Action.Guard);
+            if (guardHeld && !isGuarding && !isAttacking)
             {
                 if (isCrouching) SetCrouch(false);
                 isGuarding = true;
                 guardStartTime = Time.time;
                 EnterCombatStance();
                 if (animator) animator.SetBool("IsGuarding", true);
+                // Si ya venía moviéndose, esa dirección no cuenta como esquiva: hay que volver a inclinar el stick
+                lastAvoidDir = AvoidDirection();
             }
-            else if (Input.GetMouseButtonUp(1) || Input.GetKeyUp(KeyCode.G))
+            else if (!guardHeld && isGuarding)
             {
                 SetGuard(false);
             }
 
-            if (isGuarding)
-            {
-                EnterCombatStance();
+            if (!isGuarding) return;
+            EnterCombatStance();
 
-                // Esquivas Direccionales estilo Sifu (Duck / Jump Avoid)
-                if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.S))
-                {
-                    // Agacharse evita los ataques ALTOS durante la ventana de esquiva
-                    dodgeUntil = Time.time + dodgeWindow;
-                    dodgeEvades = AttackHeight.High;
-                    guardReactionUntil = Time.time + 0.7f;
-                    if (animator) animator.SetTrigger("DuckAvoid");
-                }
-                else if (Input.GetKeyDown(KeyCode.W))
-                {
-                    // Saltar evita los ataques BAJOS (barridos) durante la ventana de esquiva
-                    dodgeUntil = Time.time + dodgeWindow;
-                    dodgeEvades = AttackHeight.Low;
-                    guardReactionUntil = Time.time + 0.7f;
-                    if (animator) animator.SetTrigger("JumpAvoid");
-                }
+            // Esquivas estilo Sifu, sin moverse del sitio:
+            //   abajo (S)            agacharse   → evita los golpes altos
+            //   arriba (W) o salto   saltito     → evita los barridos
+            //   izquierda / derecha  balanceo    → evita cualquier golpe, con una ventana más corta
+            int dir = AvoidDirection();
+            AvoidKind kind = AvoidKind.None;
+            if (AyniInput.Down(AyniInput.Action.Jump)) kind = AvoidKind.Jump;
+            else if (dir != 0 && dir != lastAvoidDir)
+            {
+                kind = dir == 1 ? AvoidKind.Duck : dir == 2 ? AvoidKind.Jump : dir == 3 ? AvoidKind.SwayLeft : AvoidKind.SwayRight;
+            }
+            lastAvoidDir = dir;
+
+            if (kind != AvoidKind.None && Time.time >= avoidReadyTime) StartAvoid(kind);
+        }
+
+        /// <summary>Dirección dominante del stick o de WASD: 0 neutro, 1 abajo, 2 arriba, 3 izquierda, 4 derecha.</summary>
+        private int AvoidDirection()
+        {
+            Vector2 move = AyniInput.Move;
+            if (move.magnitude < avoidStickThreshold) return 0;
+            if (Mathf.Abs(move.y) >= Mathf.Abs(move.x)) return move.y < 0f ? 1 : 2;
+            return move.x < 0f ? 3 : 4;
+        }
+
+        private void StartAvoid(AvoidKind kind)
+        {
+            bool sway = kind == AvoidKind.SwayLeft || kind == AvoidKind.SwayRight;
+            dodgeUntil = Time.time + (sway ? swayWindow : dodgeWindow);
+            dodgeEvadesAll = sway;
+            dodgeEvades = kind == AvoidKind.Jump ? AttackHeight.Low : AttackHeight.High;
+            avoidReadyTime = Time.time + avoidCooldown;
+            guardReactionUntil = Time.time + 0.7f;
+
+            if (!animator) return;
+            string state = kind == AvoidKind.Duck ? "Avoid_Duck"
+                         : kind == AvoidKind.Jump ? "Avoid_Jump"
+                         : kind == AvoidKind.SwayLeft ? "Avoid_SwayL" : "Avoid_SwayR";
+            if (HasState(state))
+            {
+                animator.CrossFadeInFixedTime(state, 0.05f, 0, 0f);
+            }
+            else
+            {
+                // Animator sin las esquivas generadas: Ayni > Animaciones > 1. Generar Caídas y Esquivas
+                animator.SetTrigger(kind == AvoidKind.Jump ? "JumpAvoid" : "DuckAvoid");
             }
         }
 
@@ -753,12 +1081,12 @@ namespace Ayni.Player
             // 1. Leer la entrada y guardarla un instante (buffer) para poder encadenar golpes con fluidez
             if (!isGuarding)
             {
-                if (Input.GetMouseButtonDown(0))
+                if (AyniInput.Down(AyniInput.Action.LightAttack))
                 {
                     bufferedAttack = 1;
                     bufferedUntil = Time.time + inputBufferTime;
                 }
-                else if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.E))
+                else if (AyniInput.Down(AyniInput.Action.HeavyAttack))
                 {
                     bufferedAttack = 2;
                     bufferedUntil = Time.time + inputBufferTime;
@@ -1017,6 +1345,14 @@ namespace Ayni.Player
             float dmg = (isHeavy ? heavyAttackDamage : lightAttackDamage) * attack.damageMul * talisman.GetDamageMultiplier();
             float structDmg = (isHeavy ? 30f : 15f) * attack.structureMul * talisman.GetDamageMultiplier();
 
+            // Contraataque: el primer golpe justo después de esquivar o desviar castiga mucho más la postura
+            bool counter = Time.time < counterUntil;
+            if (counter)
+            {
+                structDmg *= counterStructureBonus;
+                counterUntil = 0f;
+            }
+
             Vector3 forward = transform.forward;
             forward.y = 0f;
 
@@ -1035,7 +1371,7 @@ namespace Ayni.Player
                 enemy.TakeHit(dmg, structDmg, transform.position, isHeavy, attack.reaction, attack.knockback);
 
                 if (attack.impact >= 2) CombatFeedback.Finisher(hitPoint);
-                else if (attack.impact == 1) CombatFeedback.HeavyHit(hitPoint);
+                else if (attack.impact == 1 || counter) CombatFeedback.HeavyHit(hitPoint);
                 else CombatFeedback.LightHit(hitPoint);
 
                 OnAttackLanded?.Invoke(enemy, isHeavy);
@@ -1112,14 +1448,19 @@ namespace Ayni.Player
             AttackResult result;
             Vector3 impactPoint = transform.position + Vector3.up * (height == AttackHeight.High ? 1.4f : 0.6f) + transform.forward * 0.3f;
 
-            if (Time.time < dodgeUntil && dodgeEvades == height)
+            if (Time.time < dodgeUntil && (dodgeEvadesAll || dodgeEvades == height))
             {
+                // Esquiva lograda: el golpe pasa rozando, un instante a cámara lenta y ventana de contraataque
                 result = AttackResult.Dodged;
+                counterUntil = Time.time + counterWindow;
+                CombatFeedback.Avoid(impactPoint);
+                OnAvoided?.Invoke();
             }
             else if (TryParry())
             {
                 EnterCombatStance();
                 guardReactionUntil = Time.time + 0.6f;
+                counterUntil = Time.time + counterWindow;
                 PlayState("Parry_Deflect", 0.04f);
                 CombatFeedback.Parry(impactPoint);
                 result = AttackResult.Parried;
@@ -1243,24 +1584,18 @@ namespace Ayni.Player
 
         private void RestartScene()
         {
-            Scene scene = SceneManager.GetActiveScene();
-#if UNITY_EDITOR
-            // En el Editor la escena puede no estar en Build Settings
-            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
-                scene.path, new LoadSceneParameters(LoadSceneMode.Single));
-#else
-            SceneManager.LoadScene(scene.buildIndex);
-#endif
+            AyniGameState.ReloadLevel();
         }
 
         private void HandleDilemmaInputs()
         {
             // Interacción de ejecución o perdón cuando un jefe/rival tiene la postura rota
-            if (Input.GetKeyDown(KeyCode.F))
+            // Teclado: F / X. Mando: B (botón rojo, Venganza) / A (botón verde, Ayni), como en la Biblia del juego.
+            if (AyniInput.Down(AyniInput.Action.Execute))
             {
                 AyniPurificationManager.Instance?.TriggerExecutionAction(transform.position, isAyniMercy: false);
             }
-            else if (Input.GetKeyDown(KeyCode.X))
+            else if (AyniInput.Down(AyniInput.Action.Mercy))
             {
                 AyniPurificationManager.Instance?.TriggerExecutionAction(transform.position, isAyniMercy: true);
             }

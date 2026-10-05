@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Ayni.Combat;
+using Ayni.Core;
 using Ayni.Player;
 
 namespace Ayni.Enemy
@@ -45,8 +46,17 @@ namespace Ayni.Enemy
         [Tooltip("Segundos que queda expuesto tras un parry de Yari.")]
         [SerializeField] private float parryStaggerTime = 1.0f;
         [SerializeField] private float hitStaggerTime = 0.3f;
+        [Tooltip("Segundos extra que queda descolocado cuando Yari esquiva su golpe (ventana para contraatacar).")]
+        [SerializeField] private float dodgedExtraRecover = 0.4f;
         [Tooltip("Velocidad de reproducción de las animaciones de ataque.")]
         [SerializeField] private float attackAnimSpeed = 1f;
+
+        [Header("Jefe: Juicio Ayni")]
+        [Tooltip("Fracción de vida por debajo de la cual empieza la fase final del jefe: romperle la postura abre el Juicio Ayni. " +
+                 "Antes de eso, la postura rota solo lo deja expuesto. Los jefes no mueren a golpes: el final siempre es el Juicio.")]
+        [Range(0f, 1f)] [SerializeField] private float judgmentHealthThreshold = 0.4f;
+        [Tooltip("Multiplicador del daño que recibe mientras tiene la postura rota (fuera del Juicio).")]
+        [SerializeField] private float brokenDamageMultiplier = 1.6f;
 
         [Header("Impacto")]
         [Tooltip("Frenado del retroceso al recibir un golpe (m/s²). Más alto = retroceso más seco.")]
@@ -139,6 +149,22 @@ namespace Ayni.Enemy
         public float MaxHealth => maxHealth;
         public EnemyState State => state;
         public bool IsWindingUp => state == EnemyState.Windup;
+        public float HealthRatio => maxHealth > 0f ? currentHealth / maxHealth : 0f;
+        /// <summary>Un jefe está en su fase final (los rivales comunes siempre lo están).</summary>
+        public bool InFinalPhase => !isBoss || HealthRatio <= judgmentHealthThreshold;
+        /// <summary>Con la postura rota y en su fase final: se puede rematar (Venganza) o perdonar (Ayni).</summary>
+        public bool CanBeJudged => !isDead && structure != null && structure.IsBroken && InFinalPhase;
+
+        /// <summary>
+        /// Un comportamiento especial (p. ej. AmaruHunter) controla al rival un momento: la IA normal se detiene,
+        /// los golpes le hacen daño pero no lo interrumpen.
+        /// </summary>
+        public bool ExternalControl { get; set; }
+        public Animator Animator => animator;
+        public CharacterController Mover => mover;
+
+        /// <summary>Un jefe en su fase final ha quedado con la postura rota: empieza el Juicio Ayni.</summary>
+        public static event System.Action<EnemyController> OnJudgmentReady;
         public AttackHeight PendingAttackHeight => pendingHeight;
 
         private void Awake()
@@ -269,6 +295,20 @@ namespace Ayni.Enemy
         private void Update()
         {
             if (isDead) return;
+
+            // Durante el prólogo los rivales esperan quietos
+            if (AyniGameState.CinematicPlaying)
+            {
+                SetAnimSpeed(0f);
+                return;
+            }
+
+            // Un comportamiento especial lo controla (salto y dardos del Cazador)
+            if (ExternalControl)
+            {
+                UpdateTint();
+                return;
+            }
 
             ApplyGravity();
             ApplyKnockback();
@@ -441,6 +481,8 @@ namespace Ayni.Enemy
                     }
                     break;
                 case AttackResult.Dodged:
+                    // El golpe al aire lo deja descolocado: es el momento de contraatacar
+                    stateTimer = recoverTime + dodgedExtraRecover;
                     Debug.Log($"[Esquiva] Yari esquivó el golpe {(pendingHeight == AttackHeight.High ? "alto" : "bajo")} de {characterName}.");
                     break;
                 case AttackResult.Blocked:
@@ -461,7 +503,11 @@ namespace Ayni.Enemy
         {
             if (isDead) return;
 
-            currentHealth = Mathf.Max(0, currentHealth - healthDmg);
+            // Con la postura rota (y fuera del Juicio) cada golpe duele más: es el momento de castigarlo
+            if (structure.IsBroken && !CanBeJudged) healthDmg *= brokenDamageMultiplier;
+
+            // Los jefes no mueren a golpes: su final se decide en el Juicio Ayni
+            currentHealth = Mathf.Max(isBoss ? 1f : 0f, currentHealth - healthDmg);
             structure.AddStructureDamage(structDmg);
             flashUntil = Time.time + 0.1f;
 
@@ -470,6 +516,9 @@ namespace Ayni.Enemy
                 Defeat(killed: true);
                 return;
             }
+
+            // Mientras ejecuta una acción especial no se le interrumpe (pero el golpe cuenta)
+            if (ExternalControl) return;
 
             // Aturdido o ya en el suelo: recibe el daño pero no cambia de reacción
             if (state == EnemyState.Stunned || state == EnemyState.Downed) return;
@@ -584,7 +633,19 @@ namespace Ayni.Enemy
             state = EnemyState.Stunned;
             SetAnimSpeed(0f);
             SetAnimBool("IsStunned", true);
-            Debug.Log($"[VULNERABLE] ¡La postura de {characterName} está ROTA! Presiona [F] para Golpe Letal o [X] para Desarme y Perdón (Ayni).");
+
+            if (isBoss && InFinalPhase)
+            {
+                // El Juicio espera a que Yari decida: la postura no se recupera sola
+                structure.HoldBroken = true;
+                Debug.Log($"[JUICIO AYNI] ¡{characterName} está a merced de Yari! Venganza o Ayni.");
+                OnJudgmentReady?.Invoke(this);
+            }
+            else
+            {
+                Debug.Log($"[VULNERABLE] ¡La postura de {characterName} está ROTA!" +
+                          (CanBeJudged ? " Venganza (F / B) o Ayni (X / A)." : " Castígalo ahora."));
+            }
         }
 
         private void HandleStructureRecovered()
@@ -605,6 +666,7 @@ namespace Ayni.Enemy
 
             isDead = true;
             state = EnemyState.Dead;
+            if (structure != null) structure.HoldBroken = false;
             knockbackVelocity = Vector3.zero;
             attackAnimPending = false;
             if (footIK != null) footIK.Suspended = true;
@@ -715,9 +777,30 @@ namespace Ayni.Enemy
         private void UpdateTint()
         {
             if (Time.time < flashUntil) ApplyTint(Color.white, 0.8f);
+            else if (Time.time < telegraphUntil) ApplyTint(telegraphColor, 0.75f);
             else if (state == EnemyState.Windup) ApplyTint(pendingHeight == AttackHeight.High ? HighAttackTint : LowAttackTint, 0.75f);
             else if (state == EnemyState.Stunned) ApplyTint(StunnedTint, 0.6f);
             else ApplyTint(Color.clear, 0f);
+        }
+
+        private Color telegraphColor;
+        private float telegraphUntil;
+
+        /// <summary>Tiñe al rival unos segundos para avisar de un ataque especial (verde = dardo envenenado).</summary>
+        public void Telegraph(Color color, float seconds)
+        {
+            telegraphColor = color;
+            telegraphUntil = Time.time + seconds;
+        }
+
+        public bool HasAnimatorState(string stateName) => HasAnimState(stateName);
+
+        /// <summary>Reproduce un estado de ataque desde el punto indicado del clip, a la velocidad dada.</summary>
+        public void PlayAttackState(string stateName, float speed, float startOffset)
+        {
+            if (animator == null || !HasAnimState(stateName)) return;
+            SetAnimFloat("AttackSpeed", speed);
+            animator.CrossFadeInFixedTime(stateName, 0.06f, 0, startOffset);
         }
 
         private void ApplyTint(Color tint, float amount)

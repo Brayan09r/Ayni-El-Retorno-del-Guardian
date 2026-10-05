@@ -42,6 +42,9 @@ namespace Ayni.Combat
         private readonly List<FlashInstance> flashes = new List<FlashInstance>();
         private float hitstopUntil;
         private bool inHitstop;
+        private float slowUntil;
+        private float slowScale = 1f;
+        private bool inSlowMotion;
         private Camera cam;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -101,6 +104,14 @@ namespace Ayni.Combat
             Flash(point, new Color(0.8f, 0.9f, 1f), 0.55f);
         }
 
+        /// <summary>Esquiva lograda: destello frío donde pasa el golpe y un instante a cámara lenta.</summary>
+        public static void Avoid(Vector3 point)
+        {
+            SlowMotion(0.22f, 0.3f);
+            Shake(0.02f, 0.08f);
+            Flash(point, new Color(0.65f, 0.9f, 1f, 0.85f), 0.9f, 0.16f);
+        }
+
         public static void PlayerHurt(Vector3 point)
         {
             Hitstop(0.06f);
@@ -122,6 +133,22 @@ namespace Ayni.Combat
             {
                 fb.inHitstop = true;
                 Time.timeScale = HitstopTimeScale;
+            }
+        }
+
+        /// <summary>Cámara lenta durante unos segundos reales (más suave que el hitstop, para las esquivas).</summary>
+        public static void SlowMotion(float seconds, float timeScale)
+        {
+            seconds *= HitstopScale;
+            if (seconds <= 0f) return;
+
+            CombatFeedback fb = Get();
+            fb.slowUntil = Mathf.Max(fb.slowUntil, Time.unscaledTime + seconds);
+            fb.slowScale = Mathf.Clamp(timeScale, 0.05f, 1f);
+            if (!fb.inHitstop && !AyniGameState.InputLocked)
+            {
+                fb.inSlowMotion = true;
+                Time.timeScale = fb.slowScale;
             }
         }
 
@@ -218,6 +245,16 @@ namespace Ayni.Combat
             if (inHitstop && Time.unscaledTime >= hitstopUntil)
             {
                 inHitstop = false;
+                if (!AyniGameState.InputLocked)
+                {
+                    // Si queda cámara lenta pendiente (una esquiva), se continúa con ella
+                    inSlowMotion = Time.unscaledTime < slowUntil;
+                    Time.timeScale = inSlowMotion ? slowScale : 1f;
+                }
+            }
+            else if (inSlowMotion && !inHitstop && Time.unscaledTime >= slowUntil)
+            {
+                inSlowMotion = false;
                 if (!AyniGameState.InputLocked) Time.timeScale = 1f;
             }
         }
@@ -256,7 +293,7 @@ namespace Ayni.Combat
 
         private void OnDestroy()
         {
-            if (inHitstop && !AyniGameState.InputLocked) Time.timeScale = 1f;
+            if ((inHitstop || inSlowMotion) && !AyniGameState.InputLocked) Time.timeScale = 1f;
             if (instance == this) instance = null;
         }
 

@@ -16,6 +16,8 @@ namespace Ayni.Core
 
         public int CurrentAge { get; private set; }
         public int DeathCounter => deathCounter;
+        /// <summary>Veces que la Illa ha resucitado a Yari en esta partida.</summary>
+        public int TotalResurrections { get; private set; }
 
         public event Action<int> OnAgeChanged;
         public event Action OnTrueDeath;
@@ -46,6 +48,7 @@ namespace Ayni.Core
         public bool TriggerResurrection()
         {
             deathCounter++;
+            TotalResurrections++;
             int yearsLost = deathCounter;
             CurrentAge += yearsLost;
 
