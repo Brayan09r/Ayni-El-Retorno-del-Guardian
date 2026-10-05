@@ -42,10 +42,18 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
 
 ## Caminar con el stick
 
-- El stick tiene **dos marchas**: inclinado menos del 75 % Yari camina (1.0 a 1.6 m/s); a fondo corre igual que con el teclado.
-- Al caminar la animación conserva la zancada completa y cambia la **cadencia** (velocidad del Animator entre 0.7x y 1.3x) para que los pies pisen a la velocidad real. Antes se mezclaba el trote con la pose de reposo y los pies patinaban casi el 100 %.
-- `walkStrideSpeed` (1.4 m/s) es lo que cubren los pasos del clip de trote; se midió en Play con `Ayni.Editor.AyniLocomotionProbe.MeasureSlide`. Si se cambia el clip de trote, hay que volver a medirlo.
-- Al correr los pies siguen patinando (el clip cubre 1.4 m/s y Yari corre a 4.6): hace falta un clip de carrera de verdad.
+- El stick tiene **dos marchas**: inclinado menos del 75 % Yari camina (0.8 a 1.1 m/s en base; ~0.92 a 1.26 m/s con Illa Youth); a fondo corre a 4.0 m/s (4.6 m/s con Illa Youth) igual que con el teclado.
+- **Animaciones integradas de Mixamo** (con rig de Yari, In Place, Without Skin, 30 fps):
+  - Caminar: **"Standard Walk"** (`Assets/Art/Characters/Animations/Walk_Forward_InPlace.fbx`, clip interno `Walk_Forward_InPlace`). Paso erguido y natural hacia adelante.
+  - Correr: **"Running"** (`Assets/Art/Characters/Animations/Run_Forward_InPlace.fbx`, clip interno `Run_Forward_InPlace`). Carrera atlética hacia adelante.
+- Al caminar la animación conserva la zancada completa y cambia la **cadencia** (velocidad del Animator entre 0.8x y 1.2x) para que los pies pisen a la velocidad real.
+- `walkStrideSpeed` = **1.05 m/s** (cobertura natural medida del paso de "Standard Walk"; ratio paso/animator $X / Y$).
+- Con `walkSpeedMin = 0.8 m/s` y `walkSpeedMax = 1.1 m/s`, la cadencia en los extremos se mantiene calibrada dentro de 0.85x–1.20x.
+- **Resultados de patinaje medidos en Play Mode (`AyniLocomotionProbe.MeasureSlide`)**:
+  - Stick al 20 % (caminar lento): **5 %** de patinaje (Yari 0.97 m/s · pies 0.93 m/s · Animator 0.93x).
+  - Stick al 45 % (caminar medio): **0 %** de patinaje (Yari 1.09 m/s · pies 1.10 m/s · Animator 1.00x).
+  - Stick al 70 % (caminar rápido): **0 %** de patinaje (Yari 1.24 m/s · pies 1.24 m/s · Animator 1.18x).
+  - Stick al 100 % (correr): **56 %** de patinaje (Yari 4.60 m/s · pies 2.03 m/s · Animator 1.00x). Bajó significativamente del 68 % anterior que daba el trote suave.
 
 ## Mando de Xbox
 

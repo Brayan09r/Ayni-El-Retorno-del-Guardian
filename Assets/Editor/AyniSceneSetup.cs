@@ -426,6 +426,9 @@ namespace Ayni.Editor
             AnimationClip neutralIdleClip = LoadClipFromFBX($"{animFolder}/Neutral_Idle.fbx");
             AnimationClip combatIdleClip = LoadClipFromFBX($"{animFolder}/Combat_Idle.fbx");
             AnimationClip jogClip = LoadClipFromFBX($"{animFolder}/Jog_Forward_InPlace.fbx");
+            AnimationClip walkClip = LoadClipFromFBX($"{animFolder}/Walk_Forward_InPlace.fbx");
+            AnimationClip runClip = LoadClipFromFBX($"{animFolder}/Run_Forward_InPlace.fbx");
+            AnimationClip baseRunClip = runClip != null ? runClip : jogClip;
             AnimationClip sprintClip = LoadClipFromFBX($"{animFolder}/Sprint_Run_InPlace.fbx");
             AnimationClip crouchIdleClip = LoadClipFromFBX($"{animFolder}/Crouch_Idle.fbx");
             AnimationClip crouchWalkClip = LoadClipFromFBX($"{animFolder}/Crouch_Walk_InPlace.fbx");
@@ -465,7 +468,7 @@ namespace Ayni.Editor
 
             var rootStateMachine = controller.layers[0].stateMachine;
 
-            // 1. Locomoción Relajada (Neutral Idle <-> Jog <-> Sprint)
+            // 1. Locomoción Relajada (Neutral Idle <-> Walk <-> Run <-> Sprint)
             BlendTree relaxedBlendTree;
             var relaxedState = controller.CreateBlendTreeInController("Relaxed_Locomotion", out relaxedBlendTree, 0);
             relaxedBlendTree.name = "Relaxed_BlendTree";
@@ -473,10 +476,11 @@ namespace Ayni.Editor
             relaxedBlendTree.blendParameter = "Speed";
             relaxedBlendTree.useAutomaticThresholds = false;
             if (neutralIdleClip != null) relaxedBlendTree.AddChild(neutralIdleClip, 0f);
-            if (jogClip != null) relaxedBlendTree.AddChild(jogClip, 1f);
+            if (walkClip != null) relaxedBlendTree.AddChild(walkClip, 0.5f);
+            if (baseRunClip != null) relaxedBlendTree.AddChild(baseRunClip, 1f);
             if (sprintClip != null) relaxedBlendTree.AddChild(sprintClip, 2f);
 
-            // 2. Locomoción de Combate (Combat Idle <-> Jog <-> Sprint)
+            // 2. Locomoción de Combate (Combat Idle <-> Walk <-> Run <-> Sprint)
             BlendTree combatBlendTree;
             var combatState = controller.CreateBlendTreeInController("Combat_Locomotion", out combatBlendTree, 0);
             combatBlendTree.name = "Combat_BlendTree";
@@ -484,7 +488,8 @@ namespace Ayni.Editor
             combatBlendTree.blendParameter = "Speed";
             combatBlendTree.useAutomaticThresholds = false;
             if (combatIdleClip != null) combatBlendTree.AddChild(combatIdleClip, 0f);
-            if (jogClip != null) combatBlendTree.AddChild(jogClip, 1f);
+            if (walkClip != null) combatBlendTree.AddChild(walkClip, 0.5f);
+            if (baseRunClip != null) combatBlendTree.AddChild(baseRunClip, 1f);
             if (sprintClip != null) combatBlendTree.AddChild(sprintClip, 2f);
 
             // 3. Locomoción Agachado / Cuclillas (Crouch Idle <-> Crouch Walk)
@@ -516,8 +521,9 @@ namespace Ayni.Editor
             if (strafeRightClip != null) lockOnBlendTree.AddChild(strafeRightClip, new Vector2(1f, 0f));
 
             // Ajustar la cadencia de cada clip a la velocidad real de Yari para que los pies patinen menos
-            MatchLocomotionToMoveSpeed(new[] { relaxedBlendTree, combatBlendTree, crouchBlendTree, lockOnBlendTree },
-                                       jogClip, sprintClip, crouchWalkClip);
+            MatchLocomotionToMoveSpeed(new[] { relaxedBlendTree, combatBlendTree, crouchBlendTree },
+                                       baseRunClip, sprintClip, crouchWalkClip);
+            MatchLocomotionToMoveSpeed(new[] { lockOnBlendTree }, jogClip, sprintClip, crouchWalkClip);
 
             // El estado por defecto es la postura natural relajada
             rootStateMachine.defaultState = relaxedState;

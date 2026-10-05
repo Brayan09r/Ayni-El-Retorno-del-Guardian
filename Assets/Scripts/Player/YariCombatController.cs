@@ -25,13 +25,13 @@ namespace Ayni.Player
         [Tooltip("Por debajo de esta inclinación del stick Yari camina; por encima, corre como con el teclado.")]
         [Range(0.3f, 0.95f)] [SerializeField] private float runStickThreshold = 0.75f;
         [Tooltip("Velocidad al caminar con el stick apenas inclinado (m/s).")]
-        [SerializeField] private float walkSpeedMin = 1.0f;
+        [SerializeField] private float walkSpeedMin = 0.8f;
         [Tooltip("Velocidad al caminar con el stick justo por debajo del umbral de correr (m/s).")]
-        [SerializeField] private float walkSpeedMax = 1.6f;
+        [SerializeField] private float walkSpeedMax = 1.1f;
         [Tooltip("Metros por segundo que cubren los pasos de la animación de trote a velocidad normal. Al caminar, la animación " +
                  "se acelera o se frena para que los pies pisen a la velocidad real. Medido en Play con " +
                  "Ayni.Editor.AyniLocomotionProbe.MeasureSlide (volver a medir si cambia el clip de trote).")]
-        [SerializeField] private float walkStrideSpeed = 1.4f;
+        [SerializeField] private float walkStrideSpeed = 1.05f;
 
         [Header("Postura y Agachado")]
         [SerializeField] private float combatStanceDuration = 4.5f;
@@ -752,6 +752,7 @@ namespace Ayni.Player
                     float walkCadence = Mathf.Clamp(walkSpeed / Mathf.Max(0.1f, walkStrideSpeed), 0.7f, 1.3f);
                     currentSpeed = Mathf.Lerp(walkSpeed, currentSpeed, smooth);
                     locomotionCadence = Mathf.Lerp(walkCadence, 1f, smooth);
+                    targetAnimSpeedVal = Mathf.Lerp(0.5f, 1f, smooth);
                 }
                 else
                 {
