@@ -38,9 +38,15 @@ Puntos a tener en cuenta:
 6. **Copia del terreno original** en `EnvironmentBackups/Terrain.asset.original` (fuera de Assets e ignorada por git). `Ayni > Entorno > Restaurar Terreno Original` devuelve el relieve y el material; no deshace la atmósfera.
 7. La garganta mata: si Yari baja de y = -3 muere en la caída y la Illa lo resucita en el último suelo firme a cambio de años (ver `NIVEL_1_PROLOGO_Y_JUGABILIDAD.md`, sección Caídas). Un rival que baja de y = -8 vuelve sin más a su último suelo firme.
 
+## Aldea inca del camino
+
+Cuatro conjuntos de casas sobre el camino, entre el nuevo punto de inicio de Yari (376, 397) y la plaza. Se generan con
+`Ayni > Entorno > Construir Aldea Inca` y aplanan el terreno bajo cada uno. **Si se vuelve a ejecutar `Crear Acantilados y Quebradas`
+o `Restaurar Terreno Original`, hay que reconstruir la aldea después.** Todo el detalle en `ALDEA_INCA.md`.
+
 ## Pendiente
 
-- Arquitectura inca (muros, portadas trapezoidales, escalinatas, templo): necesita modelos; no se puede hacer bien solo con el terreno.
+- Escalinatas y templo. (Las casas, cercos y portadas ya están: ver `ALDEA_INCA.md`.)
 - Vegetación (ichu, queñuales), rocas sueltas, antorchas y cascadas.
 - Rayos de sol volumétricos.
 - El rival persigue en línea recta: puede caer a la garganta si Yari cruza el puente.

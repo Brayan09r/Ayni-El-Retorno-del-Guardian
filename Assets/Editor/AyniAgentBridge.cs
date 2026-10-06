@@ -50,6 +50,9 @@ namespace Ayni.Editor
             EditorApplication.update += Tick;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
+            // Los errores de compilación no pasan por la consola normal: se anotan aparte para que el agente los lea
+            UnityEditor.Compilation.CompilationPipeline.assemblyCompilationFinished -= OnAssemblyCompiled;
+            UnityEditor.Compilation.CompilationPipeline.assemblyCompilationFinished += OnAssemblyCompiled;
 
             // Las líneas que quedaron pendientes antes de una recompilación siguen ejecutándose después
             if (File.Exists(PendingPath))
@@ -77,6 +80,18 @@ namespace Ayni.Editor
             {
                 SessionState.SetBool("AyniAgentPlay", false);
             }
+        }
+
+        private static void OnAssemblyCompiled(string assembly, UnityEditor.Compilation.CompilerMessage[] messages)
+        {
+            int errors = 0;
+            foreach (var m in messages)
+            {
+                if (m.type != UnityEditor.Compilation.CompilerMessageType.Error) continue;
+                errors++;
+                if (errors <= 25) Append("[COMPILE ERROR] " + m.message);
+            }
+            if (errors > 0) Append($"[bridge] {Path.GetFileName(assembly)}: {errors} errores de compilación");
         }
 
         private static void OnLog(string message, string stackTrace, LogType type)

@@ -79,3 +79,6 @@ Thumbs.db
 
 # Copia local del terreno original (Ayni > Entorno)
 /EnvironmentBackups/
+
+# Capturas que Claude envía al chat (no son parte del juego)
+/Claude outputs/

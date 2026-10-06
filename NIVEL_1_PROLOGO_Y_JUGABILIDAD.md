@@ -7,16 +7,20 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
 
 1. **Prólogo "La Noche de las Cenizas"** (~43 s, se salta con `Tab` / `Esc` / `Menu`). Yari está en el puente colgante sobre la
    garganta. El General Sayri le quiebra la guardia con la Champi y lo arroja al abismo. En la caída la Illa se enciende y sella el pacto.
-   "Años después" Yari despierta en el camino frente a **Amaru el Cazador**.
+   "Años después" Yari despierta al principio del camino, a 630 m de camino de la plaza; la cámara presenta a **Amaru el Cazador**, que espera allí.
 2. **Tutorial** (4 páginas) con los botones del dispositivo en uso.
-3. **Combate contra Amaru en tres fases:**
+3. **El camino hasta el Cazador**: cuatro conjuntos de casas incas a caballo sobre el camino (Puesto de Chasquis, Kancha de los Tejedores,
+   Tambo del Camino y Portada del Cazador), con sus rivales: Rastreadores, Saqueadores, Guardias del Tambo y Cazadores de élite.
+   El patio de cada uno es una sala de combate al estilo Sifu. Entre conjunto y conjunto hay de 115 a 165 m de camino con obstáculos:
+   troncos quemados que saltar, derrumbes y empalizadas que obligan a serpentear y un muro a medio caer. Ver `ALDEA_INCA.md`.
+4. **Combate contra Amaru en tres fases:**
    - Más del 75 % de vida: cuerpo a cuerpo.
    - Desde el 75 %: además salta hacia atrás y lanza **ráfagas de 3 dardos envenenados**. Antes de cada dardo se tiñe de verde.
      El dardo se esquiva agachándose o con el balanceo, se desvía con parry y se bloquea con la guardia. Si alcanza a Yari, lo envenena:
      pierde vida poco a poco y la pantalla se nubla de verde.
    - En el 40 % o menos: al romperle la postura llega el **Juicio Ayni**. Todo va a cámara lenta y se elige entre botón rojo
      (Venganza) y botón verde (Ayni). Los jefes no mueren a golpes: el final siempre pasa por el Juicio.
-4. **Desenlace:**
+5. **Desenlace:**
    - Ayni: llueve, vuelve a brotar el queñual (ver *El queñual del perdón*) y aparece el título "ODS 15".
    - Venganza: cae ceniza y el cielo se oscurece.
    - Después sale la tarjeta "Nivel 1 completado" con la edad, las caídas, el tiempo y la decisión. Desde ahí se puede volver a jugar o seguir explorando.
@@ -170,6 +174,10 @@ Menús en `Ayni > Animaciones`:
 | `Editor/AyniGamepadSetup.cs` | Ejes del mando en el Input Manager |
 | `Editor/AyniStoryMenu.cs` | `Ayni > Historia > Prólogo al dar Play` (desactivarlo para probar el combate rápido) |
 | `Editor/AyniAgentBridge.cs` · `AyniPlaytestProbe.cs` | Puente para agentes y sondas de prueba (ver abajo) |
+| `Editor/AyniVillageBuilder.cs` · `AyniVillageGeometry.cs` · `AyniVillageTextures.cs` · `AyniVillageObstacles.cs` | La aldea inca del camino y sus obstáculos, generados por código (`ALDEA_INCA.md`) |
+| `Editor/AyniRivalSetup.cs` | Importa y coloca los cuatro rivales del camino (de Antigravity) |
+| `Scripts/World/AyniEncounterSite.cs` | Cada conjunto de casas: puntos de rival, aparición al entrar Yari y aviso al despejarlo |
+| `Shaders/AyniMuroInca.shader` | Mampostería inca (pirca, sillería y piedra de una pieza) dibujada en el shader |
 
 Todo se añade solo en Play desde `SifuCombatHUD`: prólogo, tutorial, Juicio, desenlace, panel del mando y el Cazador de Amaru.
 **No hace falta tocar la escena.**
@@ -179,6 +187,7 @@ Todo se añade solo en Play desde `SifuCombatHUD`: prólogo, tutorial, Juicio, d
 `AyniAgentBridge` permite manejar el editor desde la terminal **sin tomar el control de la pantalla**.
 Se escriben comandos en `UserSettings/AyniAgent/cmd.txt` y la salida (con toda la consola) aparece en `UserSettings/AyniAgent/log.txt`.
 Los dos archivos están en una carpeta que git ignora.
+Si un script no compila, sus errores salen también ahí como `[COMPILE ERROR]` (y los `call` a clases nuevas dirán "tipo no encontrado").
 
 ```
 refresh                                         recompilar
