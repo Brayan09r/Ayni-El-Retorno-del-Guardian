@@ -178,6 +178,7 @@ namespace Ayni.Enemy
             SetupMover();
             HookRootMotion();
             footIK = FootIK.Attach(animator, mover);
+            AyniFootsteps.Attach(gameObject, 0.4f);
             if (animator != null) andeanStance = animator.GetComponent<AndeanCombatStanceModifier>();
             ApplyVisualGroundOffset();
             CacheAnimatorParameters();
@@ -444,6 +445,7 @@ namespace Ayni.Enemy
             if (animator != null)
             {
                 animator.CrossFadeInFixedTime(attackAnimState, 0.08f, 0, attackAnimOffset);
+                AyniAudio.Play("swing_fuerte", transform.position + Vector3.up * 1.3f, 0.65f, 0.1f, 0.92f);
                 attackAnimPlaying = true;
             }
         }
@@ -627,6 +629,7 @@ namespace Ayni.Enemy
 
         private void HandleStructureBroken()
         {
+            if (!isDead) AyniAudio.Play("postura_rota", transform.position + Vector3.up * 1.4f, 1f, 0.03f);
             if (isDead) return;
             attackAnimPending = false;
             attackAnimPlaying = false;

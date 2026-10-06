@@ -44,6 +44,8 @@ namespace Ayni.Story
         private float waterY = -18f;
 
         private GameObject embers;
+        private int fireLoop = -1;
+        private int music = -1;
         private Light fireLight;
         private Light illaLight;
         private bool skipRequested;
@@ -181,7 +183,10 @@ namespace Ayni.Story
             Play("Guard_Stance", 0f);
 
             BuildNightOfAshes();
+            fireLoop = AyniAudio.PlayLoop("amb_fuego", 0.8f, 2.5f);
+            music = AyniAudio.PlayMusic("prologo_quena", 0.75f, 2f);
 
+            AyniAudio.Play2D("titulo_golpe", 0.8f);
             AyniScreenFX.Title("AYNI", "Prólogo — La Noche de las Cenizas", 4.2f);
             yield return Wait(3.0f);
             AyniScreenFX.FadeTo(Color.black, 0f, 2.2f);
@@ -221,6 +226,9 @@ namespace Ayni.Story
             Phase("el golpe de Sayri");
             AyniScreenFX.ClearCaption();
             Play("Fall_Back", 0.04f);
+            AyniAudio.Play2D("remate", 1f, 0.85f);
+            AyniAudio.Play2D("caida_viento", 0.7f);
+            AyniAudio.SetLoopVolume(music, 0.35f, 1f);
             Ayni.Combat.CombatFeedback.Flash(yariSpot + Vector3.up * 1.3f - acrossBridge * 0.3f, new Color(1f, 0.55f, 0.2f), 2.6f, 0.25f);
             AyniScreenFX.SetFade(new Color(1f, 0.5f, 0.15f), 0.7f);
             AyniScreenFX.FadeTo(new Color(1f, 0.5f, 0.15f), 0f, 0.7f);
@@ -271,6 +279,9 @@ namespace Ayni.Story
             Phase($"el pacto de la Illa (Yari a {yariTransform.position.y:F1} m, agua a {waterY:F1} m)");
             // El pacto: la Illa absorbe el golpe mortal
             AyniScreenFX.Caption("...pero la Illa de la Pachamama despertó.", 2.6f);
+            AyniAudio.Play2D("illa_brillo", 0.9f);
+            AyniAudio.Play2D("chapuzon", 0.45f);
+            AyniAudio.StopLoop(fireLoop, 2f);
             Ayni.Combat.CombatFeedback.Flash(yariTransform.position + Vector3.up, IllaGold, 2.2f, 0.45f);
             AyniScreenFX.FadeTo(IllaGold, 1f, 0.6f);
             yield return Wait(1.2f);
@@ -291,6 +302,7 @@ namespace Ayni.Story
             yield return Wait(4.6f);
             AyniScreenFX.Caption("No morirá mientras su corazón anhele volver a casa... pero cada vez que caiga, la Illa cobrará años de su vida.", 5.2f);
             yield return Wait(5.4f);
+            AyniAudio.Play2D("titulo_golpe", 0.7f);
             AyniScreenFX.Title("AÑOS DESPUÉS", "Nivel 1 · Antisuyo — El dominio de Amaru el Cazador", 3.6f);
             yield return Wait(3.4f);
             if (skipRequested) { Finish(); yield break; }
@@ -324,6 +336,7 @@ namespace Ayni.Story
                 toYari.y = 0f;
                 Vector3 dir = toYari.sqrMagnitude > 0.01f ? toYari.normalized : Vector3.forward;
                 Vector3 side = Vector3.Cross(Vector3.up, dir);
+                AyniAudio.Play2D("juicio", 0.6f);
                 AyniScreenFX.Title("AMARU EL CAZADOR", "Primer teniente de Sayri · Señor de los bosques quemados del Antisuyo", 3.2f);
                 yield return Shot(3.3f, u =>
                 {
@@ -346,6 +359,8 @@ namespace Ayni.Story
             Time.timeScale = 1f;
             ClearNightOfAshes();
             AyniScreenFX.ClearAll();
+            AyniAudio.StopLoop(fireLoop, 1.5f);
+            AyniAudio.StopLoop(music, 2.5f);
 
             bool skipped = skipRequested;
             Phase(skipped ? "saltado por el jugador" : "fin");

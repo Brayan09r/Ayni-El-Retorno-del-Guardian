@@ -75,10 +75,21 @@ namespace Ayni.Editor
             if (state == PlayModeStateChange.EnteredPlayMode && SessionState.GetBool("AyniAgentPlay", false))
             {
                 Application.runInBackground = true;
+                // Las pruebas del agente no suenan: la persona puede estar usando el PC para otra cosa
+                if (!SessionState.GetBool("AyniAgentMutedAudio", false) && !EditorUtility.audioMasterMute)
+                {
+                    EditorUtility.audioMasterMute = true;
+                    SessionState.SetBool("AyniAgentMutedAudio", true);
+                }
             }
             else if (state == PlayModeStateChange.ExitingPlayMode)
             {
                 SessionState.SetBool("AyniAgentPlay", false);
+                if (SessionState.GetBool("AyniAgentMutedAudio", false))
+                {
+                    EditorUtility.audioMasterMute = false;
+                    SessionState.SetBool("AyniAgentMutedAudio", false);
+                }
             }
         }
 
@@ -140,6 +151,28 @@ namespace Ayni.Editor
                 SavePending();
             }
 
+            // "play" no sigue con la cola hasta que el juego arranca de verdad (justo después de recompilar
+            // Unity puede ignorar la petición: se repite)
+            if (SessionState.GetBool("AyniAgentPlayPending", false))
+            {
+                if (EditorApplication.isPlaying)
+                {
+                    SessionState.SetBool("AyniAgentPlayPending", false);
+                }
+                else
+                {
+                    if (EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode) return;
+                    float requested = SessionState.GetFloat("AyniAgentPlayRequestedAt", 0f);
+                    if ((float)now - requested > 3f || requested > (float)now)
+                    {
+                        Append("[bridge] el Play no arrancó; se vuelve a pedir");
+                        SessionState.SetFloat("AyniAgentPlayRequestedAt", (float)now);
+                        EditorApplication.isPlaying = true;
+                    }
+                    return;
+                }
+            }
+
             while (queue.Count > 0)
             {
                 if (now < resumeAt) return;
@@ -185,6 +218,8 @@ namespace Ayni.Editor
 
                 case "play":
                     SessionState.SetBool("AyniAgentPlay", true);
+                    SessionState.SetBool("AyniAgentPlayPending", true);
+                    SessionState.SetFloat("AyniAgentPlayRequestedAt", (float)EditorApplication.timeSinceStartup);
                     EditorApplication.isPlaying = true;
                     return false;
 

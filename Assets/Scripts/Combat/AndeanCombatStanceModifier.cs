@@ -78,8 +78,10 @@ namespace Ayni.Combat
 
         private void Update()
         {
-            // Transición suave del peso de la postura
-            currentWeight = Mathf.MoveTowards(currentWeight, enableAndeanStance ? targetWeight : 0f, blendSpeed * Time.deltaTime);
+            // Transición suave del peso de la postura. En las esquivas, caídas y aterrizajes (estados sin IK de pies)
+            // la animación manda: la postura se aparta de golpe para no deformarla
+            if (FootIK.IsNoIKState(animator)) currentWeight = 0f;
+            else currentWeight = Mathf.MoveTowards(currentWeight, enableAndeanStance ? targetWeight : 0f, blendSpeed * Time.deltaTime);
 
             // Con IK de pies, la cadera baja dentro del pase de IK: los pies se quedan en el suelo y las rodillas
             // se flexionan. Mover el hueso de la cadera a mano arrastraba las piernas y hundía los pies 12 cm.
