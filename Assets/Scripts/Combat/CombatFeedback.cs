@@ -71,6 +71,7 @@ namespace Ayni.Combat
 
         public static void LightHit(Vector3 point)
         {
+            AyniAudio.Play("golpe_ligero", point, 0.85f);
             Hitstop(0.045f);
             Shake(0.03f, 0.10f);
             Flash(point, Color.white, 0.75f);
@@ -78,6 +79,7 @@ namespace Ayni.Combat
 
         public static void HeavyHit(Vector3 point)
         {
+            AyniAudio.Play("golpe_fuerte", point, 0.95f);
             Hitstop(0.085f);
             Shake(0.07f, 0.16f);
             Flash(point, new Color(1f, 0.95f, 0.8f), 1.15f, 0.14f);
@@ -85,6 +87,7 @@ namespace Ayni.Combat
 
         public static void Finisher(Vector3 point)
         {
+            AyniAudio.Play("remate", point, 1f, 0.03f);
             Hitstop(0.14f);
             Shake(0.13f, 0.24f);
             Flash(point, new Color(1f, 0.85f, 0.5f), 1.7f, 0.18f);
@@ -92,6 +95,7 @@ namespace Ayni.Combat
 
         public static void Parry(Vector3 point)
         {
+            AyniAudio.Play("parry", point, 0.95f, 0.04f);
             Hitstop(0.10f);
             Shake(0.05f, 0.12f);
             Flash(point, new Color(1f, 0.9f, 0.4f), 1.25f, 0.16f);
@@ -99,6 +103,7 @@ namespace Ayni.Combat
 
         public static void Block(Vector3 point)
         {
+            AyniAudio.Play("bloqueo", point, 0.8f);
             Hitstop(0.03f);
             Shake(0.025f, 0.08f);
             Flash(point, new Color(0.8f, 0.9f, 1f), 0.55f);
@@ -107,6 +112,7 @@ namespace Ayni.Combat
         /// <summary>Esquiva lograda: destello frío donde pasa el golpe y un instante a cámara lenta.</summary>
         public static void Avoid(Vector3 point)
         {
+            AyniAudio.Play("esquiva", point, 0.9f, 0.05f);
             SlowMotion(0.22f, 0.3f);
             Shake(0.02f, 0.08f);
             Flash(point, new Color(0.65f, 0.9f, 1f, 0.85f), 0.9f, 0.16f);
@@ -114,6 +120,8 @@ namespace Ayni.Combat
 
         public static void PlayerHurt(Vector3 point)
         {
+            // Golpe recibido: más grave que los que da Yari
+            AyniAudio.Play("golpe_fuerte", point, 1f, 0.04f, 0.82f);
             Hitstop(0.06f);
             Shake(0.09f, 0.18f);
             Flash(point, new Color(1f, 0.3f, 0.25f), 0.95f, 0.14f);

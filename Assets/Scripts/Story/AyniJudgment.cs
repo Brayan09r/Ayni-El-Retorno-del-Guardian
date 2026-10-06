@@ -51,6 +51,7 @@ namespace Ayni.Story
             nextZoom = 0f;
             AyniScreenFX.Letterbox(true);
             CombatFeedback.Shake(0.08f, 0.25f);
+            AyniAudio.Play2D("juicio", 0.95f);
             CombatFeedback.Flash(enemy.transform.position + Vector3.up * 1.5f, new Color(1f, 0.85f, 0.5f), 2.4f, 0.3f);
         }
 

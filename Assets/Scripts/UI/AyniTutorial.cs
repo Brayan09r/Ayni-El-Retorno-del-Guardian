@@ -52,9 +52,10 @@ namespace Ayni.UI
                         new Row(light, "<b>Golpe ligero.</b> Rápido; se puede encadenar hasta 4 veces."),
                         new Row(heavy, "<b>Golpe pesado.</b> Más lento, pero daña mucho la postura del rival."),
                         new Row(K(AyniInput.Action.LockOn), "<b>Fijar al rival.</b> Yari lo encara siempre y la cámara los encuadra."),
+                        new Row(pad ? "Stick + golpe" : "WASD + golpe", "<b>Elegir rival.</b> El golpe va al que señalas; si está a tu espalda, <b>patada hacia atrás</b>."),
                         new Row(K(AyniInput.Action.Sprint), "<b>Correr.</b> " + (pad ? "Mantén RT (o pulsa el stick izquierdo)." : "Mantén Shift.")),
                     },
-                    tip = "Al golpear, Yari se gira solo hacia el rival más cercano y da un paso hacia él."
+                    tip = "Sin dirección, Yari se gira solo hacia el rival más cercano y da un paso hacia él."
                 },
                 new Page
                 {
@@ -167,12 +168,21 @@ namespace Ayni.UI
             int count = BuildPages().Length;
             if (AyniInput.Down(AyniInput.Action.Confirm))
             {
-                if (page < count - 1) page++;
-                else Close();
+                if (page < count - 1)
+                {
+                    page++;
+                    AyniAudio.Play2D("ui_mover", 0.7f);
+                }
+                else
+                {
+                    AyniAudio.Play2D("ui_confirmar", 0.8f);
+                    Close();
+                }
             }
             else if (AyniInput.Down(AyniInput.Action.Back))
             {
                 page = Mathf.Max(0, page - 1);
+                AyniAudio.Play2D("ui_mover", 0.6f, 0.85f);
             }
             else if (AyniInput.Down(AyniInput.Action.Skip) || AyniInput.Down(AyniInput.Action.Tutorial))
             {

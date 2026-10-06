@@ -38,6 +38,9 @@ namespace Ayni.Editor
         public const string FallLoop = "Yari_Fall_Loop";
         public const string FallBack = "Yari_Fall_Back";
         public const string LandHard = "Yari_Land_Hard";
+        public const string BackKick = "Yari_Back_Kick";
+        /// <summary>Segundo del clip de patada hacia atrás en el que la pierna llega a su extensión (impacto).</summary>
+        public const float BackKickContact = 0.22f;
 
         // ───────────────────────── Pose ─────────────────────────
 
@@ -280,6 +283,7 @@ namespace Ayni.Editor
                     Pose fallStart = BuildFallLoop(combat, report);
                     BuildFallBack(rig, combat, hitHeavyClip, report);
                     BuildLandHard(fallStart, crouch, combat, metersPerUnit, report);
+                    BuildBackKick(rig, guard, crouch, metersPerUnit, report);
                 }
             }
             catch (Exception e)
@@ -309,6 +313,7 @@ namespace Ayni.Editor
             RenderSheet(FallLoop, 6);
             RenderSheet(FallBack, 7);
             RenderSheet(LandHard, 6);
+            RenderSheet(BackKick, 7);
         }
 
         // ───────────────────────── Recetas ─────────────────────────
@@ -320,23 +325,27 @@ namespace Ayni.Editor
 
         private static void BuildAvoidDuck(Pose guard, Pose crouch, System.Text.StringBuilder report)
         {
-            // Agachado en el sitio: piernas del agachado real, tronco hacia delante, guardia arriba y mirada al rival
+            // Amago rápido al estilo Sifu: media flexión (no sentadilla), el tronco baja hacia delante y un poco
+            // de lado, la guardia sigue arriba y la mirada no se separa del rival
+            Pose legs = Pose.Lerp(guard, crouch, 0.6f);
             Pose low = guard.Clone();
-            CopyLegs(ref low, crouch);
-            low.pos.y = crouch.pos.y;
-            Nudge(ref low, "Spine Front-Back", 0.35f);
-            Nudge(ref low, "Chest Front-Back", 0.2f);
-            Nudge(ref low, "Head Nod Down-Up", -0.25f);
-            low.rot = Quaternion.Euler(12f, 0f, 0f) * guard.rot;
+            CopyLegs(ref low, legs);
+            low.pos.y = legs.pos.y;
+            Nudge(ref low, "Spine Front-Back", 0.45f);
+            Nudge(ref low, "Chest Front-Back", 0.3f);
+            Nudge(ref low, "UpperChest Front-Back", 0.2f);
+            Nudge(ref low, "Spine Left-Right", -0.18f);
+            Nudge(ref low, "Head Nod Down-Up", -0.4f);
+            low.rot = Quaternion.Euler(16f, 0f, 0f) * guard.rot;
 
-            Pose lowHold = Pose.Lerp(low, guard, 0.1f);
+            Pose lowHold = Pose.Lerp(low, guard, 0.12f);
 
             var keys = new List<(float, Pose)>
             {
-                (0f, guard), (0.09f, low), (0.34f, lowHold), (0.60f, guard)
+                (0f, guard), (0.07f, low), (0.22f, lowHold), (0.44f, guard)
             };
-            Save(AvoidDuck, Keyed(keys), 0.60f, false);
-            report.AppendLine($"   {AvoidDuck}: 0.60 s (agacharse en el sitio bajo un golpe alto)");
+            Save(AvoidDuck, Keyed(keys), 0.44f, false);
+            report.AppendLine($"   {AvoidDuck}: 0.44 s (amago rápido bajo un golpe alto)");
         }
 
         private static void BuildAvoidJump(Pose guard, Pose crouch, System.Text.StringBuilder report)
@@ -367,17 +376,20 @@ namespace Ayni.Editor
 
         private static void BuildAvoidSway(Rig rig, Pose guard, Pose crouch, bool left, System.Text.StringBuilder report)
         {
-            // Balanceo del tronco hacia un lado con los pies plantados (rodillas algo flexionadas)
+            // Balanceo marcado del tronco hacia un lado, con las rodillas flexionadas y los pies plantados:
+            // la cabeza sale de la línea del golpe
             float side = left ? -1f : 1f; // + = hacia la derecha del personaje
+            Pose legs = Pose.Lerp(guard, crouch, 0.35f);
             Pose lean = guard.Clone();
-            CopyLegs(ref lean, Pose.Lerp(guard, crouch, 0.25f));
-            lean.pos.y = Mathf.Lerp(guard.pos.y, crouch.pos.y, 0.25f);
-            Nudge(ref lean, "Spine Left-Right", 0.55f * side);
-            Nudge(ref lean, "Chest Left-Right", 0.55f * side);
-            Nudge(ref lean, "UpperChest Left-Right", 0.5f * side);
-            Nudge(ref lean, "Head Tilt Left-Right", -0.3f * side);
-            Nudge(ref lean, "Spine Front-Back", 0.1f);
-            lean.rot = Quaternion.Euler(0f, 0f, -15f * side) * guard.rot;
+            CopyLegs(ref lean, legs);
+            lean.pos.y = legs.pos.y;
+            Nudge(ref lean, "Spine Left-Right", 0.8f * side);
+            Nudge(ref lean, "Chest Left-Right", 0.8f * side);
+            Nudge(ref lean, "UpperChest Left-Right", 0.75f * side);
+            Nudge(ref lean, "Head Tilt Left-Right", -0.25f * side);
+            Nudge(ref lean, "Spine Front-Back", 0.2f);
+            Nudge(ref lean, "Chest Front-Back", 0.1f);
+            lean.rot = Quaternion.Euler(6f, 0f, -18f * side) * guard.rot;
 
             rig.Apply(guard);
             float headBase = rig.Bone(HumanBodyBones.Head).x;
@@ -386,11 +398,11 @@ namespace Ayni.Editor
 
             var keys = new List<(float, Pose)>
             {
-                (0f, guard), (0.10f, lean), (0.30f, Pose.Lerp(lean, guard, 0.1f)), (0.52f, guard)
+                (0f, guard), (0.08f, lean), (0.22f, Pose.Lerp(lean, guard, 0.08f)), (0.42f, guard)
             };
             string name = left ? AvoidSwayL : AvoidSwayR;
-            Save(name, Keyed(keys), 0.52f, false);
-            report.AppendLine($"   {name}: 0.52 s (balanceo lateral; la cabeza se desplaza {headShift:+0.00;-0.00} m, + = derecha)");
+            Save(name, Keyed(keys), 0.42f, false);
+            report.AppendLine($"   {name}: 0.42 s (balanceo lateral; la cabeza se desplaza {headShift:+0.00;-0.00} m, + = derecha)");
         }
 
         /// <summary>Caída en el aire: brazos abiertos que buscan el equilibrio y piernas que pedalean. Devuelve la pose del primer fotograma.</summary>
@@ -515,6 +527,71 @@ namespace Ayni.Editor
             report.AppendLine($"   {LandHard}: 1.00 s (aterrizaje pesado)");
         }
 
+        /// <summary>
+        /// Patada hacia atrás (estilo Sifu): sin girarse, Yari recoge la rodilla, inclina el tronco y lanza la pierna
+        /// derecha recta hacia atrás mirando por encima del hombro; luego la recoge y vuelve a la guardia.
+        /// </summary>
+        private static void BuildBackKick(Rig rig, Pose guard, Pose crouch, float metersPerUnit, System.Text.StringBuilder report)
+        {
+            const float length = 0.72f;
+
+            rig.Apply(guard);
+            float groundY = Mathf.Min(rig.Bone(HumanBodyBones.LeftFoot).y, rig.Bone(HumanBodyBones.RightFoot).y);
+
+            // Recoger: rodilla derecha arriba, tronco algo inclinado y la mirada buscando atrás
+            Pose chamber = guard.Clone();
+            chamber.rot = Quaternion.Euler(22f, 0f, 0f) * guard.rot;
+            SetIntent(ref chamber, "Left Upper Leg Front-Back", -0.15f);   // compensa la inclinación: la pierna de apoyo sigue vertical
+            SetIntent(ref chamber, "Left Lower Leg Stretch", 0.45f);
+            SetIntent(ref chamber, "Right Upper Leg Front-Back", 0.45f);
+            SetIntent(ref chamber, "Right Lower Leg Stretch", -0.95f);
+            Nudge(ref chamber, "Spine Front-Back", 0.15f);
+            Nudge(ref chamber, "Head Turn Left-Right", 0.45f);
+            Nudge(ref chamber, "Neck Turn Left-Right", 0.3f);
+            GroundFoot(rig, ref chamber, HumanBodyBones.LeftFoot, groundY, metersPerUnit);
+
+            // Impacto: tronco casi horizontal y la pierna derecha recta hacia atrás, a la altura del pecho del rival.
+            // La rotación del cuerpo se reparte entre cadera y columna: con la espalda arqueada, la cadera se inclina más
+            // y la pierna sube más
+            Pose extend = guard.Clone();
+            extend.rot = Quaternion.Euler(66f, 0f, 0f) * guard.rot;
+            SetIntent(ref extend, "Left Upper Leg Front-Back", 0.5f);
+            SetIntent(ref extend, "Left Lower Leg Stretch", 0.6f);
+            SetIntent(ref extend, "Right Upper Leg Front-Back", -1f);
+            SetIntent(ref extend, "Right Lower Leg Stretch", 1f);
+            SetIntent(ref extend, "Right Upper Leg In-Out", 0.08f);
+            Nudge(ref extend, "Spine Front-Back", -0.25f);
+            Nudge(ref extend, "Chest Front-Back", -0.1f);
+            Nudge(ref extend, "Head Turn Left-Right", 0.8f);
+            Nudge(ref extend, "Neck Turn Left-Right", 0.55f);
+            Nudge(ref extend, "Head Nod Down-Up", -0.45f);
+            Nudge(ref extend, "Chest Twist Left-Right", 0.2f);
+            GroundFoot(rig, ref extend, HumanBodyBones.LeftFoot, groundY, metersPerUnit);
+
+            Pose hold = Pose.Lerp(extend, chamber, 0.15f);
+
+            var keys = new List<(float, Pose)>
+            {
+                (0f, guard), (0.10f, chamber), (BackKickContact, extend), (0.34f, hold), (0.47f, chamber), (length, guard)
+            };
+            Save(BackKick, Keyed(keys), length, false);
+
+            rig.Apply(extend);
+            Vector3 foot = rig.Bone(HumanBodyBones.RightFoot);
+            report.AppendLine($"   {BackKick}: {length:F2} s (patada hacia atrás; en el impacto el pie llega a {-foot.z:F2} m por detrás y {foot.y - groundY:F2} m de altura)");
+        }
+
+        /// <summary>Sube o baja el cuerpo de la pose para que el pie indicado quede apoyado a la altura del suelo.</summary>
+        private static void GroundFoot(Rig rig, ref Pose pose, HumanBodyBones foot, float groundY, float metersPerUnit)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                rig.Apply(pose);
+                float error = rig.Bone(foot).y - groundY;
+                pose.pos.y -= error / Mathf.Max(0.01f, metersPerUnit);
+            }
+        }
+
         private static void SetBoth(ref Pose p, string muscle, float value)
         {
             SetIntent(ref p, "Left " + muscle, value);
@@ -587,10 +664,24 @@ namespace Ayni.Editor
             // Cabeza: + = mirar hacia abajo / inclinarla hacia la derecha
             Learn(rig, basePose, "Head Nod Down-Up", () => headTop().z - rig.Bone(HumanBodyBones.Head).z);
             Learn(rig, basePose, "Head Tilt Left-Right", () => headTop().x - rig.Bone(HumanBodyBones.Head).x);
+            // Giro de cabeza y cuello: + = mirar hacia la derecha del personaje (eje Z del hueso = hacia donde mira la cara)
+            Learn(rig, basePose, "Head Turn Left-Right", () => FaceYaw(rig));
+            Learn(rig, basePose, "Neck Turn Left-Right", () => FaceYaw(rig));
+            Learn(rig, basePose, "Spine Twist Left-Right", () => FaceYaw(rig));
+            Learn(rig, basePose, "Chest Twist Left-Right", () => FaceYaw(rig));
 
             var signs = new System.Text.StringBuilder();
             foreach (var kv in intentSign) signs.Append($"{kv.Key}={(kv.Value > 0 ? "+" : "-")} ");
             report.AppendLine("   Calibración de músculos: " + signs);
+        }
+
+        private static float FaceYaw(Rig rig)
+        {
+            Transform head = rig.anim.GetBoneTransform(HumanBodyBones.Head);
+            if (head == null) return 0f;
+            Vector3 f = rig.go.transform.InverseTransformDirection(head.forward);
+            f.y = 0f;
+            return f.sqrMagnitude < 0.0001f ? 0f : Vector3.SignedAngle(Vector3.forward, f, Vector3.up);
         }
 
         private static void Learn(Rig rig, Pose basePose, string muscle, Func<float> measure)

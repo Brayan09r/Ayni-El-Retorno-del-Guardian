@@ -47,6 +47,8 @@ namespace Ayni.UI
             // Juicio Ayni del jefe y desenlace del nivel
             if (GetComponent<AyniJudgment>() == null) gameObject.AddComponent<AyniJudgment>();
             if (GetComponent<AyniLevelOutcome>() == null) gameObject.AddComponent<AyniLevelOutcome>();
+            // Viento de la cordillera y tambores al entrar en los patios con rivales
+            if (GetComponent<AyniLevelAmbience>() == null) gameObject.AddComponent<AyniLevelAmbience>();
 
             // Amaru el Cazador: segunda fase con salto atrás y dardos envenenados
             foreach (EnemyController boss in EnemyController.All)
@@ -102,7 +104,7 @@ namespace Ayni.UI
         private void DrawPlayerPanel()
         {
             GUILayout.BeginArea(new Rect(20, 20, 340, 190), GUI.skin.box);
-            GUILayout.Label("<b>AYNI: EL RETORNO DEL GUARDIÁN</b>");
+            GUILayout.Label($"<b>AYNI: EL RETORNO DEL GUARDIÁN</b>  <color=#a8a8a8>{AyniVersion.Label}</color>");
 
             if (talisman != null)
             {

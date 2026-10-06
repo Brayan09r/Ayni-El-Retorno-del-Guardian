@@ -82,3 +82,6 @@ Thumbs.db
 
 # Capturas que Claude envía al chat (no son parte del juego)
 /Claude outputs/
+
+# Espectrogramas de revisión que dibuja Herramientas/Audio/generar_sfx.py --espectros
+/Herramientas/Audio/espectros.png

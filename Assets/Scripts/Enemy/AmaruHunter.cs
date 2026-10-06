@@ -96,6 +96,7 @@ namespace Ayni.Enemy
             if (FindLeapTarget(out Vector3 landing))
             {
                 if (enemy.HasAnimatorState("Hunter_Leap")) enemy.Animator.CrossFadeInFixedTime("Hunter_Leap", 0.05f);
+                AyniAudio.Play("salto", transform.position + Vector3.up, 0.7f, 0.05f, 0.9f);
                 Vector3 start = transform.position;
                 float t = 0f;
                 Vector3 previous = start;
@@ -112,6 +113,7 @@ namespace Ayni.Enemy
                 }
                 // Asentarse en el suelo
                 Move(Vector3.down * 0.6f);
+                AyniAudio.Play("aterrizaje", transform.position, 0.8f);
             }
 
             // 2. Ráfaga de dardos, cada uno anunciado con el destello verde
@@ -160,6 +162,7 @@ namespace Ayni.Enemy
                 if (hand != null) origin = hand.position;
             }
             AmaruDart.Launch(origin, yari, dartSpeed, dartDamage, dartStructureDamage, poisonSeconds, poisonDamagePerSecond);
+            AyniAudio.Play("dardo_lanzado", origin, 0.9f, 0.08f);
         }
 
         /// <summary>Punto de aterrizaje alejándose de Yari; prueba también en diagonal si detrás no hay suelo firme.</summary>
@@ -293,6 +296,7 @@ namespace Ayni.Enemy
             switch (result)
             {
                 case AttackResult.Hit:
+                    AyniAudio.Play("dardo_impacto", chest, 0.9f);
                     target.ApplyPoison(poisonSeconds, poisonDps);
                     CombatFeedback.Flash(chest, AmaruHunter.PoisonGreen, 0.9f, 0.18f);
                     Destroy(gameObject);
