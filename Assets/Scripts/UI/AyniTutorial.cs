@@ -131,6 +131,12 @@ namespace Ayni.UI
             if (open) Close();
         }
 
+        /// <summary>Abre el tutorial desde el menú de pausa.</summary>
+        public void OpenFromMenu()
+        {
+            if (!open) Open();
+        }
+
         private void Open()
         {
             open = true;

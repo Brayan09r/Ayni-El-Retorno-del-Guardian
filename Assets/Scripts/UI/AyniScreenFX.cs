@@ -56,6 +56,8 @@ namespace Ayni.UI
         /// <summary>Funde la pantalla hacia un color con la opacidad indicada (0 = transparente, 1 = tapada).</summary>
         public static void FadeTo(Color color, float alpha, float duration)
         {
+            // Apagar algo que no existe no debe crearlo (por ejemplo al cerrar la escena)
+            if (alpha <= 0f && instance == null) return;
             AyniScreenFX fx = Get();
             fx.fadeColor = color;
             fx.fadeFrom = fx.fadeAlpha;
@@ -67,6 +69,7 @@ namespace Ayni.UI
         /// <summary>Pone el fundido de golpe, sin transición.</summary>
         public static void SetFade(Color color, float alpha)
         {
+            if (alpha <= 0f && instance == null) return;
             AyniScreenFX fx = Get();
             fx.fadeColor = color;
             fx.fadeAlpha = fx.fadeFrom = fx.fadeTo = Mathf.Clamp01(alpha);
@@ -77,6 +80,7 @@ namespace Ayni.UI
 
         public static void Tint(Color color, float alpha)
         {
+            if (alpha <= 0f && instance == null) return;
             AyniScreenFX fx = Get();
             fx.tintColor = color;
             fx.tintTarget = Mathf.Clamp01(alpha);
@@ -84,6 +88,7 @@ namespace Ayni.UI
 
         public static void Letterbox(bool on)
         {
+            if (!on && instance == null) return;
             Get().letterboxTarget = on ? 1f : 0f;
         }
 
@@ -113,6 +118,7 @@ namespace Ayni.UI
 
         public static void Hint(string text)
         {
+            if (string.IsNullOrEmpty(text) && instance == null) return;
             Get().hint = text;
         }
 

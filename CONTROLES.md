@@ -30,6 +30,7 @@
 | Tutorial | `View` | `F1` |
 | Saltar escena / tutorial · Reintentar | `Menu` | `Tab` / `Esc` · `R` |
 | Mostrar u ocultar controles | Cruceta ↑ | `H` |
+| Pausa y volumen (en pleno juego; en escenas y en el tutorial, `Menu` / `Esc` los saltan) | `Menu` | `Esc` |
 | Panel de prueba del mando | — | `F9` |
 
 **Primera vez con el mando:** el menú `Ayni > Mando > Configurar Ejes del Mando Xbox` deja listos los ejes (ya vienen configurados en el repositorio). Para comprobar que Unity lee cada botón, entra en Play y pulsa `F9`.

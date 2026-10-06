@@ -203,6 +203,24 @@ screenshot nombre                                Game View completa, con HUD y t
 stop
 ```
 
+## Jefes en dos fases (v0.7.0)
+
+- `EnemyController` → sección **Jefe: fases**:
+  - `bossPhaseHealth` = vida de cada barra (Amaru: 380 y 460). Al vaciar una barra que no es la última empieza `PhaseTransitionRoutine`:
+    el jefe es invulnerable, cae (`Knockdown`), se levanta (`GetUp`) mientras se rellena la barra, se gira hacia Yari y ruge (`Phase_Roar`).
+  - Cada fase nueva multiplica el ritmo de ataque, el daño, la anticipación y la velocidad (`phase*Multiplier`).
+  - `bossStructure` = aguante de la postura de los jefes.
+- `AyniBossPhaseDirector` pone la escena: cámara lenta al caer, la cámara rodea al jefe y termina de frente para el grito,
+  el título "SEGUNDA FASE", el sonido y el aura de brasas (`AyniEnrageAura`). Yari se aparta en guardia (`HoldForCinematic`).
+- `AmaruHunter`: con varias fases, la cerbatana es el arma de la segunda.
+- El Juicio Ayni solo se abre en la última fase (`InFinalPhase`).
+
+## Menú de pausa (v0.7.0)
+
+- `AyniPauseMenu` (Esc / Menu): volumen general (`AudioListener.volume`), efectos (`AyniAudio.Volume`) y música
+  (`AyniAudio.AmbienceVolume`), guardados en PlayerPrefs; ver el tutorial y reiniciar el nivel. Pausa el tiempo.
+- La cámara ya no libera el cursor con Esc: lo hace el menú.
+
 ## Sonido (v0.6.0)
 
 - Todos los sonidos están en `Assets/Resources/AyniAudio/*.wav` y los genera `Herramientas/Audio/generar_sfx.py`

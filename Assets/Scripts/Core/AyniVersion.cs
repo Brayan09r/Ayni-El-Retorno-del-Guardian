@@ -9,8 +9,8 @@ namespace Ayni.Core
     /// </summary>
     public static class AyniVersion
     {
-        public const string Number = "0.6.0";
-        public const string Title = "Sonido, esquivas pulidas y patada hacia atrás";
+        public const string Number = "0.7.0";
+        public const string Title = "Jefes en dos fases, menú de pausa y balanceo nuevo";
 
         public static string Label => "v" + Number;
     }
