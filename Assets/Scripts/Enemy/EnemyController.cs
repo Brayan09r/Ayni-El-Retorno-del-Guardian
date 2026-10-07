@@ -51,6 +51,17 @@ namespace Ayni.Enemy
         [Tooltip("Velocidad de reproducción de las animaciones de ataque.")]
         [SerializeField] private float attackAnimSpeed = 1f;
 
+        [Header("Jefe: fases (como en Sifu)")]
+        [Tooltip("Vida de cada barra del jefe. Al vaciar una (que no sea la última) cae, se levanta con un grito y empieza la siguiente fase.")]
+        [SerializeField] private float[] bossPhaseHealth = { 380f, 460f };
+        [Tooltip("Aguante de la postura del jefe (los rivales comunes usan el de su StructureSystem).")]
+        [SerializeField] private float bossStructure = 150f;
+        [Tooltip("En cada fase nueva: ritmo de ataque (menos espera entre golpes), daño y velocidad.")]
+        [SerializeField] private float phaseCooldownMultiplier = 0.72f;
+        [SerializeField] private float phaseDamageMultiplier = 1.2f;
+        [SerializeField] private float phaseWindupMultiplier = 0.9f;
+        [SerializeField] private float phaseSpeedMultiplier = 1.15f;
+
         [Header("Jefe: Juicio Ayni")]
         [Tooltip("Fracción de vida por debajo de la cual empieza la fase final del jefe: romperle la postura abre el Juicio Ayni. " +
                  "Antes de eso, la postura rota solo lo deja expuesto. Los jefes no mueren a golpes: el final siempre es el Juicio.")]
@@ -150,8 +161,20 @@ namespace Ayni.Enemy
         public EnemyState State => state;
         public bool IsWindingUp => state == EnemyState.Windup;
         public float HealthRatio => maxHealth > 0f ? currentHealth / maxHealth : 0f;
+
+        /// <summary>Fase del jefe (1, 2...). Los rivales comunes tienen una sola.</summary>
+        public int Phase { get; private set; } = 1;
+        public int PhaseCount => isBoss && bossPhaseHealth != null && bossPhaseHealth.Length > 0 ? bossPhaseHealth.Length : 1;
+        /// <summary>El jefe está cayendo y levantándose entre una fase y la siguiente (es invulnerable).</summary>
+        public bool InPhaseTransition { get; private set; }
+
         /// <summary>Un jefe está en su fase final (los rivales comunes siempre lo están).</summary>
-        public bool InFinalPhase => !isBoss || HealthRatio <= judgmentHealthThreshold;
+        public bool InFinalPhase => !isBoss || (Phase >= PhaseCount && HealthRatio <= judgmentHealthThreshold);
+
+        /// <summary>Un jefe ha vaciado una barra y empieza la transición a la siguiente fase.</summary>
+        public static event System.Action<EnemyController> OnPhaseTransitionStarted;
+        /// <summary>El jefe se ha levantado y empieza la fase indicada.</summary>
+        public static event System.Action<EnemyController, int> OnPhaseStarted;
         /// <summary>Con la postura rota y en su fase final: se puede rematar (Venganza) o perdonar (Ayni).</summary>
         public bool CanBeJudged => !isDead && structure != null && structure.IsBroken && InFinalPhase;
 
@@ -171,6 +194,7 @@ namespace Ayni.Enemy
         {
             structure = GetComponent<StructureSystem>();
             animator = GetComponentInChildren<Animator>();
+            if (isBoss && bossPhaseHealth != null && bossPhaseHealth.Length > 0) maxHealth = bossPhaseHealth[0];
             currentHealth = maxHealth;
 
             attackTimings = Resources.Load<AttackTimingTable>(AttackTimingTable.ResourceName);
@@ -204,6 +228,7 @@ namespace Ayni.Enemy
                 player = playerObj.GetComponent<YariCombatController>();
             }
 
+            if (isBoss) structure.SetMaxStructure(bossStructure);
             structure.OnStructureBroken += HandleStructureBroken;
             structure.OnStructureRecovered += HandleStructureRecovered;
         }
@@ -503,15 +528,23 @@ namespace Ayni.Enemy
         public void TakeHit(float healthDmg, float structDmg, Vector3 attackerPos, bool isHeavy = false,
                             HitReaction reaction = HitReaction.Head, float knockback = 0.2f)
         {
-            if (isDead) return;
+            if (isDead || InPhaseTransition) return;
 
             // Con la postura rota (y fuera del Juicio) cada golpe duele más: es el momento de castigarlo
             if (structure.IsBroken && !CanBeJudged) healthDmg *= brokenDamageMultiplier;
 
-            // Los jefes no mueren a golpes: su final se decide en el Juicio Ayni
-            currentHealth = Mathf.Max(isBoss ? 1f : 0f, currentHealth - healthDmg);
-            structure.AddStructureDamage(structDmg);
+            // Los jefes no mueren a golpes: al vaciar una barra pasan a la siguiente fase y en la última
+            // su final se decide en el Juicio Ayni
+            bool morePhases = isBoss && Phase < PhaseCount;
+            currentHealth = Mathf.Max(isBoss && !morePhases ? 1f : 0f, currentHealth - healthDmg);
             flashUntil = Time.time + 0.1f;
+
+            if (morePhases && currentHealth <= 0f)
+            {
+                StartCoroutine(PhaseTransitionRoutine());
+                return;
+            }
+            structure.AddStructureDamage(structDmg);
 
             if (currentHealth <= 0f)
             {
@@ -788,6 +821,70 @@ namespace Ayni.Enemy
 
         private Color telegraphColor;
         private float telegraphUntil;
+
+        /// <summary>
+        /// Transición entre fases (como en Sifu): el jefe cae, se queda en el suelo, se levanta mientras su barra
+        /// se rellena y lanza un grito de guerra. Es invulnerable mientras dura. AyniBossPhaseDirector pone la cámara,
+        /// el título y el sonido.
+        /// </summary>
+        private IEnumerator PhaseTransitionRoutine()
+        {
+            InPhaseTransition = true;
+            ExternalControl = true;
+            attackAnimPending = false;
+            attackAnimPlaying = false;
+            knockbackVelocity = Vector3.zero;
+            state = EnemyState.Stagger;
+            structure.HoldBroken = false;
+            structure.ResetStructure();
+            SetAnimBool("IsStunned", false);
+            SetAnimSpeed(0f);
+            if (footIK != null) footIK.Suspended = true;
+            if (andeanStance != null) andeanStance.SetStanceWeight(0f);
+            OnPhaseTransitionStarted?.Invoke(this);
+
+            // 1. Cae al suelo
+            if (HasAnimState("Knockdown")) animator.CrossFadeInFixedTime("Knockdown", 0.08f, 0, 0f);
+            else TriggerAnim("Hit");
+            yield return new WaitForSeconds(2.0f);
+
+            // 2. Se levanta mientras la barra de la fase nueva se llena
+            Phase++;
+            maxHealth = bossPhaseHealth[Mathf.Min(Phase - 1, bossPhaseHealth.Length - 1)];
+            if (HasAnimState("GetUp")) animator.CrossFade("GetUp", 0.1f, 0, 0.25f);
+            float t = 0f;
+            while (t < 1.7f)
+            {
+                t += Time.deltaTime;
+                currentHealth = Mathf.Lerp(0f, maxHealth, Mathf.SmoothStep(0f, 1f, t / 1.7f));
+                yield return null;
+            }
+            currentHealth = maxHealth;
+
+            // Se vuelve hacia Yari antes de rugirle
+            for (float turn = 0f; turn < 0.35f; turn += Time.deltaTime)
+            {
+                if (playerTarget != null) FacePlayer(turnSpeed * 1.5f);
+                yield return null;
+            }
+
+            // 3. Grito de guerra: la fase nueva es más agresiva
+            if (HasAnimState("Phase_Roar")) animator.CrossFadeInFixedTime("Phase_Roar", 0.12f, 0, 0f);
+            Telegraph(new Color(1f, 0.35f, 0.15f), 1.4f);
+            attackCooldown *= phaseCooldownMultiplier;
+            attackDamage *= phaseDamageMultiplier;
+            windupTime *= phaseWindupMultiplier;
+            moveSpeed *= phaseSpeedMultiplier;
+            yield return new WaitForSeconds(1.5f);
+
+            if (HasAnimState("Idle")) animator.CrossFadeInFixedTime("Idle", 0.2f);
+            if (footIK != null) footIK.Suspended = false;
+            state = EnemyState.Chase;
+            nextAttackTime = Time.time + 0.6f;
+            ExternalControl = false;
+            InPhaseTransition = false;
+            OnPhaseStarted?.Invoke(this, Phase);
+        }
 
         /// <summary>Tiñe al rival unos segundos para avisar de un ataque especial (verde = dardo envenenado).</summary>
         public void Telegraph(Color color, float seconds)

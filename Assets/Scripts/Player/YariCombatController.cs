@@ -1380,6 +1380,50 @@ namespace Ayni.Player
             beingRescued = false;
         }
 
+        /// <summary>
+        /// Una escena toma el control (el cambio de fase de un jefe): Yari deja lo que hacía y espera en guardia a
+        /// <paramref name="distance"/> m de <paramref name="focus"/>, mirándolo. Si ahí no hay suelo firme, se queda donde está.
+        /// </summary>
+        public void HoldForCinematic(Vector3 focus, float distance)
+        {
+            CancelPendingAttack();
+            SetGuard(false);
+            SetCrouch(false);
+            isSprinting = false;
+            leaping = false;
+            velocity = Vector3.zero;
+            currentAnimSpeed = 0f;
+
+            Vector3 away = transform.position - focus;
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.01f) away = -transform.forward;
+            Vector3 spot = focus + away.normalized * distance;
+            if (Physics.Raycast(spot + Vector3.up * 3f, Vector3.down, out RaycastHit hit, 8f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) &&
+                Mathf.Abs(hit.point.y - transform.position.y) < 2f && Vector3.Angle(hit.normal, Vector3.up) < 35f)
+            {
+                Teleport(hit.point + Vector3.up * 0.05f);
+            }
+
+            Vector3 look = focus - transform.position;
+            look.y = 0f;
+            if (look.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(look);
+
+            EnterCombatStance();
+            if (animator)
+            {
+                animator.SetFloat("Speed", 0f);
+                if (HasState("Combat_Locomotion")) animator.CrossFadeInFixedTime("Combat_Locomotion", 0.2f);
+            }
+            CinematicControl = true;
+        }
+
+        /// <summary>La escena devuelve el control a Yari.</summary>
+        public void ReleaseFromCinematic()
+        {
+            CinematicControl = false;
+            EnterCombatStance();
+        }
+
         private void Teleport(Vector3 position)
         {
             characterController.enabled = false;

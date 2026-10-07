@@ -49,6 +49,10 @@ namespace Ayni.UI
             if (GetComponent<AyniLevelOutcome>() == null) gameObject.AddComponent<AyniLevelOutcome>();
             // Viento de la cordillera y tambores al entrar en los patios con rivales
             if (GetComponent<AyniLevelAmbience>() == null) gameObject.AddComponent<AyniLevelAmbience>();
+            // Cambio de fase de los jefes (caída, grito y segunda fase)
+            if (GetComponent<AyniBossPhaseDirector>() == null) gameObject.AddComponent<AyniBossPhaseDirector>();
+            // Pausa con las opciones de sonido (Esc / Menu)
+            if (GetComponent<AyniPauseMenu>() == null) gameObject.AddComponent<AyniPauseMenu>();
 
             // Amaru el Cazador: segunda fase con salto atrás y dardos envenenados
             foreach (EnemyController boss in EnemyController.All)
@@ -155,7 +159,7 @@ namespace Ayni.UI
             string sides = pad ? "Stick ← →" : "A / D";
 
             GUILayout.BeginArea(new Rect(20, Screen.height - 195, Mathf.Min(680f, Screen.width - 40f), 175), GUI.skin.box);
-            GUILayout.Label($"<b>CONTROLES RUMI MAKI — {(pad ? "MANDO" : "TECLADO Y RATÓN")}</b>  ([{Key(AyniInput.Action.ToggleHud)}] ocultar · [{Key(AyniInput.Action.Tutorial)}] tutorial)");
+            GUILayout.Label($"<b>CONTROLES RUMI MAKI — {(pad ? "MANDO" : "TECLADO Y RATÓN")}</b>  ([{Key(AyniInput.Action.ToggleHud)}] ocultar · [{Key(AyniInput.Action.Tutorial)}] tutorial · [{Key(AyniInput.Action.Pause)}] pausa y volumen)");
             GUILayout.Label($"• <b>[{Key(AyniInput.Action.LightAttack)}]:</b> Golpe Ligero  |  <b>[{Key(AyniInput.Action.HeavyAttack)}]:</b> Golpe Pesado  |  <b>[{Key(AyniInput.Action.Sprint)}]:</b> Correr");
             GUILayout.Label($"• <b>[{Key(AyniInput.Action.LockOn)}]:</b> Fijar o soltar al rival (Lock-On)");
             GUILayout.Label($"• <b>[{Key(AyniInput.Action.Guard)}] mantener:</b> Guardia (Yari se planta) — púlsala justo antes del impacto para el Parry");
@@ -170,7 +174,8 @@ namespace Ayni.UI
             float width = Mathf.Clamp(Screen.width - 390f, 220f, 420f);
             float x = Mathf.Max(Screen.width / 2f - width / 2f, 370f);
             GUILayout.BeginArea(new Rect(x, 20, width, 90), GUI.skin.box);
-            GUILayout.Label($"<b>{enemy.CharacterName.ToUpper()}</b>   Vida: {enemy.CurrentHealth:F0} / {enemy.MaxHealth:F0}");
+            string phase = enemy.PhaseCount > 1 ? $"   <color=#ffb347>FASE {enemy.Phase}/{enemy.PhaseCount}</color>" : "";
+            GUILayout.Label($"<b>{enemy.CharacterName.ToUpper()}</b>   Vida: {enemy.CurrentHealth:F0} / {enemy.MaxHealth:F0}{phase}");
             DrawBar(GUILayoutUtility.GetRect(width - 20, 14), enemy.MaxHealth > 0f ? enemy.CurrentHealth / enemy.MaxHealth : 0f, HealthColor);
             GUILayout.Space(4);
             float fill = enemy.Structure.StructureRatio;

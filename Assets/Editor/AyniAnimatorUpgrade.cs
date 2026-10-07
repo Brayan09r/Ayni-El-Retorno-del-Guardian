@@ -80,6 +80,8 @@ namespace Ayni.Editor
             if (idle == null) return;
 
             int added = AddState(sm, "Hunter_Leap", AyniAnimationForge.AvoidJump, idle, 0.85f, 0.9f, false);
+            // Grito al empezar la segunda fase
+            added += AddState(sm, "Phase_Roar", AyniAnimationForge.Roar, idle, 1f, 0.95f, false);
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
             if (added > 0) Debug.Log("<color=green>[Ayni Animator]</color> Amaru: estado Hunter_Leap (salto del Cazador) añadido.");

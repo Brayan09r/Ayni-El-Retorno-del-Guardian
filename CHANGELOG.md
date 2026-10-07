@@ -10,6 +10,29 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.7.0 — Jefes en dos fases, menú de pausa y balanceo nuevo · 6 de octubre de 2026
+
+**Jefes en dos fases (como en Sifu)**
+- Amaru tiene **dos barras de vida**: 380 en la fase 1 y 460 en la fase 2. Antes tenía 220 y caía demasiado rápido.
+  Su postura también aguanta más: 150 en vez de 100.
+- **Al vaciar la primera barra:**
+  1. La acción se detiene y Amaru cae a cámara lenta. Yari queda apartado en guardia.
+  2. La cámara lo rodea mientras se levanta y su barra se rellena.
+  3. Se vuelve hacia Yari y lanza un **grito de guerra** (animación nueva `Gen_Roar`), con el título "SEGUNDA FASE · Desatado".
+- **En la segunda fase** ataca más seguido, pega más fuerte y se mueve más rápido. Le rodea un **aura de brasas**,
+  y es cuando usa la **cerbatana** (dardos envenenados).
+- El **Juicio Ayni** solo llega al final de la segunda fase. La barra del jefe muestra "FASE 1/2".
+- Ajustes en `EnemyController` (sección *Jefe: fases*). La escena del cambio de fase está en `AyniBossPhaseDirector`.
+
+**Menú de pausa con volumen** (Esc / Menu del mando)
+- Volumen general, de efectos y de música y ambiente. Se guardan entre partidas.
+- Opciones para volver a ver el tutorial y reiniciar el nivel. Se maneja con el ratón, con el teclado o con el mando.
+- El volumen de fábrica baja al 75 % general, 80 % efectos y 70 % música, porque los efectos sonaban fuertes.
+
+**Balanceo lateral nuevo**
+- Ahora sale de la esquiva real de Mixamo (`Dodge_Left` / `Dodge_Right`): se toma su tramo central (rodillas, tronco que
+  se inclina y gira, cabeza fuera de la línea del golpe), acelerado a 0.46 s y con los brazos en guardia. La versión anterior era procedural y se veía rígida.
+
 ## v0.6.0 — Sonido, esquivas pulidas y patada hacia atrás · 6 de octubre de 2026
 
 **Sonido (antes el juego no tenía ninguno)**

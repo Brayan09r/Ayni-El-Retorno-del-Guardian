@@ -65,15 +65,29 @@ namespace Ayni.Enemy
             nextVolley = Time.time + 3f;
         }
 
+        private void OnEnable()
+        {
+            EnemyController.OnPhaseStarted += HandlePhaseStarted;
+        }
+
         private void OnDisable()
         {
+            EnemyController.OnPhaseStarted -= HandlePhaseStarted;
             Release();
+        }
+
+        /// <summary>Al empezar la segunda fase, la primera ráfaga llega pronto.</summary>
+        private void HandlePhaseStarted(EnemyController who, int phase)
+        {
+            if (who == enemy) nextVolley = Time.time + 3.5f;
         }
 
         private void Update()
         {
             if (busy || yari == null || enemy.IsDead || yari.IsDead || AyniGameState.CinematicPlaying) return;
-            if (enemy.HealthRatio > activateBelowHealth || Time.time < nextVolley) return;
+            // Con varias fases, la cerbatana es el arma de la segunda; con una sola, aparece al bajar de vida
+            bool unlocked = enemy.PhaseCount > 1 ? enemy.Phase >= 2 : enemy.HealthRatio <= activateBelowHealth;
+            if (!unlocked || enemy.InPhaseTransition || Time.time < nextVolley) return;
             if (enemy.State != EnemyState.Chase || enemy.Structure.IsBroken) return;
 
             float dist = FlatDistance(transform.position, yari.transform.position);

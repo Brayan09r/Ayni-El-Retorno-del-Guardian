@@ -46,6 +46,7 @@ namespace Ayni.Editor
                 text += $"\n      {enemy.CharacterName}: estado={enemy.State} dist={dist:F1} vida={enemy.CurrentHealth:F0} postura={enemy.Structure.CurrentStructure:F0}";
             }
             text += $"\n      sonidos ({AyniAudio.LoadedCount} cargados): {AyniAudio.Recent}";
+            text += $"\n      volumen general={AudioListener.volume:F2} efectos={AyniAudio.Volume:F2} música={AyniAudio.AmbienceVolume:F2} pausa={Ayni.UI.AyniPauseMenu.IsOpen}";
             Debug.Log("[Ayni Prueba] " + text);
             return state;
         }
@@ -101,6 +102,16 @@ namespace Ayni.Editor
             var cam = Camera.main != null ? Camera.main.GetComponent<Ayni.Player.ThirdPersonSifuCamera>() : null;
             if (cam != null) cam.SnapBehindTarget();
             Debug.Log($"[Ayni Prueba] Yari a {distance} m del jefe, con el jefe a {angle}° de su frente");
+        }
+
+        /// <summary>Borra los volúmenes guardados del menú de pausa (vuelven los de fábrica). Para deshacer lo que cambian las pruebas.</summary>
+        public static void ResetVolumes()
+        {
+            PlayerPrefs.DeleteKey("Ayni_VolumenGeneral");
+            PlayerPrefs.DeleteKey("Ayni_VolumenEfectos");
+            PlayerPrefs.DeleteKey("Ayni_VolumenMusica");
+            PlayerPrefs.Save();
+            Debug.Log("[Ayni Prueba] Volúmenes de fábrica restaurados");
         }
 
         /// <summary>Congela (1) o libera (0) la IA de todos los rivales; siguen recibiendo daño.</summary>

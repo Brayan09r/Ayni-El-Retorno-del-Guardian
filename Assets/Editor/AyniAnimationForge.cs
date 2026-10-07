@@ -39,6 +39,8 @@ namespace Ayni.Editor
         public const string FallBack = "Yari_Fall_Back";
         public const string LandHard = "Yari_Land_Hard";
         public const string BackKick = "Yari_Back_Kick";
+        /// <summary>Grito de guerra de un jefe al empezar su segunda fase (sirve para cualquier rig Humanoid).</summary>
+        public const string Roar = "Gen_Roar";
         /// <summary>Segundo del clip de patada hacia atrás en el que la pierna llega a su extensión (impacto).</summary>
         public const float BackKickContact = 0.22f;
 
@@ -284,6 +286,7 @@ namespace Ayni.Editor
                     BuildFallBack(rig, combat, hitHeavyClip, report);
                     BuildLandHard(fallStart, crouch, combat, metersPerUnit, report);
                     BuildBackKick(rig, guard, crouch, metersPerUnit, report);
+                    BuildRoar(rig, combat, crouch, report);
                 }
             }
             catch (Exception e)
@@ -314,6 +317,7 @@ namespace Ayni.Editor
             RenderSheet(FallBack, 7);
             RenderSheet(LandHard, 6);
             RenderSheet(BackKick, 7);
+            RenderSheet(Roar, 7);
         }
 
         // ───────────────────────── Recetas ─────────────────────────
@@ -374,7 +378,73 @@ namespace Ayni.Editor
             report.AppendLine($"   {AvoidJump}: 0.62 s (salto corto con las piernas recogidas sobre el barrido)");
         }
 
+        /// <summary>
+        /// Balanceo lateral a partir de la esquiva real de Mixamo (Dodge_Left / Dodge_Right): se toma solo el tramo
+        /// central de la esquiva (rodillas que se flexionan, tronco que se inclina y gira, la cabeza sale de la línea
+        /// del golpe) acelerado a 0.46 s, con los brazos en guardia y fundido con la guardia al entrar y al salir.
+        /// Si falta el clip de Mixamo, se usa la versión procedural.
+        /// </summary>
         private static void BuildAvoidSway(Rig rig, Pose guard, Pose crouch, bool left, System.Text.StringBuilder report)
+        {
+            string name = left ? AvoidSwayL : AvoidSwayR;
+            AnimationClip mocap = LoadClip(left ? "Dodge_Left" : "Dodge_Right");
+            if (mocap == null)
+            {
+                BuildAvoidSwayProcedural(rig, guard, crouch, left, report);
+                return;
+            }
+
+            // Instante de máxima inclinación: donde la cabeza más se separa de su posición inicial
+            const float step = 1f / Fps;
+            rig.Sample(mocap, 0f, false);
+            float headStart = rig.Bone(HumanBodyBones.Head).x;
+            float peakTime = mocap.length * 0.4f, peak = 0f;
+            for (float t = 0f; t <= mocap.length; t += step)
+            {
+                rig.Sample(mocap, t, false);
+                float d = Mathf.Abs(rig.Bone(HumanBodyBones.Head).x - headStart);
+                if (d > peak)
+                {
+                    peak = d;
+                    peakTime = t;
+                }
+            }
+
+            float from = Mathf.Max(0f, peakTime - 0.3f);
+            float to = Mathf.Min(mocap.length, peakTime + 0.3f);
+            const float length = 0.46f;
+
+            // Referencia: la pose al empezar el tramo (se le quita el giro y la posición horizontal)
+            Pose start = rig.Sample(mocap, from, false);
+            Vector3 fwd = start.rot * Vector3.forward;
+            fwd.y = 0f;
+            float yaw = fwd.sqrMagnitude > 0.0001f ? Mathf.Atan2(fwd.x, fwd.z) * Mathf.Rad2Deg : 0f;
+            Quaternion unYaw = Quaternion.Euler(0f, -yaw, 0f);
+            Vector3 origin = start.pos;
+
+            Pose Evaluate(float t)
+            {
+                float u = Mathf.Clamp01(t / length);
+                Pose m = rig.Sample(mocap, Mathf.Lerp(from, to, u), false);
+                Vector3 offset = unYaw * (m.pos - origin);
+                m.pos = new Vector3(offset.x, m.pos.y, offset.z);
+                m.rot = unYaw * m.rot;
+                // La guardia no baja durante la esquiva: brazos de la guardia con un poco del movimiento real,
+                // que equilibra el cuerpo (sin él, al echarse atrás los brazos quedaban demasiado altos)
+                Pose arms = Pose.Lerp(guard, m, 0.35f);
+                CopyArms(ref m, arms);
+
+                // Entra rápido desde la guardia y vuelve a ella al final; 85 % de la amplitud de la captura
+                float w = 0.85f * Smooth(Mathf.InverseLerp(0f, 0.16f, u)) * (1f - Smooth(Mathf.InverseLerp(0.72f, 1f, u)));
+                return Pose.Lerp(guard, m, w);
+            }
+
+            Save(name, Evaluate, length, false);
+            rig.Sample(mocap, peakTime, false);
+            report.AppendLine($"   {name}: {length:F2} s (balanceo desde la esquiva de Mixamo, tramo {from:F2}–{to:F2} s; la cabeza se aparta {peak:F2} m)");
+        }
+
+        private static void BuildAvoidSwayProcedural(Rig rig, Pose guard, Pose crouch, bool left, System.Text.StringBuilder report)
         {
             // Balanceo marcado del tronco hacia un lado, con las rodillas flexionadas y los pies plantados:
             // la cabeza sale de la línea del golpe
@@ -579,6 +649,65 @@ namespace Ayni.Editor
             rig.Apply(extend);
             Vector3 foot = rig.Bone(HumanBodyBones.RightFoot);
             report.AppendLine($"   {BackKick}: {length:F2} s (patada hacia atrás; en el impacto el pie llega a {-foot.z:F2} m por detrás y {foot.y - groundY:F2} m de altura)");
+        }
+
+        /// <summary>
+        /// Grito de guerra (segunda fase de un jefe): se encoge reuniendo fuerza, abre el pecho y los brazos hacia abajo
+        /// y atrás con la cabeza alta, tiembla de rabia y vuelve a la guardia.
+        /// </summary>
+        private static void BuildRoar(Rig rig, Pose combat, Pose crouch, System.Text.StringBuilder report)
+        {
+            const float length = 1.5f;
+
+            Pose gather = combat.Clone();
+            CopyLegs(ref gather, Pose.Lerp(combat, crouch, 0.45f));
+            gather.pos.y = Mathf.Lerp(combat.pos.y, crouch.pos.y, 0.45f);
+            Nudge(ref gather, "Spine Front-Back", 0.35f);
+            Nudge(ref gather, "Chest Front-Back", 0.25f);
+            Nudge(ref gather, "Head Nod Down-Up", 0.35f);
+            SetBoth(ref gather, "Arm Down-Up", -0.35f);
+            SetBoth(ref gather, "Arm Front-Back", 0.35f);
+            SetBoth(ref gather, "Forearm Stretch", -0.4f);
+
+            Pose roar = combat.Clone();
+            CopyLegs(ref roar, Pose.Lerp(combat, crouch, 0.35f));
+            roar.pos.y = Mathf.Lerp(combat.pos.y, crouch.pos.y, 0.35f);
+            SetBoth(ref roar, "Upper Leg In-Out", 0.25f);
+            Nudge(ref roar, "Spine Front-Back", -0.3f);
+            Nudge(ref roar, "Chest Front-Back", -0.3f);
+            Nudge(ref roar, "UpperChest Front-Back", -0.2f);
+            Nudge(ref roar, "Head Nod Down-Up", -0.55f);
+            // Brazos tensos hacia abajo y atrás, codos flexionados y puños a la altura de la cadera
+            SetBoth(ref roar, "Arm Down-Up", -0.3f);
+            SetBoth(ref roar, "Arm Front-Back", -0.4f);
+            SetBoth(ref roar, "Forearm Stretch", -0.15f);
+            SetBoth(ref roar, "Shoulder Down-Up", 0.3f);
+            roar.rot = Quaternion.Euler(-8f, 0f, 0f) * combat.rot;
+            rig.Apply(combat);
+            float groundY = Mathf.Min(rig.Bone(HumanBodyBones.LeftFoot).y, rig.Bone(HumanBodyBones.RightFoot).y);
+            float metersPerUnit = 0.715f;
+            GroundFoot(rig, ref roar, HumanBodyBones.LeftFoot, groundY, metersPerUnit);
+            GroundFoot(rig, ref gather, HumanBodyBones.LeftFoot, groundY, metersPerUnit);
+
+            Pose Evaluate(float t)
+            {
+                Pose p;
+                if (t < 0.3f) p = Pose.Lerp(combat, gather, Smooth(t / 0.3f));
+                else if (t < 0.5f) p = Pose.Lerp(gather, roar, Smooth((t - 0.3f) / 0.2f));
+                else if (t < 1.15f)
+                {
+                    p = roar.Clone();
+                    // Temblor de rabia en brazos y pecho
+                    float shake = Mathf.Sin(t * 2f * Mathf.PI * 13f) * Mathf.InverseLerp(1.15f, 0.55f, t);
+                    NudgeBoth(ref p, "Arm Down-Up", 0.05f * shake);
+                    Nudge(ref p, "Chest Left-Right", 0.04f * shake);
+                }
+                else p = Pose.Lerp(roar, combat, Smooth((t - 1.15f) / (length - 1.15f)));
+                return p;
+            }
+
+            Save(Roar, Evaluate, length, false);
+            report.AppendLine($"   {Roar}: {length:F2} s (grito de guerra de un jefe al empezar su segunda fase)");
         }
 
         /// <summary>Sube o baja el cuerpo de la pose para que el pie indicado quede apoyado a la altura del suelo.</summary>

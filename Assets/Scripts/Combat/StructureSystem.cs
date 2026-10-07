@@ -81,6 +81,14 @@ namespace Ayni.Combat
             OnStructureBroken?.Invoke();
         }
 
+        /// <summary>Cambia el aguante de la postura (los jefes la tienen más alta que los rivales comunes).</summary>
+        public void SetMaxStructure(float value)
+        {
+            maxStructure = Mathf.Max(1f, value);
+            currentStructure = Mathf.Min(currentStructure, maxStructure);
+            OnStructureChanged?.Invoke(currentStructure, maxStructure);
+        }
+
         public void ResetStructure()
         {
             bool wasBroken = IsBroken;
