@@ -12,9 +12,10 @@ namespace Ayni.Story
     ///   - matas de ichu y flores de cantuta entre ellos,
     ///   - y motas de polen dorado flotando sobre todo el claro.
     /// Todo se genera por código (mallas y texturas), sin assets: no hay nada que importar ni que pueda faltar.
+    /// A la vez renacen todos los árboles quemados del camino, estén en pie o caídos (AyniReforestationRevival.cs).
     /// Lo lanza AyniLevelOutcome; el paisaje se queda así si el jugador sigue explorando.
     /// </summary>
-    public class AyniReforestation : MonoBehaviour
+    public partial class AyniReforestation : MonoBehaviour
     {
         private enum Kind { Tree, YoungTree, Sapling, Sprout, Grass, Flower, Mound }
 
@@ -27,6 +28,7 @@ namespace Ayni.Story
             public float swayAmp, swaySpeed, phase;
             public Quaternion baseRotation;
             public bool sprouted, leafed;
+            public bool fromWood;        // rebrota de un árbol quemado: no levanta tierra
         }
 
         private readonly List<Plant> plants = new List<Plant>();
@@ -106,6 +108,9 @@ namespace Ayni.Story
                     AddSimple(rng, Kind.Grass, Assets.Tufts[i % Assets.Tufts.Length], Assets.Grass, null, p, n, Range(rng, 0.7f, 1.5f), 1.2f);
                 if (++made % 14 == 0) yield return null;
             }
+
+            // Y la vida vuelve también a los árboles quemados de todo el camino
+            yield return ReviveBurntTrees();
         }
 
         /// <summary>Busca un sitio libre en el anillo indicado, sobre el terreno y sin demasiada pendiente.</summary>
@@ -240,6 +245,9 @@ namespace Ayni.Story
         private void Update()
         {
             float t = Time.unscaledTime - startTime;
+            UpdateWood(t);
+            Camera view = Camera.main;
+            Vector3 eye = view != null ? view.transform.position : center;
             for (int i = 0; i < plants.Count; i++)
             {
                 Plant p = plants[i];
@@ -251,10 +259,14 @@ namespace Ayni.Story
                 if (!p.sprouted)
                 {
                     p.sprouted = true;
-                    if (p.kind != Kind.Grass && p.kind != Kind.Mound) EmitSoil(p.root.position, p.kind);
+                    if (p.kind != Kind.Grass && p.kind != Kind.Mound && !p.fromWood) EmitSoil(p.root.position, p.kind);
                 }
 
-                if (k < 1f || p.root.localScale.y < p.size * 0.999f)
+                bool growing = k < 1f || p.root.localScale.y < p.size * 0.999f;
+                // Lo que ya ha crecido y queda lejos no se mece: nadie lo ve y son cientos de plantas por todo el camino
+                if (!growing && (p.root.position - eye).sqrMagnitude > SwayDistance * SwayDistance) continue;
+
+                if (growing)
                 {
                     if (p.crown != null)
                     {
@@ -312,7 +324,7 @@ namespace Ayni.Story
             main.playOnAwake = false;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.gravityModifier = 0.55f;
-            main.maxParticles = 1500;
+            main.maxParticles = 4000;
             var emission = ps.emission;
             emission.enabled = false;
             var fade = ps.colorOverLifetime;

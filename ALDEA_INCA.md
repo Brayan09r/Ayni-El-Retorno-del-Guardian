@@ -47,6 +47,24 @@ Cada uno se supera con algo que Yari ya sabe hacer.
   más largo que ir recto (ahora 31 y 29 m, frente a 20).
 - Yari salta 1,60 m en parado y 1,05 m en carrera (unos 3,4 m de largo). Los troncos asoman 0,6 m; el muro, de 0,5 a 1,25 m.
 
+### Los árboles quemados renacen con el perdón
+
+Junto a cada obstáculo hay 7 árboles quemados en pie, y los troncos que cruzan el camino son árboles caídos: 56 en pie y 5 caídos
+en total. Cada uno lleva una marca `AyniBurntTree` (objetos `ArbolQuemado_n` y `ArbolCaido_n`, hijos del obstáculo) con los puntos
+por donde rebrota. Si Yari perdona a Amaru, la ola de vida del queñual (`AyniReforestation`) sale de la plaza y recorre todo el
+camino en unos 10 s, durante la escena final:
+
+- La madera quemada recupera el color de la corteza viva.
+- En la punta de cada árbol en pie sale una copa nueva, y varas con hojas en sus ramas rotas y a lo largo del tronco. Al pie vuelve
+  el ichu y, a veces, una cantuta.
+- Los troncos caídos rebrotan (varas hacia arriba desde los muñones y la corteza). **Siguen cruzados en el camino**: hay que
+  saltarlos igual. Lo que brota no tiene colisión.
+- Con la venganza no pasa nada: siguen quemados.
+
+Las marcas se ponen solas al construir la aldea. Sobre una aldea ya construida, sin tocar nada más:
+`Ayni > Entorno > Marcar Árboles Quemados del Camino`. Un árbol quemado nuevo (de otra herramienta o puesto a mano) renace también
+si se le añade el componente `AyniBurntTree` con sus puntos de rebrote.
+
 ## Cómo está hecho
 
 Todo lo genera `Ayni > Entorno > Construir Aldea Inca`. No hay modelos importados: muros, techos, cántaros y tejidos son código.
@@ -140,6 +158,8 @@ call Ayni.Editor.AyniVillageBuilder.TeleportLocal K3 0 -20 10     lleva a Yari a
 call Ayni.Editor.AyniVillageBuilder.Where                         dice en qué conjunto está y en cuáles ha entrado
 call Ayni.Editor.AyniVillageBuilder.TeleportObstacle O1 0 -8 10   lleva a Yari 8 m antes de un obstáculo
 call Ayni.Editor.AyniVillageBuilder.WhereObstacle O1              dónde está Yari respecto a ese obstáculo
+call Ayni.Editor.AyniOutcomePreview.BurntTrees                    cuántos árboles quemados hay marcados
+call Ayni.Editor.AyniOutcomePreview.ReforestAt 612 468            en Play: el perdón como si ocurriera en la plaza (renacen todos)
 call Ayni.Editor.AyniVillageBuilder.ShotLocal K4 0 1.7 -4 0 2.4 13 62 nombre   foto desde un punto del conjunto (fuera de Play)
 ```
 

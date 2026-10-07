@@ -123,6 +123,9 @@ Al perdonar al jefe, alrededor del lugar del Juicio brota un bosque en una ola q
   sin ella, en el juego compilado las hojas saldrían como cuadrados opacos (en el editor seguiría viéndose bien).
 - Solo brota sobre el terreno (ni sobre el puente ni sobre las rocas), fuera de la quebrada y en pendientes suaves.
 - Los árboles no tienen colisión: si el jugador sigue explorando, los atraviesa.
+- **Renacen también los árboles quemados de todo el camino** (56 en pie y 5 caídos, junto a los obstáculos): la madera recupera
+  su color y echan copa y varas nuevas. La ola tarda unos 10 s en llegar de la plaza al principio del camino. Detalles en
+  `ALDEA_INCA.md` (*Los árboles quemados renacen con el perdón*).
 - Para verlo sin ganar el combate, en Play: `call Ayni.Editor.AyniOutcomePreview.Reforest` y
   `call Ayni.Editor.AyniOutcomePreview.Shot 60 13 4.5` (ángulo, distancia y altura de la cámara). El desenlace real se puede
   forzar con `call Ayni.Editor.AyniPlaytestProbe.HitBoss 200 999` seguido de `call Ayni.Core.AyniInput.Simulate Mercy 0.15`.
@@ -165,8 +168,12 @@ Menús en `Ayni > Animaciones`:
 | `Scripts/Story/AyniJudgment.cs` | Pantalla del Juicio Ayni del jefe (cámara lenta, botón rojo / verde) |
 | `Scripts/Story/AyniLevelOutcome.cs` | Desenlace del nivel según la decisión y tarjeta final |
 | `Scripts/Story/AyniReforestation.cs` | El queñual que brota al perdonar: árboles, brotes, ichu y cantutas generados por código |
+| `Scripts/Story/AyniReforestationRevival.cs` | La otra mitad de esa clase: hace renacer los árboles quemados del camino |
+| `Scripts/World/AyniBurntTree.cs` | Marca de un árbol quemado (en pie o caído) con sus puntos de rebrote |
 | `Editor/AyniVegetationMaterials.cs` | Crea las plantillas de material de esa vegetación en `Resources/AyniVegetacion` |
 | `Editor/AyniOutcomePreview.cs` | Para ver el queñual en Play sin ganar el combate |
+| `Editor/AyniWebBuild.cs` | Compila el juego para navegador (WebGL) con texturas más ligeras, listo para Unity Play |
+| `Editor/AyniTrailerRunner.cs` | Graba las tomas del tráiler desde la vista de juego (1080p, 30 fps) y las dirige solo: cámara, teclas simuladas y pelea automática |
 | `Scripts/Enemy/AmaruHunter.cs` | Segunda fase de Amaru: salto atrás y dardos envenenados |
 | `Scripts/UI/AyniScreenFX.cs` | Fundidos, franjas de cine, subtítulos, títulos y tinte de ambiente |
 | `Scripts/UI/AyniGamepadTester.cs` | Panel de prueba del mando (F9) |
@@ -215,3 +222,45 @@ stop
 - Modelo de Sayri para el prólogo (ahora el golpe llega desde fuera de cuadro).
 - Sonido (golpes, lluvia, quena del prólogo) y vibración del mando. La vibración necesita el paquete Input System.
 - Trampas de red con estacas de Amaru (Biblia 4.3) y entorno de selva quemada del Antisuyo.
+
+## El tráiler
+
+`Trailer/Ayni_Trailer_Nivel1.mp4` (1:08, 1080p). Se grabó dentro de Unity con `Editor/AyniTrailerRunner.cs`, que usa el
+codificador de video del propio editor: no hace falta ningún programa de captura.
+
+```
+call Ayni.Editor.AyniTrailer.GameViewHD          vista de juego a 1920 x 1080 (antes de dar Play)
+call Ayni.Editor.AyniTrailer.Arm prologo         el prólogo se graba solo al entrar en Play (con el prólogo activado)
+call Ayni.Editor.AyniTrailer.Shot nombre         en Play: salto, salto_lado, aldea, casa, casa_dentro, combate1..4, jefe,
+                                                 renacer, renacer_pie
+call Ayni.Editor.AyniTrailer.GameViewRestore     devuelve la vista de juego a como estaba
+```
+
+- Las tomas quedan en `Trailer/tomas/` (fuera de git: pesan unos 400 MB). Cada una avisa en la consola con *TOMA LISTA*.
+- En los combates Yari pelea solo: fija al rival más cercano, se acerca, encadena golpes, se cubre cuando el rival arma
+  el golpe y resuelve el Juicio. Sirve también para probar el combate sin tocar el teclado.
+- El montaje (títulos, paneles con el código real y música original sintetizada) está en `Trailer/montaje/`: `edit.py`
+  (guion y composición), `gfx.py` (tipografía y paneles), `music.py` y `synth.py` (música). Necesitan Python con numpy,
+  scipy, Pillow, OpenCV y pygments, además de ffmpeg.
+
+## Versión web en Unity Play
+
+Enlace para compartir: <https://play.unity.com/en/games/66b8abca-71ca-4703-8580-d51948d2be29/ayninivel1>
+
+Para subir una versión nueva:
+
+1. **Ayni > Publicar > 1. Preparar y compilar para Web**. Cambia a la plataforma Web y compila en `Builds/Web/AyniNivel1`
+   (fuera de git). La primera vez tardó unos 15 minutos; el resultado queda anotado en `UserSettings/AyniAgent/webbuild.txt`.
+2. **File > Build Profiles > Web > Publish to Play**. Si dice que no hay compilación, pulsa *Locate Build...* y elige esa
+   carpeta. Luego *Publish* y **Update existing game > AyniNivel1**, para actualizar este mismo juego en vez de crear otro.
+3. Se abre el navegador con la ficha del juego (pide entrar con la cuenta de Unity): ahí se cambian el título, la
+   descripción, la miniatura y la visibilidad.
+4. **Ayni > Publicar > 2. Volver a la plataforma de Windows** para seguir trabajando como siempre.
+
+Qué cambia solo para la web (en Windows todo sigue igual):
+
+- Las texturas de los personajes (4K) bajan a 1024 y el resto, como mucho, a 2048. La descarga queda en unos 68 MB.
+- Compresión Gzip con descompresión de reserva, para que cargue en cualquier servidor.
+
+En el navegador conviene saber que `Esc` suelta el ratón (se recupera con un clic en el juego) y que `Ctrl` + `W` cierra la
+pestaña: para agacharse es mejor la tecla `C`.

@@ -82,3 +82,9 @@ Thumbs.db
 
 # Capturas que Claude envía al chat (no son parte del juego)
 /Claude outputs/
+
+# Tomas en bruto del tráiler (se graban con Ayni.Editor.AyniTrailer; pesan cientos de MB)
+/Trailer/tomas/
+
+# Compilaciones del juego (Ayni > Publicar)
+/Builds/

@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using UnityEngine;
+using Ayni.World;
 
 namespace Ayni.Editor
 {
@@ -14,6 +15,9 @@ namespace Ayni.Editor
     /// A los lados, una hilera de peñascos sube por el talud para que no baste con salirse un paso del camino
     /// (el mapa es abierto: quien dé un rodeo largo por el cerro puede evitarlos).
     /// Forma parte de <see cref="AyniVillageBuilder"/>: se construyen y se borran con la aldea.
+    ///
+    /// Cada árbol quemado (en pie o caído) lleva además una marca <see cref="AyniBurntTree"/> con los puntos por donde
+    /// rebrota: si Yari perdona a Amaru, el queñual renace también en ellos (AyniReforestation).
     /// </summary>
     public static partial class AyniVillageBuilder
     {
@@ -58,6 +62,11 @@ namespace Ayni.Editor
             public readonly MeshBuf roca = new MeshBuf(), quemado = new MeshBuf(), ramas = new MeshBuf();
             public readonly MeshBuf madera = new MeshBuf(), pirca = new MeshBuf(), textil = new MeshBuf();
             public readonly List<(Vector3 center, Vector3 size)> boxes = new List<(Vector3, Vector3)>();
+            public readonly List<BurntTree> trees = new List<BurntTree>();
+            /// <summary>Azar propio de los rebrotes: así no altera la forma de los obstáculos ya construidos.</summary>
+            public System.Random life;
+
+            public float Life(float min, float max) => VillageGeo.Range(life, min, max);
 
             public float Rand(float min, float max) => VillageGeo.Range(rng, min, max);
 
@@ -71,6 +80,127 @@ namespace Ayni.Editor
             public Vector3 P(float lx, float above, float lz) => new Vector3(lx, GroundY(lx, lz) + above, lz);
         }
 
+        /// <summary>Un árbol quemado del obstáculo y los puntos por los que rebrota (en coordenadas del obstáculo).</summary>
+        private sealed class BurntTree
+        {
+            public bool fallen;
+            public Vector3 foot;
+            public readonly List<Vector3> points = new List<Vector3>();
+            public readonly List<Vector3> directions = new List<Vector3>();
+            public readonly List<float> sizes = new List<float>();
+            public readonly List<int> kinds = new List<int>();
+
+            public void Shoot(Vector3 point, Vector3 direction, float size, int kind)
+            {
+                points.Add(point);
+                directions.Add(direction.normalized);
+                sizes.Add(size);
+                kinds.Add(kind);
+            }
+        }
+
+        /// <summary>Calcula en memoria todas las piezas de un obstáculo (mallas, bloqueos y árboles quemados).</summary>
+        private static ObstacleBuild Compose(Obstacle def, Terrain terrain)
+        {
+            var o = new ObstacleBuild
+            {
+                def = def,
+                terrain = terrain,
+                y0 = Ground(terrain, def.center.x, def.center.y),
+                rng = new System.Random(def.seed),
+                life = new System.Random(def.seed * 7919 + 13),
+            };
+
+            switch (def.kind)
+            {
+                case ObstacleKind.Tronco:
+                    Trunk(o, 0f, o.Rand(-0.8f, 0.8f));
+                    break;
+                case ObstacleKind.TroncoDoble:
+                    Trunk(o, -2.6f, o.Rand(-0.9f, 0.2f));
+                    Trunk(o, 2.6f, o.Rand(-0.2f, 0.9f));
+                    break;
+                case ObstacleKind.Derrumbe:
+                    RockSlide(o);
+                    break;
+                case ObstacleKind.Empalizada:
+                    Chicane(o);
+                    break;
+                default:
+                    BrokenWall(o);
+                    break;
+            }
+            Snags(o, 7);
+            return o;
+        }
+
+        /// <summary>Cuelga del obstáculo una marca por cada árbol quemado, con sus puntos de rebrote.</summary>
+        private static int AddBurntTrees(GameObject go, ObstacleBuild o)
+        {
+            var wood = new List<Renderer>();
+            foreach (string part in new[] { "Troncos", "Ramas" })
+            {
+                Transform piece = go.transform.Find(part);
+                Renderer renderer = piece != null ? piece.GetComponent<Renderer>() : null;
+                if (renderer != null) wood.Add(renderer);
+            }
+
+            for (int i = 0; i < o.trees.Count; i++)
+            {
+                BurntTree tree = o.trees[i];
+                var marker = new GameObject((tree.fallen ? "ArbolCaido_" : "ArbolQuemado_") + (i + 1));
+                marker.transform.SetParent(go.transform, false);
+                marker.transform.localPosition = tree.foot;
+                var points = new Vector3[tree.points.Count];
+                for (int p = 0; p < points.Length; p++) points[p] = tree.points[p] - tree.foot;
+                marker.AddComponent<AyniBurntTree>().Setup(tree.fallen, wood.ToArray(), points, tree.directions.ToArray(),
+                    tree.sizes.ToArray(), tree.kinds.ToArray());
+            }
+            return o.trees.Count;
+        }
+
+        /// <summary>
+        /// Pone (o renueva) las marcas de árbol quemado en los obstáculos que ya están en la escena, sin reconstruir la aldea.
+        /// </summary>
+        [UnityEditor.MenuItem("Ayni/Entorno/Marcar Árboles Quemados del Camino")]
+        public static void MarkBurntTrees()
+        {
+            if (UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning("[Ayni Aldea] Sal del modo Play antes de marcar los árboles.");
+                return;
+            }
+            Terrain terrain = Terrain.activeTerrain;
+            GameObject envRoot = AyniEnvironmentBuilder.GetOrCreateRoot();
+            Transform parent = envRoot != null ? envRoot.transform.Find(RootName + "/Obstaculos") : null;
+            if (terrain == null || parent == null)
+            {
+                Debug.LogError("[Ayni Aldea] No están los obstáculos en la escena: construye antes la aldea.");
+                return;
+            }
+
+            int standing = 0, fallen = 0, shoots = 0;
+            foreach (Obstacle def in Obstacles)
+            {
+                Transform go = parent.Find(def.id + "_" + def.kind);
+                if (go == null) continue;
+                foreach (AyniBurntTree old in go.GetComponentsInChildren<AyniBurntTree>(true)) Object.DestroyImmediate(old.gameObject);
+
+                ObstacleBuild o = Compose(def, terrain);
+                AddBurntTrees(go.gameObject, o);
+                foreach (BurntTree tree in o.trees)
+                {
+                    if (tree.fallen) fallen++; else standing++;
+                    shoots += tree.points.Count;
+                }
+            }
+
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+            Debug.Log($"<color=green>[Ayni Aldea]</color> Árboles quemados marcados: {standing} en pie y {fallen} caídos, con {shoots} puntos de rebrote.");
+        }
+
         private static void BuildObstacles(Terrain terrain, Transform root, Materials mats, List<Mesh> meshes)
         {
             var parent = new GameObject("Obstaculos");
@@ -78,34 +208,7 @@ namespace Ayni.Editor
 
             foreach (Obstacle def in Obstacles)
             {
-                var o = new ObstacleBuild
-                {
-                    def = def,
-                    terrain = terrain,
-                    y0 = Ground(terrain, def.center.x, def.center.y),
-                    rng = new System.Random(def.seed),
-                };
-
-                switch (def.kind)
-                {
-                    case ObstacleKind.Tronco:
-                        Trunk(o, 0f, o.Rand(-0.8f, 0.8f));
-                        break;
-                    case ObstacleKind.TroncoDoble:
-                        Trunk(o, -2.6f, o.Rand(-0.9f, 0.2f));
-                        Trunk(o, 2.6f, o.Rand(-0.2f, 0.9f));
-                        break;
-                    case ObstacleKind.Derrumbe:
-                        RockSlide(o);
-                        break;
-                    case ObstacleKind.Empalizada:
-                        Chicane(o);
-                        break;
-                    default:
-                        BrokenWall(o);
-                        break;
-                }
-                Snags(o, 7);
+                ObstacleBuild o = Compose(def, terrain);
 
                 var go = new GameObject(def.id + "_" + def.kind);
                 go.transform.SetParent(parent.transform, false);
@@ -123,6 +226,7 @@ namespace Ayni.Editor
                     box.transform.localPosition = center;
                     box.AddComponent<BoxCollider>().size = size;
                 }
+                AddBurntTrees(go, o);
             }
         }
 
@@ -159,13 +263,26 @@ namespace Ayni.Editor
             VillageGeo.Tube(o.quemado, a, mid, 0.33f, 0.3f, 9, true, 0.6f);
             VillageGeo.Tube(o.quemado, mid, b, 0.3f, 0.25f, 9, true, 0.6f);
 
+            // Si el bosque renace, el tronco caído rebrota: de cada muñón y de la propia corteza salen varas nuevas
+            var tree = new BurntTree { fallen = true, foot = mid };
+            o.trees.Add(tree);
+
             // Muñones de ramas (no chocan: son finos y engancharían el salto)
             for (int i = 0; i < 7; i++)
             {
                 float t = o.Rand(0.06f, 0.94f);
                 Vector3 p = t < 0.5f ? Vector3.Lerp(a, mid, t * 2f) : Vector3.Lerp(mid, b, t * 2f - 1f);
                 Vector3 dir = new Vector3(o.Rand(-0.35f, 0.35f), o.Rand(0.25f, 1f), o.Rand(-1f, 1f)).normalized;
-                VillageGeo.Tube(o.ramas, p, p + dir * o.Rand(0.45f, 1.0f), 0.075f, 0.025f, 5, true);
+                float length = o.Rand(0.45f, 1.0f);
+                VillageGeo.Tube(o.ramas, p, p + dir * length, 0.075f, 0.025f, 5, true);
+                tree.Shoot(p + dir * (length - 0.04f), Vector3.Slerp(dir, Vector3.up, 0.6f), o.Life(1.0f, 1.6f), AyniBurntTree.Shoot);
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                float t = (i + o.Life(0.15f, 0.85f)) / 4f;
+                Vector3 p = t < 0.5f ? Vector3.Lerp(a, mid, t * 2f) : Vector3.Lerp(mid, b, t * 2f - 1f);
+                Vector3 dir = new Vector3(o.Life(-0.2f, 0.2f), 1f, o.Life(-0.35f, 0.35f));
+                tree.Shoot(p + Vector3.up * 0.24f, dir, o.Life(0.9f, 1.4f), AyniBurntTree.Shoot);
             }
             // Raíces arrancadas en un extremo
             for (int i = 0; i < 6; i++)
@@ -301,13 +418,31 @@ namespace Ayni.Editor
                 float h = o.Rand(2.4f, 5.4f);
                 Vector3 foot = o.P(x, -0.4f, z);
                 Vector3 top = foot + new Vector3(o.Rand(-0.5f, 0.5f), h + 0.4f, o.Rand(-0.5f, 0.5f));
-                VillageGeo.Tube(o.quemado, foot, top, o.Rand(0.2f, 0.3f), o.Rand(0.05f, 0.1f), 7, true, 0.6f);
+                float baseRadius = o.Rand(0.2f, 0.3f), topRadius = o.Rand(0.05f, 0.1f);
+                VillageGeo.Tube(o.quemado, foot, top, baseRadius, topRadius, 7, true, 0.6f);
+
+                // Si el bosque renace: copa nueva en la punta, y varas en cada rama rota y a lo largo del tronco
+                Vector3 axis = (top - foot).normalized;
+                var tree = new BurntTree { fallen = false, foot = foot + axis * (0.4f / Mathf.Max(0.2f, axis.y)) };
+                o.trees.Add(tree);
+                tree.Shoot(top - axis * 0.12f, axis, Mathf.Lerp(0.8f, 1.15f, Mathf.InverseLerp(2.4f, 5.4f, h)), AyniBurntTree.Crown);
+
                 int branches = 1 + o.rng.Next(3);
                 for (int b = 0; b < branches; b++)
                 {
                     Vector3 p = Vector3.Lerp(foot, top, o.Rand(0.45f, 0.88f));
                     Vector3 dir = new Vector3(o.Rand(-1f, 1f), o.Rand(0.15f, 0.7f), o.Rand(-1f, 1f)).normalized;
-                    VillageGeo.Tube(o.ramas, p, p + dir * o.Rand(0.6f, 1.4f), 0.06f, 0.02f, 5, true);
+                    float length = o.Rand(0.6f, 1.4f);
+                    VillageGeo.Tube(o.ramas, p, p + dir * length, 0.06f, 0.02f, 5, true);
+                    tree.Shoot(p + dir * (length - 0.05f), Vector3.Slerp(dir, Vector3.up, 0.45f), o.Life(1.1f, 1.7f), AyniBurntTree.Shoot);
+                }
+                for (int e = 0; e < 3; e++)
+                {
+                    float along = o.Life(0.3f, 0.82f);
+                    float angle = o.Life(0f, Mathf.PI * 2f);
+                    Vector3 outward = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                    Vector3 p = Vector3.Lerp(foot, top, along) + outward * (Mathf.Lerp(baseRadius, topRadius, along) * 0.8f);
+                    tree.Shoot(p, outward + Vector3.up * o.Life(0.7f, 1.3f), o.Life(0.9f, 1.5f), AyniBurntTree.Shoot);
                 }
             }
         }
