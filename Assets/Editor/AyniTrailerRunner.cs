@@ -790,7 +790,24 @@ namespace Ayni.Editor
                     MoveTowards(d, true);
                     yield return null;
                 }
-                AyniPlaytestProbe.HitBoss(200f, 999f);
+
+                // El jefe tiene varias barras (v0.7.0): vaciar una que no es la última abre la escena de la fase
+                // siguiente (unos 5,5 s, invulnerable); en la última se le baja la vida y se le rompe la postura
+                for (int tries = 0; tries < 4 && !boss.CanBeJudged; tries++)
+                {
+                    while (boss.InPhaseTransition) yield return null;
+                    if (boss.Phase < boss.PhaseCount)
+                    {
+                        AyniPlaytestProbe.HitBoss(boss.CurrentHealth + 1f, 0f);
+                        yield return null;
+                        while (boss.InPhaseTransition) yield return null;
+                        yield return Wait(0.6f);
+                    }
+                    else
+                    {
+                        AyniPlaytestProbe.HitBoss(Mathf.Max(1f, boss.CurrentHealth - boss.MaxHealth * 0.3f), 999f);
+                    }
+                }
             }
             yield return Wait(3.2f);          // la pantalla del Juicio, a cámara lenta
             AyniInput.Simulate("Mercy", 0.15f);

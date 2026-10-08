@@ -128,7 +128,9 @@ Al perdonar al jefe, alrededor del lugar del Juicio brota un bosque en una ola q
   `ALDEA_INCA.md` (*Los árboles quemados renacen con el perdón*).
 - Para verlo sin ganar el combate, en Play: `call Ayni.Editor.AyniOutcomePreview.Reforest` y
   `call Ayni.Editor.AyniOutcomePreview.Shot 60 13 4.5` (ángulo, distancia y altura de la cámara). El desenlace real se puede
-  forzar con `call Ayni.Editor.AyniPlaytestProbe.HitBoss 200 999` seguido de `call Ayni.Core.AyniInput.Simulate Mercy 0.15`.
+  forzar así (Amaru tiene dos barras desde la v0.7.0): `call Ayni.Editor.AyniPlaytestProbe.PlaceYariNearBoss 3 0`,
+  `call Ayni.Editor.AyniPlaytestProbe.HitBoss 400 0` (vacía la primera barra), `wait 7` (escena de la segunda fase),
+  `call Ayni.Editor.AyniPlaytestProbe.HitBoss 300 999` (Juicio Ayni), `wait 3` y `call Ayni.Core.AyniInput.Simulate Mercy 0.15`.
 
 ## Mando de Xbox
 
