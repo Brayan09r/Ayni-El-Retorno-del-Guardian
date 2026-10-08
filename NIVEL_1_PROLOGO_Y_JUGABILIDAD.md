@@ -210,6 +210,52 @@ screenshot nombre                                Game View completa, con HUD y t
 stop
 ```
 
+## Jefes en dos fases (v0.7.0)
+
+- `EnemyController` → sección **Jefe: fases**:
+  - `bossPhaseHealth` = vida de cada barra (Amaru: 380 y 460). Al vaciar una barra que no es la última empieza `PhaseTransitionRoutine`:
+    el jefe es invulnerable, cae (`Knockdown`), se levanta (`GetUp`) mientras se rellena la barra, se gira hacia Yari y ruge (`Phase_Roar`).
+  - Cada fase nueva multiplica el ritmo de ataque, el daño, la anticipación y la velocidad (`phase*Multiplier`).
+  - `bossStructure` = aguante de la postura de los jefes.
+- `AyniBossPhaseDirector` pone la escena: cámara lenta al caer, la cámara rodea al jefe y termina de frente para el grito,
+  el título "SEGUNDA FASE", el sonido y el aura de brasas (`AyniEnrageAura`). Yari se aparta en guardia (`HoldForCinematic`).
+- `AmaruHunter`: con varias fases, la cerbatana es el arma de la segunda.
+- El Juicio Ayni solo se abre en la última fase (`InFinalPhase`).
+
+## Menú de pausa (v0.7.0)
+
+- `AyniPauseMenu` (Esc / Menu): volumen general (`AudioListener.volume`), efectos (`AyniAudio.Volume`) y música
+  (`AyniAudio.AmbienceVolume`), guardados en PlayerPrefs; ver el tutorial y reiniciar el nivel. Pausa el tiempo.
+- La cámara ya no libera el cursor con Esc: lo hace el menú.
+
+## Sonido (v0.6.0)
+
+- Todos los sonidos están en `Assets/Resources/AyniAudio/*.wav` y los genera `Herramientas/Audio/generar_sfx.py`
+  (síntesis propia, sin licencias de terceros). Para regenerarlos: `python Herramientas/Audio/generar_sfx.py --espectros`;
+  el `--espectros` dibuja `Herramientas/Audio/espectros.png` para revisarlos a ojo.
+- **Para cambiar un sonido** basta con reemplazar su `.wav` por otro con el mismo nombre. Las variantes van numeradas
+  (`golpe_ligero_1`, `_2`...) y se pueden añadir más: `AyniAudio` elige una al azar.
+- `AyniAudio.Play("nombre", punto)` (3D), `Play2D` (interfaz y escenas), `PlayLoop` / `PlayMusic` + `StopLoop` (ambiente y música).
+  Los impactos suenan desde `CombatFeedback`, así que cualquier golpe nuevo que use LightHit / HeavyHit / Finisher ya suena.
+- Pasos: `AyniFootsteps` (Yari y rivales) suena un paso por zancada recorrida por el suelo.
+- Ambiente: `AyniLevelAmbience` pone el viento; el prólogo, fuego y quena; el desenlace, lluvia (Ayni) o fuego (Venganza).
+- Ajustes de importación: `Assets/Editor/AyniAudioImport.cs`. Efectos descomprimidos al cargar; ambiente y música comprimidos.
+
+## Elegir rival y patada hacia atrás (v0.6.0)
+
+- Al golpear con el stick (o WASD) inclinado, el golpe va al rival que hay en esa dirección: hasta 6 m y 55° de margen.
+  Sin dirección: el fijado o el más cercano, como antes.
+- Si ese rival está a la espalda de Yari (más de 115° y a menos de 2.6 m), Yari lanza la **patada hacia atrás**
+  (`Atk_BackKick`, clip `Yari_Back_Kick` de la Fragua) sin girarse, y luego se gira hacia él.
+  Cuenta hacia dónde miraba Yari al empezar a inclinar el stick (hasta 0.6 s antes), porque al moverse se gira enseguida.
+
+## Estados sin IK de pies (`SinIK`)
+
+Los clips generados por la Fragua no traen las "metas de IK" de los pies que sí traen los de Mixamo. Si el FootIK se aplica sobre
+ellos, manda los pies a cualquier sitio: en v0.5.0 las esquivas se veían como una bolita flotando. `AyniAnimatorUpgrade` pone la
+etiqueta `SinIK` a esos estados, y en ellos `FootIK` y `AndeanCombatStanceModifier` se apartan. Cualquier estado nuevo con
+un clip generado debe llevar esa etiqueta.
+
 ## Otros cambios
 
 - `AyniNewCombatAnimationsImporter` ahora corre una sola vez por sesión del editor y nunca al entrar en Play.
@@ -220,7 +266,7 @@ stop
 ## Pendiente / ideas
 
 - Modelo de Sayri para el prólogo (ahora el golpe llega desde fuera de cuadro).
-- Sonido (golpes, lluvia, quena del prólogo) y vibración del mando. La vibración necesita el paquete Input System.
+- Vibración del mando (necesita el paquete Input System) y voces (gritos de golpe y de dolor).
 - Trampas de red con estacas de Amaru (Biblia 4.3) y entorno de selva quemada del Antisuyo.
 
 ## El tráiler

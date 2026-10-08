@@ -24,6 +24,21 @@ namespace Ayni.Combat
         public bool Suspended;
 
         /// <summary>
+        /// Etiqueta de los estados del Animator en los que no se apoyan los pies (esquivas, caídas, aterrizaje...).
+        /// Los clips generados por la Fragua no traen "metas de IK" de los pies como los de Mixamo: si se apoyaran,
+        /// los pies irían a parar a cualquier sitio (se veían recogidos en el aire). La pone AyniAnimatorUpgrade.
+        /// </summary>
+        public const string NoIKTag = "SinIK";
+
+        /// <summary>El Animator está en (o entrando a) un estado sin apoyo de pies.</summary>
+        public static bool IsNoIKState(Animator animator)
+        {
+            if (animator == null || animator.runtimeAnimatorController == null) return false;
+            if (animator.GetCurrentAnimatorStateInfo(0).IsTag(NoIKTag)) return true;
+            return animator.IsInTransition(0) && animator.GetNextAnimatorStateInfo(0).IsTag(NoIKTag);
+        }
+
+        /// <summary>
         /// Metros extra que baja la cadera con los pies clavados en el suelo (las rodillas se flexionan).
         /// Lo usa la postura andina para bajar el centro de gravedad sin hundir los pies.
         /// </summary>
@@ -55,6 +70,14 @@ namespace Ayni.Combat
         private void OnAnimatorIK(int layerIndex)
         {
             if (layerIndex != 0 || animator == null || !animator.isHuman) return;
+
+            // Estados sin metas de IK (clips generados): los pies se quedan donde los pone la animación, sin transición
+            if (IsNoIKState(animator))
+            {
+                weight = 0f;
+                leftOffset = rightOffset = pelvisOffset = 0f;
+                return;
+            }
 
             bool active = !Suspended && (controller == null || (controller.enabled && controller.isGrounded));
             weight = Mathf.MoveTowards(weight, active ? 1f : 0f, Time.deltaTime * 6f);

@@ -46,9 +46,12 @@ namespace Ayni.Story
             if (AyniPurificationManager.Instance != null) AyniPurificationManager.Instance.OnCombatResolved += HandleResolved;
         }
 
+        private int ambienceLoop = -1;
+
         private void OnDestroy()
         {
             if (AyniPurificationManager.Instance != null) AyniPurificationManager.Instance.OnCombatResolved -= HandleResolved;
+            AyniAudio.StopLoop(ambienceLoop, 0.4f);
         }
 
         private void HandleResolved(EnemyController enemy, bool spared)
@@ -57,6 +60,7 @@ namespace Ayni.Story
             running = true;
             mercy = spared;
             bossName = enemy.CharacterName;
+            AyniAudio.Play2D(spared ? "ayni_perdon" : "venganza", 0.9f);
             StartCoroutine(Ending(enemy));
         }
 
@@ -80,12 +84,14 @@ namespace Ayni.Story
             {
                 AyniScreenFX.Tint(new Color(0.12f, 0.32f, 0.2f), 0.14f);
                 spawned.Add(BuildRain(center));
+                ambienceLoop = AyniAudio.PlayLoop("amb_lluvia", 0.75f, 3f);
                 AyniReforestation.Begin(center, new[] { yariPos, boss.transform.position }, spawned);
             }
             else
             {
                 AyniScreenFX.Tint(new Color(0.25f, 0.12f, 0.08f), 0.34f);
                 spawned.Add(BuildAsh(center));
+                ambienceLoop = AyniAudio.PlayLoop("amb_fuego", 0.6f, 3f);
             }
 
             string[] lines = mercy
@@ -126,6 +132,7 @@ namespace Ayni.Story
                 yield return null;
             }
 
+            AyniAudio.Play2D(mercy ? "illa_brillo" : "titulo_golpe", 0.75f);
             if (mercy) AyniScreenFX.Title("ODS 15 · VIDA DE ECOSISTEMAS TERRESTRES", "El Antisuyo empieza a sanar. Yari restauró el Ayni.", 4.5f);
             else AyniScreenFX.Title("LA VÍA DE LA VENGANZA", "El bosque sigue ardiendo. Yari carga con la Hucha.", 4.5f);
             yield return new WaitForSecondsRealtime(4.6f);

@@ -24,6 +24,7 @@ namespace Ayni.Editor
         public const string StateFallLoop = "Fall_Loop";
         public const string StateFallBack = "Fall_Back";
         public const string StateLandHard = "Land_Hard";
+        public const string StateBackKick = "Atk_BackKick";
 
         [MenuItem("Ayni/Animaciones/3. Añadir Estados Nuevos al Animator de Yari")]
         public static void Apply()
@@ -52,6 +53,15 @@ namespace Ayni.Editor
             added += AddState(sm, StateFallLoop, AyniAnimationForge.FallLoop, null, 1.0f, 0f, true);
             added += AddState(sm, StateFallBack, AyniAnimationForge.FallBack, null, 1.0f, 0f, false);
             added += AddState(sm, StateLandHard, AyniAnimationForge.LandHard, combat, 1.0f, 0.9f, false);
+            // Patada hacia atrás: la lanza el combo por código, con la velocidad del parámetro AttackSpeed
+            AnimatorState backKick = null;
+            added += AddState(sm, StateBackKick, AyniAnimationForge.BackKick, combat, 1.0f, 0.92f, false);
+            backKick = Find(sm, StateBackKick);
+            if (backKick != null)
+            {
+                backKick.speedParameterActive = true;
+                backKick.speedParameter = "AttackSpeed";
+            }
 
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
@@ -70,6 +80,8 @@ namespace Ayni.Editor
             if (idle == null) return;
 
             int added = AddState(sm, "Hunter_Leap", AyniAnimationForge.AvoidJump, idle, 0.85f, 0.9f, false);
+            // Grito al empezar la segunda fase
+            added += AddState(sm, "Phase_Roar", AyniAnimationForge.Roar, idle, 1f, 0.95f, false);
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
             if (added > 0) Debug.Log("<color=green>[Ayni Animator]</color> Amaru: estado Hunter_Leap (salto del Cazador) añadido.");
@@ -109,6 +121,8 @@ namespace Ayni.Editor
             state.motion = clip;
             state.speed = speed;
             state.writeDefaultValues = true;
+            // Los clips generados no traen metas de IK de los pies: en estos estados no se apoyan (ver FootIK)
+            state.tag = Ayni.Combat.FootIK.NoIKTag;
 
             if (returnTo != null && !loop)
             {

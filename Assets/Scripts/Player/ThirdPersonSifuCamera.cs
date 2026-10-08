@@ -297,12 +297,7 @@ namespace Ayni.Player
 
             ApplyShake();
 
-            // Escape libera el cursor (útil para salir del Play en el Editor)
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }
+            // El cursor lo libera el menú de pausa (Esc), que también sirve para salir del Play en el Editor
         }
     }
 }

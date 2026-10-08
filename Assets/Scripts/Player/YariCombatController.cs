@@ -111,6 +111,16 @@ namespace Ayni.Player
         [Tooltip("Al atacar, Yari se gira hacia el enemigo más cercano dentro de esta distancia.")]
         [SerializeField] private float autoFaceRange = 3.5f;
 
+        [Header("Elegir rival con el stick")]
+        [Tooltip("Al atacar inclinando el stick (o WASD), Yari busca al rival que hay en esa dirección dentro de esta distancia.")]
+        [SerializeField] private float stickTargetRange = 6f;
+        [Tooltip("Ángulo máximo (grados) entre la dirección del stick y el rival elegido.")]
+        [SerializeField] private float stickTargetAngle = 55f;
+        [Tooltip("Si el rival elegido queda a la espalda de Yari (más de estos grados respecto a donde mira) y cerca, " +
+                 "lanza la patada hacia atrás sin girarse, como en Sifu.")]
+        [SerializeField] private float backKickAngle = 115f;
+        [SerializeField] private float backKickRange = 2.6f;
+
         [Header("Defensa")]
         [Tooltip("Segundos de invulnerabilidad de cada esquiva (Duck evita ataques altos, Jump evita bajos).")]
         [SerializeField] private float dodgeWindow = 0.45f;
@@ -225,6 +235,15 @@ namespace Ayni.Player
         // Remates: pesado tras 2-3 ligeros = cabezazo; pesado tras los 4 ligeros = patada frontal de empuje
         private static readonly AttackDef HeadbuttFinisher = new AttackDef("Atk_Headbutt", "Heavy_Headbutt", true, 0.97f, 1.2f, 1.5f, HitReaction.Heavy, 0.80f, 2);
         private static readonly AttackDef FrontKickFinisher = new AttackDef("Atk_FrontKick", "Heavy_FrontKick", true, 0.83f, 1.3f, 1.7f, HitReaction.Knockdown, 1.60f, 2);
+
+        // Patada hacia atrás: con el stick hacia un rival que está a la espalda (clip generado por la Fragua)
+        private static readonly AttackDef BackKick = new AttackDef("Atk_BackKick", "Yari_Back_Kick", true, 0.22f, 1.25f, 1.6f, HitReaction.Heavy, 1.10f, 2);
+        private bool backAttack;
+        // Hacia dónde miraba Yari al empezar a inclinar el stick: al moverse se gira, y sin esto el rival que estaba
+        // a su espalda dejaría de estarlo antes de que dé tiempo a pulsar el golpe
+        private Vector3 facingAtStickStart;
+        private float stickActiveSince = -10f;
+        private bool stickWasActive;
 
         /// <summary>Punto del clip GetUp (0-1) desde el que Yari empieza a levantarse; el Animator usa el mismo valor.</summary>
         public const float GetUpStartNormalized = 0.25f;
@@ -381,6 +400,7 @@ namespace Ayni.Player
             }
             ApplyVisualGroundOffset();
             footIK = FootIK.Attach(animator, characterController);
+            AyniFootsteps.Attach(gameObject, 0.5f);
         }
 
         /// <summary>
@@ -743,6 +763,7 @@ namespace Ayni.Player
 
             Vector2 move = AyniInput.Move;
             float analog = Mathf.Clamp01(move.magnitude); // con el stick, inclinarlo poco = caminar despacio
+            TrackStickStart(analog);
             Vector3 direction = analog > 0.001f ? new Vector3(move.x, 0f, move.y) / analog : Vector3.zero;
 
             bool hasMoveInput = analog >= 0.1f;
@@ -1002,6 +1023,7 @@ namespace Ayni.Player
                 PlayJumpAnimation(airTime, runningJump);
                 jumpInAir = true;
                 jumpStartTime = Time.time;
+                AyniAudio.Play("salto", transform.position + Vector3.up, 0.6f);
 
                 if (runningJump)
                 {
@@ -1080,6 +1102,7 @@ namespace Ayni.Player
             if (!jumpInAir || Time.time - jumpStartTime < 0.15f || !characterController.isGrounded) return;
             jumpInAir = false;
             leaping = false;
+            if (!fallAnimPlaying) AyniAudio.Play("aterrizaje", transform.position, 0.7f);
             if (!animator) return;
 
             AnimatorStateInfo now = animator.GetCurrentAnimatorStateInfo(0);
@@ -1149,6 +1172,8 @@ namespace Ayni.Player
         private void Land(float drop)
         {
             if (isDead) return;
+            AyniAudio.Play(drop >= hardLandingHeight ? "aterrizaje_fuerte" : "aterrizaje", transform.position,
+                           Mathf.Lerp(0.7f, 1f, Mathf.InverseLerp(1.5f, 8f, drop)));
 
             if (drop >= hardLandingHeight && HasState("Land_Hard"))
             {
@@ -1187,6 +1212,7 @@ namespace Ayni.Player
 
         private IEnumerator PoisonRoutine(float seconds, float damagePerSecond)
         {
+            AyniAudio.Play("veneno", transform.position + Vector3.up * 1.2f, 0.8f);
             Ayni.UI.AyniScreenFX.Tint(new Color(0.18f, 0.55f, 0.12f), 0.22f);
             float t = 0f;
             while (t < seconds && !isDead)
@@ -1247,6 +1273,7 @@ namespace Ayni.Player
                 animator.SetFloat("Speed", 0f);
                 animator.ResetTrigger("Hit");
                 string fallState = HasState("Fall_Back") ? "Fall_Back" : "Fall_Loop";
+                AyniAudio.Play2D("caida_viento", 0.85f);
                 if (HasState(fallState)) animator.CrossFadeInFixedTime(fallState, 0.18f);
             }
 
@@ -1270,6 +1297,7 @@ namespace Ayni.Player
                 if (transform.position.y <= waterY + 0.9f)
                 {
                     splashed = true;
+                    AyniAudio.Play2D("chapuzon", 0.9f);
                     break;
                 }
                 if (characterController.isGrounded && Time.unscaledTime - startTime > 0.25f) break;
@@ -1309,6 +1337,7 @@ namespace Ayni.Player
 
             if (talisman.TriggerResurrection())
             {
+                AyniAudio.Play2D("illa_brillo", 0.8f);
                 structure.ResetStructure();
                 currentHealth = MaxHealth; // La vida máxima baja con la edad
                 isDead = false;
@@ -1349,6 +1378,50 @@ namespace Ayni.Player
 
             yield return new WaitForSecondsRealtime(0.2f);
             beingRescued = false;
+        }
+
+        /// <summary>
+        /// Una escena toma el control (el cambio de fase de un jefe): Yari deja lo que hacía y espera en guardia a
+        /// <paramref name="distance"/> m de <paramref name="focus"/>, mirándolo. Si ahí no hay suelo firme, se queda donde está.
+        /// </summary>
+        public void HoldForCinematic(Vector3 focus, float distance)
+        {
+            CancelPendingAttack();
+            SetGuard(false);
+            SetCrouch(false);
+            isSprinting = false;
+            leaping = false;
+            velocity = Vector3.zero;
+            currentAnimSpeed = 0f;
+
+            Vector3 away = transform.position - focus;
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.01f) away = -transform.forward;
+            Vector3 spot = focus + away.normalized * distance;
+            if (Physics.Raycast(spot + Vector3.up * 3f, Vector3.down, out RaycastHit hit, 8f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) &&
+                Mathf.Abs(hit.point.y - transform.position.y) < 2f && Vector3.Angle(hit.normal, Vector3.up) < 35f)
+            {
+                Teleport(hit.point + Vector3.up * 0.05f);
+            }
+
+            Vector3 look = focus - transform.position;
+            look.y = 0f;
+            if (look.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(look);
+
+            EnterCombatStance();
+            if (animator)
+            {
+                animator.SetFloat("Speed", 0f);
+                if (HasState("Combat_Locomotion")) animator.CrossFadeInFixedTime("Combat_Locomotion", 0.2f);
+            }
+            CinematicControl = true;
+        }
+
+        /// <summary>La escena devuelve el control a Yari.</summary>
+        public void ReleaseFromCinematic()
+        {
+            CinematicControl = false;
+            EnterCombatStance();
         }
 
         private void Teleport(Vector3 position)
@@ -1408,6 +1481,7 @@ namespace Ayni.Player
 
         private void StartAvoid(AvoidKind kind)
         {
+            AyniAudio.Play("esquiva_mov", transform.position + Vector3.up, 0.6f, 0.1f);
             bool sway = kind == AvoidKind.SwayLeft || kind == AvoidKind.SwayRight;
             dodgeUntil = Time.time + (sway ? swayWindow : dodgeWindow);
             dodgeEvadesAll = sway;
@@ -1465,6 +1539,17 @@ namespace Ayni.Player
             {
                 if (!attackHitDone) ApplyReachAssist();
 
+                // Tras la patada hacia atrás, Yari se gira hacia el rival mientras recoge la pierna
+                if (backAttack && attackHitDone && Time.time > attackHitTime + 0.12f && lungeTarget != null && !lungeTarget.IsDead)
+                {
+                    Vector3 to = lungeTarget.transform.position - transform.position;
+                    to.y = 0f;
+                    if (to.sqrMagnitude > 0.0001f)
+                    {
+                        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(to), 540f * Time.deltaTime);
+                    }
+                }
+
                 if (!attackHitDone && Time.time >= attackHitTime)
                 {
                     attackHitDone = true;
@@ -1506,11 +1591,30 @@ namespace Ayni.Player
             bufferedAttack = 0;
             if (isCrouching) SetCrouch(false);
             EnterCombatStance();
-            FaceNearestEnemy();
+
+            // Rival al que va el golpe: el que señala el stick, o si no el fijado o el más cercano.
+            // Si el stick señala a uno que está a la espalda, patada hacia atrás sin girarse
+            EnemyController target = ChooseAttackTarget(out bool behind);
+            lungeTarget = target;
+            backAttack = behind && HasState(BackKick.state);
+            if (!backAttack) FaceTarget(target);
+            else if (target != null)
+            {
+                // De espaldas al rival, justo en la línea de la patada
+                Vector3 away = transform.position - target.transform.position;
+                away.y = 0f;
+                if (away.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(away);
+            }
 
             // Elegir el golpe según el punto del combo
             AttackDef def;
-            if (!isHeavy)
+            if (backAttack)
+            {
+                def = BackKick;
+                lightCount = 0;
+                heavyIndex = 0;
+            }
+            else if (!isHeavy)
             {
                 if (lightCount >= LightChain.Length) lightCount = 0;
                 def = LightChain[lightCount];
@@ -1562,6 +1666,7 @@ namespace Ayni.Player
             }
 
             if (def.impact >= 1) StartAttackTrail(def);
+            AyniAudio.Play(def.heavy ? "swing_fuerte" : "swing_ligero", transform.position + Vector3.up * 1.2f, def.heavy ? 0.7f : 0.55f, 0.08f);
 
             if (animator)
             {
@@ -1625,7 +1730,7 @@ namespace Ayni.Player
             if (reachAssistRemaining <= 0f) return;
             float step = Mathf.Min(reachAssistSpeed * Time.deltaTime, reachAssistRemaining);
             reachAssistRemaining -= step;
-            Vector3 forward = transform.forward;
+            Vector3 forward = backAttack ? -transform.forward : transform.forward;
             forward.y = 0f;
             characterController.Move(forward.normalized * step);
         }
@@ -1635,7 +1740,8 @@ namespace Ayni.Player
         {
             if (!attackTrails || animator == null || !animator.isHuman || attackTimings == null) return;
 
-            string boneName = attackTimings.GetStrikingBone(def.clip);
+            // La patada hacia atrás es un clip generado: no está en la tabla medida, golpea con el pie derecho
+            string boneName = def.clip == BackKick.clip ? "RightFoot" : attackTimings.GetStrikingBone(def.clip);
             if (string.IsNullOrEmpty(boneName) || !Enum.TryParse(boneName, out HumanBodyBones boneId)) return;
             if (boneId == HumanBodyBones.Head) return;
 
@@ -1714,7 +1820,8 @@ namespace Ayni.Player
                 counterUntil = 0f;
             }
 
-            Vector3 forward = transform.forward;
+            // La patada hacia atrás golpea a la espalda
+            Vector3 forward = backAttack ? -transform.forward : transform.forward;
             forward.y = 0f;
 
             var enemies = EnemyController.All;
@@ -1725,7 +1832,7 @@ namespace Ayni.Player
 
                 Vector3 toEnemy = enemy.transform.position - transform.position;
                 toEnemy.y = 0f;
-                if (toEnemy.magnitude > attackRange) continue;
+                if (toEnemy.magnitude > (backAttack ? Mathf.Max(attackRange, backKickRange) : attackRange)) continue;
                 if (toEnemy.sqrMagnitude > 0.0001f && Vector3.Angle(forward, toEnemy) > attackArc * 0.5f) continue;
 
                 Vector3 hitPoint = enemy.GetHitPoint(attack.reaction, transform.position);
@@ -1739,37 +1846,81 @@ namespace Ayni.Player
             }
         }
 
-        /// <summary>Gira a Yari hacia el enemigo vivo más cercano si está a distancia de pelea.</summary>
-        private void FaceNearestEnemy()
+        /// <summary>
+        /// Elige el rival del golpe. Con el stick (o WASD) inclinado, el que está en esa dirección (relativa a la cámara),
+        /// el más cercano y mejor alineado; así se puede cambiar de rival en mitad de una pelea en grupo.
+        /// Sin dirección: el rival fijado o el más cercano. <paramref name="behind"/> = el elegido con el stick está a la
+        /// espalda de Yari y a distancia de patada.
+        /// </summary>
+        private EnemyController ChooseAttackTarget(out bool behind)
         {
-            EnemyController nearest = lockTarget != null && !lockTarget.IsDead ? lockTarget : null;
-            float best = autoFaceRange;
+            behind = false;
+            EnemyController chosen = null;
+            Vector2 move = AyniInput.Move;
 
-            var enemies = EnemyController.All;
-            for (int i = 0; nearest == null && i < enemies.Count; i++)
+            if (move.magnitude > 0.35f && cameraTransform != null)
             {
-                EnemyController enemy = enemies[i];
-                if (enemy == null || enemy.IsDead) continue;
+                Vector3 camForward = cameraTransform.forward;
+                Vector3 camRight = cameraTransform.right;
+                camForward.y = 0f;
+                camRight.y = 0f;
+                Vector3 wanted = (camForward.normalized * move.y + camRight.normalized * move.x).normalized;
 
-                Vector3 to = enemy.transform.position - transform.position;
-                to.y = 0f;
-                float dist = to.magnitude;
-                if (dist < best)
+                float bestScore = float.MaxValue;
+                float chosenDist = 0f;
+                Vector3 chosenTo = Vector3.zero;
+                var enemies = EnemyController.All;
+                for (int i = 0; i < enemies.Count; i++)
                 {
-                    best = dist;
-                    nearest = enemy;
+                    EnemyController enemy = enemies[i];
+                    if (enemy == null || enemy.IsDead) continue;
+                    Vector3 to = enemy.transform.position - transform.position;
+                    to.y = 0f;
+                    float dist = to.magnitude;
+                    if (dist > stickTargetRange) continue;
+                    float angle = dist > 0.01f ? Vector3.Angle(wanted, to) : 0f;
+                    if (angle > stickTargetAngle) continue;
+                    float score = dist + angle * 0.05f;
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        chosen = enemy;
+                        chosenDist = dist;
+                        chosenTo = to;
+                    }
+                }
+
+                if (chosen != null)
+                {
+                    // Lo que cuenta es hacia dónde miraba al empezar a inclinar el stick (enseguida se gira al moverse)
+                    Vector3 facing = Time.time - stickActiveSince < 0.6f ? facingAtStickStart : transform.forward;
+                    facing.y = 0f;
+                    behind = chosenDist <= backKickRange && Vector3.Angle(facing, chosenTo) >= backKickAngle;
                 }
             }
 
-            lungeTarget = nearest;
-            if (nearest == null) return;
+            if (chosen == null) chosen = lockTarget != null && !lockTarget.IsDead ? lockTarget : NearestEnemy(autoFaceRange);
+            return chosen;
+        }
 
-            Vector3 dir = nearest.transform.position - transform.position;
-            dir.y = 0f;
-            if (dir.sqrMagnitude > 0.0001f)
+        private void TrackStickStart(float analog)
+        {
+            bool active = analog > 0.35f;
+            if (active && !stickWasActive)
             {
-                transform.rotation = Quaternion.LookRotation(dir);
+                stickActiveSince = Time.time;
+                facingAtStickStart = transform.forward;
             }
+            stickWasActive = active;
+        }
+
+        /// <summary>Gira a Yari hacia el rival del golpe.</summary>
+        private void FaceTarget(EnemyController target)
+        {
+            if (target == null) return;
+            Vector3 dir = target.transform.position - transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(dir);
         }
 
         public void EnterCombatStance()
@@ -1874,6 +2025,7 @@ namespace Ayni.Player
             if (isDead) return;
 
             Debug.Log("[Ayni] ¡La guardia de Yari se ha roto! Queda expuesto.");
+            AyniAudio.Play("postura_rota", transform.position + Vector3.up * 1.3f, 0.9f, 0.03f);
             CancelPendingAttack();
             SetGuard(false);
             stunnedUntil = Time.time + guardBreakStun;
@@ -1911,6 +2063,7 @@ namespace Ayni.Player
 
             if (talisman.TriggerResurrection())
             {
+                AyniAudio.Play2D("illa_brillo", 0.8f);
                 structure.ResetStructure();
                 currentHealth = MaxHealth; // La vida máxima baja con la edad
                 isDead = false;

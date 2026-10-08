@@ -43,7 +43,8 @@ namespace Ayni.Core
             Skip,      // Saltar escena o tutorial
             Tutorial,
             Restart,
-            ToggleHud
+            ToggleHud,
+            Pause      // Menú de pausa y opciones de sonido
         }
 
         // Botones del mando de Xbox en Windows (Input Manager clásico)
@@ -162,6 +163,7 @@ namespace Ayni.Core
                 case Action.Tutorial: return pad ? "View" : "F1";
                 case Action.Restart: return pad ? "Menu" : "R";
                 case Action.ToggleHud: return pad ? "Cruceta ↑" : "H";
+                case Action.Pause: return pad ? "Menu" : "Esc";
             }
             return action.ToString();
         }
@@ -287,6 +289,7 @@ namespace Ayni.Core
             Set(Action.Tutorial, Input.GetKey(KeyCode.F1) || Input.GetKey(PadView));
             Set(Action.Restart, Input.GetKey(KeyCode.R) || Input.GetKey(PadMenu));
             Set(Action.ToggleHud, Input.GetKey(KeyCode.H) || dpadY > 0.5f);
+            Set(Action.Pause, Input.GetKey(KeyCode.Escape) || Input.GetKey(PadMenu));
 
             for (int i = 0; i < ActionCount; i++)
             {
