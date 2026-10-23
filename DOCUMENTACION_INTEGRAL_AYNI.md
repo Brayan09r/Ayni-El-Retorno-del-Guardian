@@ -16,6 +16,7 @@
 4. [Arquitectura Técnica, Diagramas UML/Mermaid y Software](#4-arquitectura-técnica-diagramas-umlmermaid-y-software)
 5. [Diseño del Nivel 1, Aldea Inca, Rivales y Proyección de Niveles 2–5](#5-diseño-del-nivel-1-aldea-inca-rivales-y-proyección-de-niveles-25)
 6. [Plan de Pruebas de Calidad (QA), Métricas y Catálogo de Recursos](#6-plan-de-pruebas-de-calidad-qa-métricas-y-catálogo-de-recursos)
+7. [Conclusiones del Proyecto](#7-conclusiones-del-proyecto)
 
 > **Documentos Especializados por Módulo en el Repositorio:**
 > - 🏗️ [Arquitectura Técnica y Diagramas UML/Mermaid (`ARQUITECTURA_TECNICA.md`)](ARQUITECTURA_TECNICA.md)
@@ -64,8 +65,8 @@ Durante la defensa del puente colgante sobre la garganta sagrada, el joven guard
 
 ```mermaid
 flowchart TD
-    JA{"Juicio Ayni al Jefe del Nivel"} -->|Camino del Ayni: Perdón| REST["Restauración Ecológica y Social"]
-    JA -->|Camino de la Venganza: Ejecución| DEGR["Degradación Ambiental (Ceniza y Sequía)"]
+    JA{"Juicio Ayni al Jefe del Nivel"} -->|"Camino del Ayni: Perdón"| REST["Restauración Ecológica y Social"]
+    JA -->|"Camino de la Venganza: Ejecución"| DEGR["Degradación Ambiental (Ceniza y Sequía)"]
 
     REST --> ODS15["Nivel 1 (Amaru): ODS 15\nVida de Ecosistemas Terrestres\n(Reforestación de Queñuales y Cantutas)"]
     REST --> ODS8["Nivel 2 (Túpac): ODS 8 y 12\nTrabajo Decente y Minería Responsable"]
@@ -86,13 +87,13 @@ flowchart TD
 ### 3.1. Bucle Central de Jugabilidad y Combate
 
 ```mermaid
-graph TD
+flowchart TD
     A["Yari entra en Combate"] --> B["Ataques Rumi Maki / Paradas (0.22s)"]
     B --> C["Aumenta Estructura del Enemigo"]
-    C -->|Barra llena (100 / 150 pts)| D["¡Postura ROTA (Stunned)!"]
+    C -->|"Barra llena (100 / 150 pts)"| D["¡Postura ROTA (Stunned)!"]
     D --> E{"Juicio Ayni (Cámara Lenta 0.15x)"}
-    E -->|Tecla F / B: Venganza| F["Golpe Letal - Lluvia de Ceniza"]
-    E -->|Tecla X / A: Perdón Ayni| G["Desarme, -1 Contador de Muertes y Reforestación ODS 15"]
+    E -->|"Tecla F / B: Venganza"| F["Golpe Letal - Lluvia de Ceniza"]
+    E -->|"Tecla X / A: Perdón Ayni"| G["Desarme, -1 Contador de Muertes y Reforestación ODS 15"]
     
     A --> H["Yari Recibe Daño Letal o Cae al Abismo"]
     H --> I["Talismán Illa Resucita a Yari"]
@@ -420,4 +421,14 @@ sequenceDiagram
 | **TC-12** | `AyniPauseMenu` | Abrir el menú de pausa (`Esc` / `Menu`), modificar los 3 controles de volumen y reiniciar. | El tiempo se detiene (`Time.timeScale = 0`) y los niveles de volumen persisten en `PlayerPrefs`. | **PASS** |
 
 ---
+
+## 7. CONCLUSIONES DEL PROYECTO
+
+1. **Integración Exitosa de Ingeniería de Software y Diseño de Videojuegos:** El desarrollo de **AYNI: El Retorno del Guardián (`v0.7.0`)** demuestra la viabilidad de construir un videojuego de acción táctica en tercera persona sobre **Unity 6 (`6000.3.23f1`)** con **Universal Render Pipeline (URP)** empleando una arquitectura modular desacoplada por eventos (`Ayni.*`) y un patrón de auto-ensamblaje en tiempo de ejecución (`SifuCombatHUD`). Este enfoque permitió que múltiples desarrolladores colaboraran sobre el mismo repositorio sin generar conflictos de fusión sobre la escena principal.
+2. **Precisión Matemática en Combate y Animación Procedural:** La combinación de las 29 animaciones de captura de movimiento con los 9 clips generados por código en la Fragua (`AyniAnimationForge`), el aislamiento selectivo mediante la etiqueta `SinIK` y la calibración matemática de cadencia (`AyniAttackTimingBaker`) redujo el patinaje de pies de un 94% inicial a un rango óptimo del **1% al 9%**, logrando una respuesta táctica fiel a referentes como *Sifu* y *Sekiro*.
+3. **Producción Autónoma de Activos Multimedia Libres de Derechos:** La generación procedural de la arquitectura incaica de las cuatro *Kanchas*, los cinco shaders HLSL a medida, la reforestación en tiempo real de bosques de *queñuales (`Polylepis`)* y la síntesis matemática en Python de los **42 efectos de sonido y música andina (`generar_sfx.py`)** garantizan un producto tecnológicamente autónomo, ligero para su despliegue WebGL en **Unity Play** (68 MB) y 100% libre de infracciones de propiedad intelectual.
+4. **Valor Cultural e Impacto Educativo Sostenible (Agenda 2030):** Más allá del desafío mecánico del arte marcial **Rumi Maki** y el envejecimiento del **Talismán Illa**, el proyecto convierte el principio andino del **Ayni** en una mecánica de decisión moral significativa que vincula directamente la acción del jugador con la restauración ecológica de los ecosistemas altoandinos (**ODS 15**), consolidando al videojuego como un medio de difusión cultural e impacto ambiental positivo.
+
+---
 *Documentación Integral del Proyecto — Ayni: El Retorno del Guardián (`v0.7.0`).*
+
