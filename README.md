@@ -66,5 +66,36 @@
 
 ---
 
-## 👥 Créditos y Desarrollo
+## 🌐 Jugar en el Navegador (Unity Play — WebGL)
+
+El Nivel 1 completo (**Valle de las Sombras / El Camino del Antisuyo**, `v0.7.0`) se encuentra publicado y disponible para jugar directamente en el navegador sin instalación:
+- 🎮 **[Jugar AYNI: El Retorno del Guardián en Unity Play](https://play.unity.com/en/games/66b8abca-71ca-4703-8580-d51948d2be29/ayninivel1)**
+
+---
+
+## 📚 Índice Completo de Documentación del Proyecto
+
+| Documento | Descripción y Alcance |
+| :--- | :--- |
+| 📘 **[DOCUMENTACION_INTEGRAL_AYNI.md](DOCUMENTACION_INTEGRAL_AYNI.md)** | **Documento Maestro Consolidado:** Ficha técnica, narrativa, GDD, arquitectura de software, diseño de niveles, ODS y QA en tercera persona. |
+| 📜 **[GDD_AYNI.md](GDD_AYNI.md)** | **Game Design Document (GDD):** Historia ilustrada, bucles de jugabilidad, mecánicas centrales y estructura de misiones. |
+| 🏗️ **[ARQUITECTURA_TECNICA.md](ARQUITECTURA_TECNICA.md)** | **Arquitectura de Software:** Diagramas UML/Mermaid de clases, máquinas de estados (FSM), secuencia de combate, los 29 scripts de runtime, 5 shaders URP y 28 herramientas de editor. |
+| 🧪 **[PLAN_DE_PRUEBAS_QA.md](PLAN_DE_PRUEBAS_QA.md)** | **Aseguramiento de Calidad y Balanceo:** Curva matemática de envejecimiento de la Illa, métricas anti-patinaje y matriz de 15 casos de prueba funcionales (`TC-01` a `TC-15`). |
+| 🏔️ **[NARRATIVA_Y_CULTURA_ANDINA.md](NARRATIVA_Y_CULTURA_ANDINA.md)** | **Fundamentación Cultural y ODS:** Cosmovisión del *Ayni*, *Illa*, *Rumi Maki / Takanakuy*, glosario Quechua–Español, guion de voces y alineación con los **ODS 15, 6, 12 y 16**. |
+| 🗺️ **[DISENO_NIVELES_2_AL_5.md](DISENO_NIVELES_2_AL_5.md)** | **Diseño de Niveles 2 al 5:** Expansión hacia las Canteras de Bronce (*Túpac*), Terrazas de Agua (*Apo Rumi*), Palacio Alquímico (*Mama Churi*) e Intihuatana (*General Sayri*). |
+| 📦 **[CATALOGO_RECURSOS_Y_LICENCIAS.md](CATALOGO_RECURSOS_Y_LICENCIAS.md)** | **Catálogo de Recursos y Audio:** Inventario de modelos 3D, las 38 animaciones, los 42 efectos de sonido sintetizados en Python y recursos pendientes. |
+| 🏘️ **[ALDEA_INCA.md](ALDEA_INCA.md)** · **[ENTORNO_ACANTILADOS.md](ENTORNO_ACANTILADOS.md)** | Diseño técnico y arquitectónico de las 4 *Kanchas* incas, 8 obstáculos, árboles renacientes y relieve del cañón. |
+| 🕹️ **[CONTROLES.md](CONTROLES.md)** · **[NIVEL_1_PROLOGO_Y_JUGABILIDAD.md](NIVEL_1_PROLOGO_Y_JUGABILIDAD.md)** | Guía ilustrada de controles (Teclado/Ratón y Xbox) y notas técnicas de jugabilidad del Nivel 1. |
+| 🎨 **[ConceptArt/Rivales/prompts.md](ConceptArt/Rivales/prompts.md)** · **[ConceptArt/Jefes_y_Prologo/prompts.md](ConceptArt/Jefes_y_Prologo/prompts.md)** | Prompts técnicos en A-pose simétrica (frente y espalda) para generación 3D de rivales, el General Sayri del prólogo y jefes. |
+| 📋 **[CHANGELOG.md](CHANGELOG.md)** · **[COLLABORATORS.md](COLLABORATORS.md)** | Historial detallado de versiones (`v0.3.0` a `v0.7.0`) y normas de contribución en Git. |
+
+---
+
+## 👥 Equipo de Desarrollo y Colaboradores
+
+- **Brayan (`@Brayan09r`):** Dirección técnica y artística, arquitectura de entorno andino, modelos 3D/animaciones, aldea inca procedural, reforestación, tráiler y compilación WebGL.
+- **Benn / Ragnar (`@BennJulius` / `@RagnarLoth21`):** Programación de sistemas de juego (prólogo, soporte de mando Xbox, esquivas Sifu, síntesis de audio en Python, jefes en dos fases y menú de pausa).
+- **Gilmer Antonny (`@Antonnyy`):** Ingeniería de documentación técnica, arquitectura de software (UML/Mermaid), aseguramiento de calidad (QA), fundamentación cultural/ODS y gestión de recursos de diseño.
+
 Desarrollado con pasión como proyecto de combate 3D andino y beat 'em up para Unity 6.
+
