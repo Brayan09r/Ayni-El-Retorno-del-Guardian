@@ -13,7 +13,7 @@
 1. [Resumen Ejecutivo y Ficha Técnica del Proyecto](#1-resumen-ejecutivo-y-ficha-técnica-del-proyecto)
 2. [Historia, Narrativa y Fundamentación Cultural Andina](#2-historia-narrativa-y-fundamentación-cultural-andina)
 3. [Diseño de Juego (GDD) y Mecánicas de Combate](#3-diseño-de-juego-gdd-y-mecánicas-de-combate)
-4. [Arquitectura Técnica y de Software](#4-arquitectura-técnica-y-de-software)
+4. [Arquitectura Técnica, Diagramas UML/Mermaid y Software](#4-arquitectura-técnica-diagramas-umlmermaid-y-software)
 5. [Diseño del Nivel 1, Aldea Inca, Rivales y Proyección de Niveles 2–5](#5-diseño-del-nivel-1-aldea-inca-rivales-y-proyección-de-niveles-25)
 6. [Plan de Pruebas de Calidad (QA), Métricas y Catálogo de Recursos](#6-plan-de-pruebas-de-calidad-qa-métricas-y-catálogo-de-recursos)
 
@@ -61,6 +61,19 @@ Durante la defensa del puente colgante sobre la garganta sagrada, el joven guard
 | **Queñual (*Polylepis*) y Cantuta** | Árbol nativo altoandino que regula las cabeceras de cuenca y flor sagrada de los incas. | Especies botánicas que brotan proceduralmente en tiempo real (`AyniReforestation`) cuando el jugador elige el perdón. |
 
 ### 2.3. Alineación con los Objetivos de Desarrollo Sostenible (Agenda 2030)
+
+```mermaid
+flowchart TD
+    JA{"Juicio Ayni al Jefe del Nivel"} -->|Camino del Ayni: Perdón| REST["Restauración Ecológica y Social"]
+    JA -->|Camino de la Venganza: Ejecución| DEGR["Degradación Ambiental (Ceniza y Sequía)"]
+
+    REST --> ODS15["Nivel 1 (Amaru): ODS 15\nVida de Ecosistemas Terrestres\n(Reforestación de Queñuales y Cantutas)"]
+    REST --> ODS8["Nivel 2 (Túpac): ODS 8 y 12\nTrabajo Decente y Minería Responsable"]
+    REST --> ODS6["Nivel 3 (Apo Rumi): ODS 6\nAgua Limpia y Restauración de Acueductos"]
+    REST --> ODS12["Nivel 4 (Mama Churi): ODS 12\nProducción Limpia sin Contaminación"]
+    REST --> ODS16["Nivel 5 (General Sayri): ODS 16\nPaz, Justicia e Instituciones Sólidas"]
+```
+
 - **ODS 15 (Vida de Ecosistemas Terrestres):** Implementado íntegramente en el Nivel 1 contra **Amaru el Cazador**, responsable de la caza furtiva y la quema de los bosques del Antisuyo. Si el jugador elige el camino del **Ayni (Perdón)**, se desata una lluvia purificadora y una ola de regeneración ecológica recorre los 630 metros del camino, haciendo brotar un bosque de queñuales, matas de ichu y flores de cantuta, además de reverdecer los 61 árboles quemados del valle.
 - **ODS 6 (Agua Limpia y Saneamiento):** Proyectado para la Misión 3 (*Terrazas y Acueductos* contra Apo Rumi el Acaparador), centrada en la liberación de los canales de riego secuestrados.
 - **ODS 12 (Producción y Consumo Responsables):** Proyectado para las Misiones 2 y 4 (*Canteras de Bronce* y *Palacio Alquímico*), enfocadas en detener la explotación extractivista de minerales.
@@ -70,14 +83,30 @@ Durante la defensa del puente colgante sobre la garganta sagrada, el joven guard
 
 ## 3. DISEÑO DE JUEGO (GDD) Y MECÁNICAS DE COMBATE
 
-### 3.1. Sistema de Estructura / Postura (`StructureSystem`)
-El combate prescinde del enfoque tradicional basado únicamente en el agotamiento de puntos de salud e introduce una barra de **Estructura o Postura**:
+### 3.1. Bucle Central de Jugabilidad y Combate
+
+```mermaid
+graph TD
+    A["Yari entra en Combate"] --> B["Ataques Rumi Maki / Paradas (0.22s)"]
+    B --> C["Aumenta Estructura del Enemigo"]
+    C -->|Barra llena (100 / 150 pts)| D["¡Postura ROTA (Stunned)!"]
+    D --> E{"Juicio Ayni (Cámara Lenta 0.15x)"}
+    E -->|Tecla F / B: Venganza| F["Golpe Letal - Lluvia de Ceniza"]
+    E -->|Tecla X / A: Perdón Ayni| G["Desarme, -1 Contador de Muertes y Reforestación ODS 15"]
+    
+    A --> H["Yari Recibe Daño Letal o Cae al Abismo"]
+    H --> I["Talismán Illa Resucita a Yari"]
+    I --> J["Yari Envejece (+deathCounter Años)"]
+    J --> K["+Daño Espiritual (hasta 1.6x) / -Salud Máxima (hasta 0.6x)"]
+```
+
+### 3.2. Sistema de Estructura / Postura (`StructureSystem`)
 - **Capacidad de Postura:** Los rivales comunes poseen **100 puntos** de estructura máxima, mientras que los jefes poseen **150 puntos**.
 - **Recuperación Pasiva:** Tras transcurrir **1.2 segundos** sin recibir impactos en la postura, la barra se regenera a una tasa constante de **18 puntos por segundo**.
 - **Desvío Perfecto (*Parry*):** Si el jugador activa la guardia dentro de una ventana estricta de **0.22 segundos** antes de recibir un ataque enemigo, el golpe es desviado sin coste de estructura para Yari, infligiendo **35 puntos de daño directo a la postura del agresor** y dejándolo expuesto durante **1.0 segundo**.
 - **Ruptura de Postura (*Broken State*):** Al alcanzar el 100% de la barra, el oponente entra en estado `Stunned` durante **4.0 segundos** (o de forma indefinida mediante `HoldBroken` en el Juicio Ayni de un jefe), habilitando las acciones de remate o purificación.
 
-### 3.2. Defensa Táctica y Esquivas en el Sitio (Estilo *Sifu*)
+### 3.3. Defensa Táctica y Esquivas en el Sitio (Estilo *Sifu*)
 Al mantener el botón de guardia, Yari planta los pies en el terreno sin retroceder, encarando al oponente. Al combinar la guardia con una dirección del stick o del teclado, se ejecutan tres variantes de esquiva en el sitio (*Avoid*) generadas en la Fragua de Animaciones:
 1. **Agacharse (*Avoid Duck* — Guardia + Abajo):** Ventana de invulnerabilidad de **0.45 s** que evade todos los ataques altos (golpes de puño, codazos y ganchos).
 2. **Saltito Evasivo (*Avoid Jump* — Guardia + Arriba / Espacio):** Ventana de **0.45 s** con recogimiento de piernas que esquiva los barridos bajos (telégrafo amarillo).
@@ -85,19 +114,14 @@ Al mantener el botón de guardia, Yari planta los pies en el terreno sin retroce
 
 Toda esquiva o desvío exitoso abre una **ventana de contraataque de 0.8 segundos** en la cual el siguiente golpe de Yari aplica un **bono de ×1.6 (+60%) al daño de postura** y prolonga la recuperación del enemigo en **0.4 segundos adicionales**.
 
-### 3.3. Mecánica del Talismán Sagrado "Illa" (Envejecimiento Kármico)
-El componente `IllaTalismanSystem` modela el paso del tiempo como consecuencia directa de las caídas en combate o al abismo:
-- **Fórmula de Envejecimiento:** Yari inicia la aventura con **20 años** y un contador de muertes `deathCounter = 0`. En cada derrota, el contador se incrementa en 1 unidad y la edad aumenta según `CurrentAge += deathCounter` (primera muerte: +1 año; segunda muerte consecutiva: +2 años; tercera: +3 años).
-- **Purificación del Karma:** Perdonar a un rival o jefe mediante el camino del Ayni invoca `DecreaseDeathCounter()`, reduciendo en 1 el contador de muertes acumuladas.
-- **Muerte Definitiva:** Si la edad de Yari alcanza o supera el límite de **75 años**, la energía del talismán se agota y se dispara el evento `OnTrueDeath`.
-
+### 3.4. Mecánica del Talismán Sagrado "Illa" (Envejecimiento Kármico)
 | Etapa Vital (`AgeStage`) | Rango de Edad | Multiplicador de Daño | Multiplicador de Velocidad | Multiplicador de Salud Máxima |
 | :--- | :---: | :---: | :---: | :---: |
 | **Juventud (`Youth`)** | 20 – 35 años | `1.00×` (100%) | `1.15×` (+15% agilidad) | `1.00×` (100 HP) |
 | **Madurez (`Prime`)** | 36 – 55 años | `1.25×` (+25% potencia) | `1.00×` (Velocidad base) | `0.85×` (85 HP) |
 | **Maestro Anciano (`Elder`)** | 56 – 75 años | `1.60×` (+60% daño espiritual) | `0.85×` (-15% velocidad) | `0.60×` (60 HP) |
 
-### 3.4. Esquema Unificado de Controles
+### 3.5. Esquema Unificado de Controles
 | Acción del Jugador | Teclado y Ratón (PC) | Mando de Xbox | Descripción Técnica del Comportamiento |
 | :--- | :--- | :--- | :--- |
 | **Moverse (Caminar / Correr)** | `W` `A` `S` `D` | Stick Izquierdo (3 tramos) | Desplazamiento relativo a la cámara con ajuste automático de cadencia de pasos. |
@@ -114,13 +138,67 @@ El componente `IllaTalismanSystem` modela el paso del tiempo como consecuencia d
 
 ---
 
-## 4. ARQUITECTURA TÉCNICA Y DE SOFTWARE
+## 4. ARQUITECTURA TÉCNICA, DIAGRAMAS UML/MERMAID Y SOFTWARE
 
-### 4.1. Patrones de Diseño e Ingeniería de Software
-El sistema de software de **AYNI: El Retorno del Guardián** fue estructurado bajo el espacio de nombres `Ayni.*` aplicando tres patrones arquitectónicos fundamentales:
-1. **Patrón de Auto-Ensamblaje en Tiempo de Ejecución (*Runtime Bootstrap*):** Con el propósito de evitar conflictos de fusión sobre el archivo de escena principal (`Assets/network of paths/Scenes/SampleScene.unity`), el componente `SifuCombatHUD` actúa como ensamblador en su método `Start()`. Verifica e inyecta dinámicamente los módulos de narrativa y sistema (`AyniPrologue`, `AyniTutorial`, `AyniGamepadTester`, `AyniJudgment`, `AyniLevelOutcome`, `AyniLevelAmbience`, `AyniBossPhaseDirector`, `AyniPauseMenu` y `AmaruHunter`).
-2. **Arquitectura Orientada a Eventos (*Observer Pattern*):** Los componentes de dominio emiten eventos desacoplados mediante delegados `System.Action` (`OnStructureBroken`, `OnAgeChanged`, `OnTrueDeath`, `OnCombatResolved` y `OnPhaseTransitionStart`).
-3. **Máquinas de Estados Finitos (*Finite State Machines*):** Tanto el controlador del jugador (`YariCombatController`) como la inteligencia artificial enemiga (`EnemyController`) gobiernan sus transiciones mediante estados explícitos sincronizados con tablas de tiempos horneadas en un `ScriptableObject` (`AttackTimingTable`).
+### 4.1. Diagrama de Arquitectura en 4 Capas
+
+```mermaid
+flowchart TD
+    subgraph InputLayer ["1. Capa de Entrada y Estado Global (Ayni.Core)"]
+        AI["AyniInput (Teclado/Ratón + Mando Xbox + Simulación)"]
+        AGS["AyniGameState (Bloqueos de Cinemática y Pausa)"]
+    end
+
+    subgraph GameplayLayer ["2. Capa de Jugador y Combate (Ayni.Player / Ayni.Combat)"]
+        YCC["YariCombatController (Locomoción, Combos, Guardia, Esquivas)"]
+        CAM["ThirdPersonSifuCamera (Órbita, Lock-On, Speed FOV)"]
+        SS["StructureSystem (Barra de Postura y Ruptura)"]
+        ILLA["IllaTalismanSystem (Edad 20-75, Resurrección y Multiplicadores)"]
+        STANCE["AndeanCombatStanceModifier (Postura Takanakuy + Hitstop)"]
+        FIK["FootIK (Adaptación de Pies al Terreno / Etiqueta SinIK)"]
+        CF["CombatFeedback (ScreenShake, SlowMo, Destellos)"]
+    end
+
+    subgraph EnemyWorldLayer ["3. Capa de IA Enemiga y Mundo (Ayni.Enemy / Ayni.World)"]
+        EC["EnemyController (FSM de IA + Jefes en 2 Fases)"]
+        AH["AmaruHunter (Fase 2: Salto Atrás + 3 Dardos Envenenados)"]
+        AES["AyniEncounterSite (Kanchas K1-K4 y Activación de Rivales)"]
+        AAR["AyniAbyssRescue (Detección de Caída Mortal y < -3m)"]
+        ABT["AyniBurntTree (56 Árboles en Pie + 5 Caídos Renacientes)"]
+    end
+
+    subgraph StoryUILayer ["4. Capa de Narrativa, Audio y Presentación (Ayni.Story / Ayni.UI)"]
+        HUD["SifuCombatHUD (Bootstrap + HUD OnGUI)"]
+        PRO["AyniPrologue (La Noche de las Cenizas)"]
+        BPD["AyniBossPhaseDirector (Cinemática Fase 2 + Aura de Brasas)"]
+        JUD["AyniJudgment (Dilema Ayni a Cámara Lenta 0.15x)"]
+        APM["AyniPurificationManager (Resolución Venganza vs. Ayni)"]
+        OUT["AyniLevelOutcome + AyniReforestation (Bosque Polylepis + ODS 15)"]
+        AUD["AyniAudio + AyniFootsteps (Motor de Audio 2D/3D)"]
+    end
+
+    AI --> YCC
+    AI --> HUD
+    AGS --> YCC
+    YCC --> SS
+    YCC --> ILLA
+    YCC --> CF
+    YCC <--> EC
+    EC --> AH
+    EC --> SS
+    AES --> EC
+    AAR --> YCC
+    HUD --> PRO
+    HUD --> BPD
+    HUD --> JUD
+    JUD --> APM
+    APM --> ILLA
+    APM --> OUT
+    OUT --> ABT
+    CF --> AUD
+```
+
+### 4.2. Diagrama de Clases Principal (`classDiagram`)
 
 ```mermaid
 classDiagram
@@ -173,16 +251,99 @@ classDiagram
         +TriggerExecutionAction(Vector3 playerPos, bool isAyniMercy)
     }
 
-    YariCombatController *-- StructureSystem
-    YariCombatController *-- IllaTalismanSystem
-    EnemyController *-- StructureSystem
-    EnemyController <|-- AmaruHunter
-    YariCombatController --> EnemyController
-    AyniPurificationManager --> EnemyController
-    AyniPurificationManager --> IllaTalismanSystem
+    YariCombatController *-- StructureSystem : posee
+    YariCombatController *-- IllaTalismanSystem : posee
+    EnemyController *-- StructureSystem : posee
+    EnemyController <|-- AmaruHunter : extiende en Fase 2
+    YariCombatController --> EnemyController : golpea / desvía
+    AyniPurificationManager --> EnemyController : juzga (CanBeJudged)
+    AyniPurificationManager --> IllaTalismanSystem : purifica (-1 deathCounter)
 ```
 
-### 4.2. Catálogo Completo de Módulos y Scripts de Tiempo de Ejecución (29 Scripts C#)
+### 4.3. Máquina de Estados de la IA Enemiga y Fases de Jefe (`stateDiagram-v2`)
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle : Inicio / Oculto en Kancha
+
+    Idle --> Chase : Yari entra en aggroRange (18m)
+    Chase --> Idle : Yari fuera de rango o caído
+    Chase --> Windup : Distancia <= attackRange (2.2m) y cooldown listo
+
+    state Windup {
+        [*] --> Telegrafo
+        Telegrafo : Destello Rojo (Ataque Alto 70%)\no Amarillo (Barrido Bajo 30%)
+    }
+
+    Windup --> Stagger : Yari hace Parry (ventana 0.22s)\n[+35 daño a postura, 1.0s expuesto]
+    Windup --> Recover : Golpe ejecutado\n(+0.4s extra si Yari esquiva)
+    Recover --> Chase : Fin de recoverTime (0.7s)
+
+    Chase --> Stagger : Recibe golpe ligero de Yari (0.3s)
+    Chase --> Downed : Recibe golpe pesado / derribo
+    Downed --> Chase : Se levanta tras downedTime (0.6s)
+    Stagger --> Chase : Fin de aturdimiento breve
+
+    Chase --> PhaseTransition : Jefe vacía Barra Fase 1 (380 HP)
+    Windup --> PhaseTransition : Jefe vacía Barra Fase 1 (380 HP)
+    Stagger --> PhaseTransition : Jefe vacía Barra Fase 1 (380 HP)
+
+    state PhaseTransition {
+        [*] --> Knockdown
+        Knockdown --> GetUp : Cámara lenta + Órbita 360°
+        GetUp --> Phase_Roar : Rellena 460 HP + Aura de Brasas
+        Phase_Roar : Grito Gen_Roar ("SEGUNDA FASE · Desatado")\nActiva cerbatana AmaruHunter
+    }
+
+    PhaseTransition --> Chase : Inicia Fase 2 (x0.72 cooldown, x1.2 daño, x1.15 vel)
+
+    Chase --> Stunned : StructureSystem.IsBroken == true\n(Rivales: siempre | Jefe: Fase 2 y HP <= 40%)
+    Windup --> Stunned : StructureSystem.IsBroken == true
+    Stagger --> Stunned : StructureSystem.IsBroken == true
+
+    Stunned --> Chase : Expira brokenDuration (4.0s en rivales comunes)
+    Stunned --> Dead : Juicio Ayni resuelto\n(F/B = Venganza | X/A = Perdón Ayni)
+    Dead --> [*]
+```
+
+### 4.4. Diagrama de Secuencia: Combate, Parry, Juicio Ayni y Reforestación (`sequenceDiagram`)
+
+```mermaid
+sequenceDiagram
+    actor Jugador
+    participant Yari as YariCombatController
+    participant Enemy as EnemyController (Amaru)
+    participant Struct as StructureSystem
+    participant Judg as AyniJudgment
+    participant Purif as AyniPurificationManager
+    participant Illa as IllaTalismanSystem
+    participant Refor as AyniReforestation / Outcome
+
+    Jugador->>Yari: Pulsa Guardia (Clic Der / LB) < 0.22s antes del impacto
+    Enemy->>Yari: TakeDamage(damage, structDmg, High/Low)
+    Yari->>Enemy: OnParried() [Desvío Perfecto]
+    Enemy->>Struct: AddStructureDamage(35f)
+    Note over Yari: Activa ventana de Contraataque (0.8s, x1.6 daño de postura)
+
+    Jugador->>Yari: Ataque Pesado Rumi Maki (Q/E o Y)
+    Yari->>Enemy: TakeHit(healthDmg * IllaMultiplier, structDmg * 1.6f)
+    Enemy->>Struct: AddStructureDamage(structDmg)
+    Struct-->>Enemy: Evento OnStructureBroken() [Postura >= 150]
+
+    alt Amaru está en Fase 2 y Vida <= 40%
+        Enemy->>Struct: HoldBroken = true
+        Judg->>Judg: Time.timeScale = 0.15 (Cámara Lenta)
+        Judg-->>Jugador: Muestra botones [F/B: Venganza] vs [X/A: Ayni (Perdón)]
+        Jugador->>Judg: Elige X / Botón A (Perdón Ayni)
+        Judg->>Purif: TriggerExecutionAction(playerPos, isAyniMercy: true)
+        Purif->>Enemy: Defeat(killed: false)
+        Purif->>Illa: DecreaseDeathCounter() (-1 al contador de muertes)
+        Purif-->>Refor: Evento OnCombatResolved(enemy, isAyniMercy: true)
+        Refor->>Refor: Lluvia + Brote procedural de Queñuales, Ichu y Cantutas + Renacer de 61 árboles quemados (ODS 15)
+    end
+```
+
+### 4.5. Catálogo Completo de Módulos y Scripts de Tiempo de Ejecución (29 Scripts C#)
 | Espacio de Nombres | Script C# | Responsabilidad Técnica en el Sistema |
 | :--- | :--- | :--- |
 | `Ayni.Core` | `AyniInput.cs` | Abstracción unificada de Teclado/Ratón y Mando de Xbox; detección de dispositivo en uso y simulación por código para pruebas y tráiler. |
@@ -207,13 +368,6 @@ classDiagram
 | `Ayni.World` | `AyniEncounterSite.cs` | Control de cada una de las 4 kanchas incas: aparición de rivales al cruzar la portada y detección de despeje del recinto. |
 | `Ayni.World` | `AyniAbyssRescue.cs` / `AyniBurntTree.cs` | Rastreo de último suelo seguro, muerte por caída a la quebrada (`y < -3 m`) y puntos de rebrote de árboles quemados. |
 | `Ayni.UI` | `SifuCombatHUD.cs` / `AyniPauseMenu.cs` / `AyniTutorial.cs` / `AyniScreenFX.cs` / `AyniGamepadTester.cs` | Interfaz gráfica de combate, menú de pausa con volúmenes en `PlayerPrefs`, tutorial adaptable, efectos de cine y depurador de mando (`F9`). |
-
-### 4.3. Pipeline de Shaders HLSL en Universal Render Pipeline (URP)
-1. **`AyniTerrenoAndino.shader`:** Aplica proyección *Triplanar* en las paredes verticales de la garganta para evitar el estiramiento de texturas, dibuja proceduralmente las losas de piedra del Qhapaq Ñan sobre la máscara del camino y esculpe sillería en los taludes de los andenes agrícolas.
-2. **`AyniMuroInca.shader`:** Genera tres estilos de mampostería incaica en el *Fragment Shader* utilizando coordenadas en metros reales: *Pirca rústica*, *Sillería poligonal imperial* y *Piedra monolítica* para jambas y dinteles trapezoidales.
-3. **`AyniAguaQuebrada.shader`:** Renderiza el río en el fondo del cañón (`y = -18 m`) con ondas animadas y espuma en los bordes.
-4. **`AyniNiebla.shader`:** Capas de niebla de montaña en la quebrada con desvanecimiento suave por profundidad.
-5. **`AyniMontanasLejanas.shader`:** Cordillera perimetral de los Andes con nieve en las cumbres según la altitud.
 
 ---
 
