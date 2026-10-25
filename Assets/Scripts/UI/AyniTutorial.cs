@@ -104,7 +104,10 @@ namespace Ayni.UI
         private static bool shownThisSession;
 
         private bool open;
-        private bool pendingOpen;
+        // El tutorial espera al primer combate; mientras, al empezar, solo se ve una ayuda corta de movimiento
+        private bool waitingForFight;
+        private bool moveHintShown;
+        private float moveHintUntil;
         private int page;
         private float previousTimeScale = 1f;
 
@@ -118,18 +121,49 @@ namespace Ayni.UI
 
         private void Start()
         {
-            // Solo la primera vez de cada partida (no se repite al reintentar tras un Game Over)
+            // Solo la primera vez de cada partida (no se repite al reintentar tras un Game Over). No se abre al
+            // terminar el prólogo, que cortaba la escena: espera a que Yari entre en su primer combate, que es
+            // cuando hace falta (F1 / View lo abre cuando se quiera)
             if (!shownThisSession)
             {
                 shownThisSession = true;
-                // Si el prólogo está en marcha, el tutorial espera a que termine
-                if (AyniPrologue.IsRunning) pendingOpen = true;
-                else Open();
+                waitingForFight = true;
+                Ayni.World.AyniEncounterSite.OnPlayerEntered += HandleFirstFight;
+            }
+        }
+
+        private void HandleFirstFight(Ayni.World.AyniEncounterSite site)
+        {
+            if (!waitingForFight) return;
+            waitingForFight = false;
+            Ayni.World.AyniEncounterSite.OnPlayerEntered -= HandleFirstFight;
+            AyniScreenFX.Hint(null);
+            if (!open) Open();
+        }
+
+        /// <summary>Al empezar a jugar: cómo moverse, unos segundos, en la esquina (sin pausar ni tapar nada).</summary>
+        private void UpdateMoveHint()
+        {
+            if (!waitingForFight || AyniPrologue.IsRunning || AyniGameState.CinematicPlaying) return;
+            if (!moveHintShown)
+            {
+                moveHintShown = true;
+                moveHintUntil = Time.unscaledTime + 10f;
+                bool pad = AyniInput.UsingGamepad;
+                AyniScreenFX.Hint(pad
+                    ? "[Stick] Moverse · [RT] Correr · [A] Saltar y trepar"
+                    : "[WASD] Moverse · [Shift] Correr · [Espacio] Saltar y trepar");
+            }
+            else if (moveHintUntil > 0f && Time.unscaledTime > moveHintUntil)
+            {
+                moveHintUntil = 0f;
+                AyniScreenFX.Hint(null);
             }
         }
 
         private void OnDestroy()
         {
+            Ayni.World.AyniEncounterSite.OnPlayerEntered -= HandleFirstFight;
             if (open) Close();
         }
 
@@ -141,6 +175,13 @@ namespace Ayni.UI
 
         private void Open()
         {
+            // Abierto a mano (F1 / View) antes de pelear: ya no hace falta abrirlo solo en el primer combate
+            if (waitingForFight)
+            {
+                waitingForFight = false;
+                Ayni.World.AyniEncounterSite.OnPlayerEntered -= HandleFirstFight;
+                AyniScreenFX.Hint(null);
+            }
             open = true;
             page = 0;
             previousTimeScale = 1f;
@@ -157,15 +198,7 @@ namespace Ayni.UI
 
         private void Update()
         {
-            if (pendingOpen)
-            {
-                if (!AyniPrologue.IsRunning)
-                {
-                    pendingOpen = false;
-                    Open();
-                }
-                return;
-            }
+            UpdateMoveHint();
 
             if (!open)
             {
