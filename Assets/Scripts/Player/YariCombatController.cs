@@ -23,6 +23,13 @@ namespace Ayni.Player
         [SerializeField] private float rotationSpeed = 12f;
         [SerializeField] private float gravity = -18f;
 
+        [Header("Inercia")]
+        [Tooltip("Aceleración al arrancar o al pedir más ritmo (m/s²). Con 20 llega a correr en unas dos décimas: " +
+                 "seco como en Sifu, pero sin pasar de 0 a tope en un fotograma.")]
+        [SerializeField] private float moveAcceleration = 20f;
+        [Tooltip("Frenado al soltar el stick, al bajar el ritmo o al cambiar de sentido (m/s²).")]
+        [SerializeField] private float moveDeceleration = 26f;
+
         [Header("Caminar con el stick")]
         [Tooltip("Por debajo de esta inclinación del stick Yari camina; por encima, corre como con el teclado.")]
         [Range(0.3f, 0.95f)] [SerializeField] private float runStickThreshold = 0.75f;
@@ -312,6 +319,8 @@ namespace Ayni.Player
         private int paceFrame = -10;
         private float locomotionCadence = 1f;
         private float appliedCadence = 1f;
+        // Velocidad horizontal real de la locomoción (con inercia); los golpes y la guardia la ponen a cero
+        private Vector3 planarVelocity;
 
         private bool isCrouching;
         private bool isSprinting;
@@ -523,7 +532,11 @@ namespace Ayni.Player
             }
 
             // Escena cinemática: la escena mueve y anima a Yari
-            if (CinematicControl) return;
+            if (CinematicControl)
+            {
+                planarVelocity = Vector3.zero;
+                return;
+            }
 
             // Tutorial o pausa: no se procesa ninguna entrada
             if (AyniGameState.InputLocked) return;
@@ -550,6 +563,7 @@ namespace Ayni.Player
 
             if (isDead)
             {
+                planarVelocity = Vector3.zero;
                 UpdateUpperGuardLayer();
                 ApplyGravity();
                 return;
@@ -558,6 +572,7 @@ namespace Ayni.Player
             // Aturdido por un golpe o por rotura de guardia: sin control
             if (IsStunned)
             {
+                planarVelocity = Vector3.zero;
                 currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 10f * Time.deltaTime);
                 if (animator) animator.SetFloat("Speed", currentAnimSpeed);
                 UpdateUpperGuardLayer();
@@ -889,11 +904,21 @@ namespace Ayni.Player
                     locomotionCadence = Mathf.Clamp(currentSpeed / Mathf.Max(0.1f, lockStride), 0.6f, maxStrafeCadence);
                 }
 
-                characterController.Move(moveDir * (currentSpeed * Time.deltaTime));
-                paceRatio = currentSpeed / Mathf.Max(0.1f, baseMoveSpeed * speedMul);
+                // Inercia: la velocidad real va hacia la pedida con aceleración y frenado finitos. En un cambio de
+                // sentido primero frena y luego arranca, en vez de deslizarse hacia atrás mientras se da la vuelta.
+                planarVelocity = AccelerateTowards(planarVelocity, moveDir * currentSpeed);
+                float actualSpeed = planarVelocity.magnitude;
+                // Mientras acelera, los pasos van al ritmo de la velocidad real (sin bajar del tope inferior de cada marcha)
+                if (currentSpeed > 0.01f)
+                {
+                    locomotionCadence = Mathf.Clamp(locomotionCadence * actualSpeed / currentSpeed, 0.6f, locomotionCadence);
+                }
+
+                characterController.Move(planarVelocity * Time.deltaTime);
+                paceRatio = actualSpeed / Mathf.Max(0.1f, baseMoveSpeed * speedMul);
                 paceFrame = Time.frameCount;
-                lastMoveDir = moveDir;
-                lastMoveSpeed = currentSpeed;
+                lastMoveDir = actualSpeed > 0.05f ? planarVelocity / actualSpeed : moveDir;
+                lastMoveSpeed = actualSpeed;
 
                 if (!locked)
                 {
@@ -909,6 +934,9 @@ namespace Ayni.Player
                 currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 10f * Time.deltaTime);
                 // Desde parado siempre se arranca caminando y, si toca correr, se acelera
                 runBlend = 0f;
+                // Al soltar el stick frena en unas décimas en vez de clavarse en seco
+                planarVelocity = AccelerateTowards(planarVelocity, Vector3.zero);
+                if (planarVelocity.sqrMagnitude > 0.0001f) characterController.Move(planarVelocity * Time.deltaTime);
             }
 
             if (animator) animator.SetFloat("Speed", currentAnimSpeed);
@@ -928,12 +956,24 @@ namespace Ayni.Player
         }
 
         /// <summary>
+        /// Lleva la velocidad horizontal hacia la pedida: acelera al pedir más y frena (con más fuerza) al pedir
+        /// menos o al cambiar de dirección.
+        /// </summary>
+        private Vector3 AccelerateTowards(Vector3 current, Vector3 desired)
+        {
+            bool speedingUp = desired.sqrMagnitude >= current.sqrMagnitude && Vector3.Dot(desired, current) >= 0f;
+            float rate = speedingUp ? moveAcceleration : moveDeceleration;
+            return Vector3.MoveTowards(current, desired, rate * Time.deltaTime);
+        }
+
+        /// <summary>
         /// Guardia plantada estilo Sifu: los pies no se mueven del sitio. Yari solo gira para encarar al rival
         /// (el fijado o el más cercano) y la locomoción se detiene.
         /// </summary>
         private void HoldGuardStance()
         {
             isSprinting = false;
+            planarVelocity = Vector3.zero;
             locomotionCadence = 1f;
             currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 14f * Time.deltaTime);
             if (animator)
@@ -1114,6 +1154,7 @@ namespace Ayni.Player
         {
             if (!jumpInAir || Time.time - jumpStartTime < 0.15f || !characterController.isGrounded) return;
             jumpInAir = false;
+            if (leaping) planarVelocity = leapDir * leapSpeed;
             leaping = false;
             if (!fallAnimPlaying) AyniAudio.Play("aterrizaje", transform.position, 0.7f);
             if (!animator) return;
@@ -1443,6 +1484,7 @@ namespace Ayni.Player
             transform.position = position;
             characterController.enabled = true;
             velocity = Vector3.zero;
+            planarVelocity = Vector3.zero;
         }
 
         private void HandleDefense()
@@ -1608,6 +1650,7 @@ namespace Ayni.Player
         private void StartAttack(bool isHeavy)
         {
             bufferedAttack = 0;
+            planarVelocity = Vector3.zero;
             if (isCrouching) SetCrouch(false);
             EnterCombatStance();
 
