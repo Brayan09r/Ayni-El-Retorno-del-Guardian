@@ -24,7 +24,7 @@ namespace Ayni.Editor
             "Relaxed_Locomotion", "Combat_Locomotion", "Crouch_Locomotion", "LockOn_Locomotion", "Guard_Stance",
             "Fall_Loop", "Fall_Back", "Land_Hard", "Jump", "Run_Jump", "GetUp", "Defeat_Death",
             "Atk_Light1", "Atk_Light2", "Atk_Light3", "Atk_Light4", "Atk_Overhand", "Atk_Uppercut", "Atk_Elbow",
-            "Atk_Headbutt", "Atk_FrontKick"
+            "Atk_Headbutt", "Atk_FrontKick", "Traverse_Vault", "Traverse_Climb"
         };
 
         // ───────────────────────── Patinaje de los pies ─────────────────────────
