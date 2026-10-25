@@ -18,6 +18,7 @@ namespace Ayni.Editor
     ///   Yari_Fall_Loop                          Caída en el aire (bucle): brazos y piernas buscando equilibrio
     ///   Yari_Fall_Back                          Caída de espaldas al vacío tras un golpe (prólogo del puente)
     ///   Yari_Land_Hard                          Aterrizaje pesado tras una caída alta
+    ///   Yari_Vault / Yari_Climb                 Saltar un obstáculo apoyando una mano y trepar a una cornisa (estilo Sifu)
     ///
     /// Todos llevan el desplazamiento "horneado en la pose": no mueven al personaje, solo su cuerpo.
     /// Se guardan en Assets/Art/Characters/Animations/Generadas y se pueden regenerar cuando se quiera.
@@ -43,6 +44,14 @@ namespace Ayni.Editor
         public const string Roar = "Gen_Roar";
         /// <summary>Segundo del clip de patada hacia atrás en el que la pierna llega a su extensión (impacto).</summary>
         public const float BackKickContact = 0.22f;
+        /// <summary>Saltar un obstáculo bajo apoyando la mano izquierda, con las piernas recogidas hacia la derecha.</summary>
+        public const string Vault = "Yari_Vault";
+        /// <summary>Trepar a una cornisa: se agarra al borde, tira de los brazos, sube la rodilla y se pone de pie.</summary>
+        public const string Climb = "Yari_Climb";
+        // Duración de los clips. YariTraversal los reproduce a la velocidad justa para que duren lo que dura el movimiento
+        // (y sus fases, en tanto por uno, coinciden con las del recorrido que hace el personaje)
+        public const float VaultLength = 0.6f;
+        public const float ClimbLength = 1.0f;
 
         // ───────────────────────── Pose ─────────────────────────
 
@@ -287,6 +296,8 @@ namespace Ayni.Editor
                     BuildLandHard(fallStart, crouch, combat, metersPerUnit, report);
                     BuildBackKick(rig, guard, crouch, metersPerUnit, report);
                     BuildRoar(rig, combat, crouch, report);
+                    BuildVault(combat, crouch, report);
+                    BuildClimb(combat, crouch, report);
                 }
             }
             catch (Exception e)
@@ -318,6 +329,8 @@ namespace Ayni.Editor
             RenderSheet(LandHard, 6);
             RenderSheet(BackKick, 7);
             RenderSheet(Roar, 7);
+            RenderSheet(Vault, 7);
+            RenderSheet(Climb, 8);
         }
 
         // ───────────────────────── Recetas ─────────────────────────
@@ -649,6 +662,150 @@ namespace Ayni.Editor
             rig.Apply(extend);
             Vector3 foot = rig.Bone(HumanBodyBones.RightFoot);
             report.AppendLine($"   {BackKick}: {length:F2} s (patada hacia atrás; en el impacto el pie llega a {-foot.z:F2} m por detrás y {foot.y - groundY:F2} m de altura)");
+        }
+
+        /// <summary>
+        /// Saltar un obstáculo bajo (tronco caído, muro a medio caer), estilo Sifu: Yari apoya la mano izquierda encima,
+        /// recoge las piernas y las pasa por la derecha con el cuerpo inclinado hacia la mano, y cae flexionando las
+        /// rodillas para seguir corriendo. El desplazamiento lo pone YariTraversal; aquí solo va el cuerpo.
+        /// Fases (en tanto por uno): apoyo 0.2 · encima 0.45 · suelta 0.7 · aterriza 0.87.
+        /// </summary>
+        private static void BuildVault(Pose combat, Pose crouch, System.Text.StringBuilder report)
+        {
+            const float length = VaultLength;
+
+            Pose run = combat.Clone();
+            run.rot = Quaternion.Euler(8f, 0f, 0f) * combat.rot;
+
+            // Apoyo: el tronco se echa sobre el obstáculo, la mano izquierda baja recta hacia él y la pierna derecha
+            // empieza a recogerse mientras la izquierda empuja
+            Pose plant = combat.Clone();
+            plant.rot = Quaternion.Euler(30f, 0f, 0f) * combat.rot;
+            plant.pos.y = Mathf.Lerp(combat.pos.y, crouch.pos.y, 0.25f);
+            Nudge(ref plant, "Spine Front-Back", 0.25f);
+            SetIntent(ref plant, "Left Arm Down-Up", -0.55f);
+            SetIntent(ref plant, "Left Arm Front-Back", 0.7f);
+            SetIntent(ref plant, "Left Forearm Stretch", 1f);
+            SetIntent(ref plant, "Right Arm Down-Up", 0.35f);
+            SetIntent(ref plant, "Right Arm Front-Back", -0.2f);
+            SetIntent(ref plant, "Right Forearm Stretch", 0.5f);
+            SetIntent(ref plant, "Right Upper Leg Front-Back", 0.7f);
+            SetIntent(ref plant, "Right Lower Leg Stretch", -0.8f);
+            SetIntent(ref plant, "Left Upper Leg Front-Back", -0.35f);
+            SetIntent(ref plant, "Left Lower Leg Stretch", 0.55f);
+
+            // Encima: apoyado en el brazo izquierdo, el cuerpo se inclina hacia él y las dos piernas pasan recogidas por la derecha
+            Pose over = combat.Clone();
+            over.rot = Quaternion.Euler(18f, -10f, 28f) * combat.rot;
+            over.pos.y = Mathf.Lerp(combat.pos.y, crouch.pos.y, 0.35f);
+            SetBoth(ref over, "Upper Leg Front-Back", 0.95f);
+            SetBoth(ref over, "Lower Leg Stretch", -0.95f);
+            SetIntent(ref over, "Right Upper Leg In-Out", 0.3f);
+            SetIntent(ref over, "Left Upper Leg In-Out", -0.15f);
+            SetIntent(ref over, "Left Arm Down-Up", -0.8f);
+            SetIntent(ref over, "Left Arm Front-Back", 0.3f);
+            SetIntent(ref over, "Left Forearm Stretch", 1f);
+            SetIntent(ref over, "Right Arm Down-Up", 0.6f);
+            SetIntent(ref over, "Right Arm Front-Back", -0.35f);
+            SetIntent(ref over, "Right Forearm Stretch", 0.7f);
+            Nudge(ref over, "Spine Front-Back", 0.15f);
+            Nudge(ref over, "Head Nod Down-Up", 0.1f);
+
+            // Suelta la mano y estira las piernas hacia el suelo
+            Pose release = combat.Clone();
+            release.rot = Quaternion.Euler(10f, -4f, 12f) * combat.rot;
+            SetBoth(ref release, "Upper Leg Front-Back", 0.45f);
+            SetBoth(ref release, "Lower Leg Stretch", -0.2f);
+            SetIntent(ref release, "Left Arm Down-Up", 0.2f);
+            SetIntent(ref release, "Left Arm Front-Back", 0.2f);
+            SetIntent(ref release, "Left Forearm Stretch", 0.7f);
+            SetIntent(ref release, "Right Arm Down-Up", 0.45f);
+
+            // Aterriza con las rodillas flexionadas y los brazos delante para equilibrarse
+            Pose land = combat.Clone();
+            CopyLegs(ref land, Pose.Lerp(combat, crouch, 0.6f));
+            land.pos.y = Mathf.Lerp(combat.pos.y, crouch.pos.y, 0.6f);
+            land.rot = Quaternion.Euler(14f, 0f, 0f) * combat.rot;
+            SetBoth(ref land, "Arm Down-Up", 0.15f);
+            SetBoth(ref land, "Arm Front-Back", 0.45f);
+            SetBoth(ref land, "Forearm Stretch", 0.6f);
+
+            var keys = new List<(float, Pose)>
+            {
+                (0f, run), (0.12f, plant), (0.27f, over), (0.42f, release), (0.52f, land), (length, run)
+            };
+            Save(Vault, Keyed(keys), length, false);
+            report.AppendLine($"   {Vault}: {length:F2} s (saltar un obstáculo apoyando la mano)");
+        }
+
+        /// <summary>
+        /// Trepar a una cornisa, estilo Sifu: se agacha para impulsarse, se estira con los brazos arriba hasta el borde,
+        /// tira con los brazos subiendo la rodilla derecha, apoya la rodilla arriba empujando con las manos y se levanta.
+        /// El desplazamiento lo pone YariTraversal. Fases: impulso 0.14 · agarre 0.32 · tirón 0.55 · rodilla 0.74 · de pie 0.88.
+        /// </summary>
+        private static void BuildClimb(Pose combat, Pose crouch, System.Text.StringBuilder report)
+        {
+            const float length = ClimbLength;
+
+            Pose prep = combat.Clone();
+            CopyLegs(ref prep, Pose.Lerp(combat, crouch, 0.6f));
+            prep.pos.y = Mathf.Lerp(combat.pos.y, crouch.pos.y, 0.6f);
+            prep.rot = Quaternion.Euler(12f, 0f, 0f) * combat.rot;
+            SetBoth(ref prep, "Arm Down-Up", 0.1f);
+            SetBoth(ref prep, "Arm Front-Back", -0.3f);
+
+            // Agarre: brazos arriba y algo adelante, estirados hasta el borde; piernas estiradas y la mirada arriba
+            Pose reach = combat.Clone();
+            reach.rot = Quaternion.Euler(-5f, 0f, 0f) * combat.rot;
+            SetBoth(ref reach, "Arm Down-Up", 0.95f);
+            SetBoth(ref reach, "Arm Front-Back", 0.35f);
+            SetBoth(ref reach, "Forearm Stretch", 1f);
+            SetBoth(ref reach, "Shoulder Down-Up", 0.5f);
+            SetBoth(ref reach, "Upper Leg Front-Back", -0.45f);
+            SetBoth(ref reach, "Lower Leg Stretch", 0.6f);
+            Nudge(ref reach, "Spine Front-Back", -0.15f);
+            Nudge(ref reach, "Head Nod Down-Up", 0.25f);
+
+            // Tirón: codos flexionados que suben el cuerpo; la rodilla derecha se recoge para buscar el borde
+            Pose pull = combat.Clone();
+            pull.rot = Quaternion.Euler(15f, 0f, 0f) * combat.rot;
+            SetBoth(ref pull, "Arm Down-Up", 0.45f);
+            SetBoth(ref pull, "Arm Front-Back", 0.75f);
+            SetBoth(ref pull, "Forearm Stretch", -0.3f);
+            SetIntent(ref pull, "Right Upper Leg Front-Back", 0.75f);
+            SetIntent(ref pull, "Right Lower Leg Stretch", -0.9f);
+            SetIntent(ref pull, "Left Upper Leg Front-Back", -0.1f);
+            SetIntent(ref pull, "Left Lower Leg Stretch", 0.1f);
+            Nudge(ref pull, "Spine Front-Back", 0.2f);
+
+            // Rodilla arriba: el tronco sobre la cornisa, las manos empujan hacia abajo y la pierna izquierda queda atrás
+            Pose knee = combat.Clone();
+            knee.rot = Quaternion.Euler(35f, 0f, 0f) * combat.rot;
+            SetBoth(ref knee, "Arm Down-Up", -0.55f);
+            SetBoth(ref knee, "Arm Front-Back", 0.55f);
+            SetBoth(ref knee, "Forearm Stretch", 1f);
+            SetIntent(ref knee, "Right Upper Leg Front-Back", 1f);
+            SetIntent(ref knee, "Right Lower Leg Stretch", -1f);
+            SetIntent(ref knee, "Left Upper Leg Front-Back", -0.6f);
+            SetIntent(ref knee, "Left Lower Leg Stretch", 0.3f);
+            Nudge(ref knee, "Spine Front-Back", 0.35f);
+            Nudge(ref knee, "Chest Front-Back", 0.2f);
+
+            // Se levanta con las piernas flexionadas y los brazos delante
+            Pose rise = combat.Clone();
+            CopyLegs(ref rise, Pose.Lerp(combat, crouch, 0.5f));
+            rise.pos.y = Mathf.Lerp(combat.pos.y, crouch.pos.y, 0.5f);
+            rise.rot = Quaternion.Euler(18f, 0f, 0f) * combat.rot;
+            SetBoth(ref rise, "Arm Down-Up", 0f);
+            SetBoth(ref rise, "Arm Front-Back", 0.5f);
+            SetBoth(ref rise, "Forearm Stretch", 0.6f);
+
+            var keys = new List<(float, Pose)>
+            {
+                (0f, combat), (0.14f, prep), (0.32f, reach), (0.55f, pull), (0.74f, knee), (0.88f, rise), (length, combat)
+            };
+            Save(Climb, Keyed(keys), length, false);
+            report.AppendLine($"   {Climb}: {length:F2} s (trepar a una cornisa)");
         }
 
         /// <summary>
