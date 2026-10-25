@@ -162,6 +162,19 @@ namespace Ayni.Editor
                 else
                 {
                     if (EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode) return;
+                    // Con errores de compilación Unity nunca entra en Play: insistir dejaba la cola atascada para siempre
+                    // (y sin leer cmd.txt, así que ni un "refresh" podía arreglarlo). Se abandona la prueba y se recompila
+                    // lo que haya en el disco, por si el error ya está corregido.
+                    if (EditorUtility.scriptCompilationFailed)
+                    {
+                        Append("[bridge] no se puede entrar en Play: hay errores de compilación. Se descarta la cola y se recompila.");
+                        SessionState.SetBool("AyniAgentPlayPending", false);
+                        SessionState.SetBool("AyniAgentPlay", false);
+                        queue.Clear();
+                        SavePending();
+                        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                        return;
+                    }
                     float requested = SessionState.GetFloat("AyniAgentPlayRequestedAt", 0f);
                     if ((float)now - requested > 3f || requested > (float)now)
                     {
