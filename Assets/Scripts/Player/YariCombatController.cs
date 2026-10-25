@@ -138,6 +138,9 @@ namespace Ayni.Player
         [SerializeField] private float hitStunDuration = 0.35f;
         [Tooltip("Segundos sin control cuando la guardia de Yari se rompe.")]
         [SerializeField] private float guardBreakStun = 1.5f;
+        [Tooltip("Tras el impacto y su recorrido (Follow Through), la guardia corta el resto del golpe, como en Sifu: " +
+                 "se puede cubrir o esquivar sin esperar a que Yari recoja el brazo.")]
+        [SerializeField] private bool guardCancelsRecovery = true;
 
         [Header("Fijación de Blanco (Lock-On)")]
         [Tooltip("Distancia máxima para fijar a un rival con Tab o clic central.")]
@@ -1436,6 +1439,12 @@ namespace Ayni.Player
         {
             // Guardia mientras se mantiene pulsada (clic derecho, G o LB del mando)
             bool guardHeld = AyniInput.Held(AyniInput.Action.Guard);
+            // El golpe ya conectó y terminó su recorrido: la guardia corta la recuperación
+            if (guardHeld && guardCancelsRecovery && CanCancelAttack)
+            {
+                bufferedAttack = 0;
+                EndAttackEarly("Guard_Stance", 0.08f);
+            }
             if (guardHeld && !isGuarding && !isAttacking)
             {
                 if (isCrouching) SetCrouch(false);
@@ -1774,6 +1783,23 @@ namespace Ayni.Player
             trail.emitting = true;
             activeTrail = trail;
             trailOffTime = attackHitTime + 0.1f;
+        }
+
+        /// <summary>El golpe en curso ya conectó y terminó su recorrido: lo que queda es recuperación y se puede cortar.</summary>
+        private bool CanCancelAttack => isAttacking && attackHitDone && Time.time >= attackCancelTime;
+
+        /// <summary>Corta la recuperación del golpe y pasa al estado indicado. El combo sigue vivo el tiempo de siempre.</summary>
+        private void EndAttackEarly(string nextState, float fade)
+        {
+            reachAssistRemaining = 0f;
+            if (activeTrail != null)
+            {
+                activeTrail.emitting = false;
+                activeTrail = null;
+            }
+            isAttacking = false;
+            comboExpireTime = Time.time + comboResetTime;
+            if (animator && HasState(nextState)) animator.CrossFadeInFixedTime(nextState, fade);
         }
 
         private void CancelPendingAttack()
