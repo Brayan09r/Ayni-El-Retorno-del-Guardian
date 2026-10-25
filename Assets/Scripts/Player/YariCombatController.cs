@@ -1917,9 +1917,10 @@ namespace Ayni.Player
                 Vector3 hitPoint = enemy.GetHitPoint(attack.reaction, transform.position);
                 enemy.TakeHit(dmg, structDmg, transform.position, isHeavy, attack.reaction, attack.knockback);
 
-                if (attack.impact >= 2) CombatFeedback.Finisher(hitPoint);
-                else if (attack.impact == 1 || counter) CombatFeedback.HeavyHit(hitPoint);
-                else CombatFeedback.LightHit(hitPoint);
+                // La cámara se empuja hacia donde va el golpe
+                if (attack.impact >= 2) CombatFeedback.Finisher(hitPoint, toEnemy);
+                else if (attack.impact == 1 || counter) CombatFeedback.HeavyHit(hitPoint, toEnemy);
+                else CombatFeedback.LightHit(hitPoint, toEnemy);
 
                 OnAttackLanded?.Invoke(enemy, isHeavy);
             }
@@ -2053,7 +2054,7 @@ namespace Ayni.Player
                 guardReactionUntil = Time.time + 0.6f;
                 counterUntil = Time.time + counterWindow;
                 PlayState("Parry_Deflect", 0.04f);
-                CombatFeedback.Parry(impactPoint);
+                CombatFeedback.Parry(impactPoint, -transform.forward);
                 result = AttackResult.Parried;
             }
             else if (isGuarding)
@@ -2062,7 +2063,7 @@ namespace Ayni.Player
                 structure.AddStructureDamage(structureDamage);
                 guardReactionUntil = Time.time + 0.5f;
                 if (!structure.IsBroken) PlayState("Guard_BlockHit", 0.05f);
-                CombatFeedback.Block(impactPoint);
+                CombatFeedback.Block(impactPoint, -transform.forward);
                 result = AttackResult.Blocked;
             }
             else
@@ -2071,7 +2072,8 @@ namespace Ayni.Player
                 CancelPendingAttack();
                 currentHealth = Mathf.Max(0f, currentHealth - damage);
                 structure.AddStructureDamage(structureDamage * 0.5f);
-                CombatFeedback.PlayerHurt(impactPoint);
+                // El golpe llega de frente: empuja la cámara hacia atrás, hacia Yari
+                CombatFeedback.PlayerHurt(impactPoint, -transform.forward);
 
                 if (currentHealth <= 0f)
                 {

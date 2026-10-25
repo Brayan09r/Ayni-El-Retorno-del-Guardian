@@ -6,7 +6,7 @@ using Ayni.Core;
 namespace Ayni.Combat
 {
     /// <summary>
-    /// Sensación de impacto del combate: micro-pausa al conectar (hitstop), sacudida de cámara y destello
+    /// Sensación de impacto del combate: micro-pausa al conectar (hitstop), empujón y sacudida de cámara y destello
     /// en el punto de contacto. Se crea solo la primera vez que se usa; no hay que añadirlo a la escena.
     /// Los valores de cada tipo de golpe están en los métodos LightHit / HeavyHit / Finisher / Parry / Block / PlayerHurt.
     /// </summary>
@@ -18,6 +18,11 @@ namespace Ayni.Combat
 
         /// <summary>La cámara se suscribe: (amplitud en metros, duración en segundos).</summary>
         public static event Action<float, float> OnShake;
+        /// <summary>
+        /// La cámara se suscribe: empujón en la dirección del golpe (dirección en el mundo, fuerza en metros).
+        /// Con dirección cero la cámara elige un lado al azar.
+        /// </summary>
+        public static event Action<Vector3, float> OnKick;
         /// <summary>La cámara se suscribe: acercamiento de remate durante los segundos indicados.</summary>
         public static event Action<float> OnFinisherCamera;
 
@@ -54,6 +59,7 @@ namespace Ayni.Combat
             burstSprite = null;
             spriteMaterial = null;
             OnShake = null;
+            OnKick = null;
             OnFinisherCamera = null;
         }
 
@@ -69,43 +75,50 @@ namespace Ayni.Combat
 
         // ───────────────────────── Tipos de impacto ─────────────────────────
 
-        public static void LightHit(Vector3 point)
+        // La dirección (opcional) es hacia dónde va el golpe: la cámara se empuja hacia ese lado
+
+        public static void LightHit(Vector3 point, Vector3 direction = default)
         {
             AyniAudio.Play("golpe_ligero", point, 0.85f);
             Hitstop(0.045f);
-            Shake(0.03f, 0.10f);
+            Kick(direction, 0.03f);
+            Shake(0.015f, 0.10f);
             Flash(point, Color.white, 0.75f);
         }
 
-        public static void HeavyHit(Vector3 point)
+        public static void HeavyHit(Vector3 point, Vector3 direction = default)
         {
             AyniAudio.Play("golpe_fuerte", point, 0.95f);
             Hitstop(0.085f);
-            Shake(0.07f, 0.16f);
+            Kick(direction, 0.07f);
+            Shake(0.035f, 0.16f);
             Flash(point, new Color(1f, 0.95f, 0.8f), 1.15f, 0.14f);
         }
 
-        public static void Finisher(Vector3 point)
+        public static void Finisher(Vector3 point, Vector3 direction = default)
         {
             AyniAudio.Play("remate", point, 1f, 0.03f);
             Hitstop(0.14f);
-            Shake(0.13f, 0.24f);
+            Kick(direction, 0.12f);
+            Shake(0.06f, 0.24f);
             Flash(point, new Color(1f, 0.85f, 0.5f), 1.7f, 0.18f);
         }
 
-        public static void Parry(Vector3 point)
+        public static void Parry(Vector3 point, Vector3 direction = default)
         {
             AyniAudio.Play("parry", point, 0.95f, 0.04f);
             Hitstop(0.10f);
-            Shake(0.05f, 0.12f);
+            Kick(direction, 0.045f);
+            Shake(0.02f, 0.12f);
             Flash(point, new Color(1f, 0.9f, 0.4f), 1.25f, 0.16f);
         }
 
-        public static void Block(Vector3 point)
+        public static void Block(Vector3 point, Vector3 direction = default)
         {
             AyniAudio.Play("bloqueo", point, 0.8f);
             Hitstop(0.03f);
-            Shake(0.025f, 0.08f);
+            Kick(direction, 0.03f);
+            Shake(0.012f, 0.08f);
             Flash(point, new Color(0.8f, 0.9f, 1f), 0.55f);
         }
 
@@ -118,12 +131,13 @@ namespace Ayni.Combat
             Flash(point, new Color(0.65f, 0.9f, 1f, 0.85f), 0.9f, 0.16f);
         }
 
-        public static void PlayerHurt(Vector3 point)
+        public static void PlayerHurt(Vector3 point, Vector3 direction = default)
         {
             // Golpe recibido: más grave que los que da Yari
             AyniAudio.Play("golpe_fuerte", point, 1f, 0.04f, 0.82f);
             Hitstop(0.06f);
-            Shake(0.09f, 0.18f);
+            Kick(direction, 0.08f);
+            Shake(0.045f, 0.18f);
             Flash(point, new Color(1f, 0.3f, 0.25f), 0.95f, 0.14f);
         }
 
@@ -164,6 +178,13 @@ namespace Ayni.Combat
         {
             Get();
             OnShake?.Invoke(amplitude * ShakeScale, duration);
+        }
+
+        /// <summary>Empujón de cámara en la dirección del golpe, que vuelve con un pequeño rebote.</summary>
+        public static void Kick(Vector3 direction, float strength)
+        {
+            Get();
+            OnKick?.Invoke(direction, strength * ShakeScale);
         }
 
         public static void FinisherCamera(float duration)
