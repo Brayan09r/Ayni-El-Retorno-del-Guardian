@@ -44,6 +44,11 @@ namespace Ayni.Story
         private float waterY = -18f;
 
         private GameObject embers;
+        // El General Sayri y su Guardia de Bronce (copias de modelos de la escena) y la noche de incendio
+        private AyniPrologueCast cast;
+        private Animator sayri, guardA, guardB;
+        private Transform planks;
+        private bool captionShown;
         private int fireLoop = -1;
         private int music = -1;
         private Light fireLight;
@@ -138,7 +143,7 @@ namespace Ayni.Story
             var bridge = GameObject.Find("Puente_Colgante");
             if (bridge == null) return false;
 
-            Transform planks = bridge.transform.Find("Tablones");
+            planks = bridge.transform.Find("Tablones");
             if (planks == null || planks.childCount < 3) return false;
 
             Transform first = planks.GetChild(0);
@@ -176,50 +181,101 @@ namespace Ayni.Story
             AyniScreenFX.Letterbox(true);
             AyniScreenFX.Hint(AyniInput.UsingGamepad ? "[Menu] Saltar escena" : "[Tab / Esc] Saltar escena");
 
-            // Yari en el borde del puente, de cara al centro: el golpe vendrá de ahí
-            Vector3 yariSpot = deck + acrossBridge * 0.45f;
-            Quaternion facingDeck = Quaternion.LookRotation(-acrossBridge);
-            PlaceYari(yariSpot, facingDeck);
+            // Yari en el puente, junto a la cuerda por la que caerá, de cara a la orilla por la que llega Sayri
+            Vector3 along = Vector3.Cross(acrossBridge, Vector3.up).normalized;
+            Vector3 yariSpot = deck + acrossBridge * 0.38f;
+            PlaceYari(yariSpot, Quaternion.LookRotation(along));
             Play("Guard_Stance", 0f);
+
+            // El General Sayri y dos soldados de su Guardia de Bronce cruzan el puente hacia él
+            cast = new AyniPrologueCast(planks);
+            cast.BeginNight(deck, acrossBridge);
+            Vector3 sayriStop = yariSpot + along * 1.6f;
+            Vector3 sayriStart = deck + along * 11f;
+            Quaternion towardYari = Quaternion.LookRotation(-along);
+            sayri = cast.Spawn("General_Sayri", "CazadorElite", sayriStart, towardYari, 1.1f, new Color(0.9f, 0.66f, 0.42f));
+            cast.GiveChampi(sayri);
+            Vector3 flank = acrossBridge * 0.5f;
+            guardA = cast.Spawn("Guardia_de_Bronce_1", "Guardia", sayriStart + along * 1.8f + flank, towardYari, 1f, new Color(0.78f, 0.56f, 0.36f));
+            guardB = cast.Spawn("Guardia_de_Bronce_2", "Guardia", sayriStart + along * 1.8f - flank, towardYari, 1f, new Color(0.78f, 0.56f, 0.36f));
+            StartCoroutine(March(sayriStart, sayriStop, flank, along, 9.2f));
 
             BuildNightOfAshes();
             fireLoop = AyniAudio.PlayLoop("amb_fuego", 0.8f, 2.5f);
             music = AyniAudio.PlayMusic("prologo_quena", 0.75f, 2f);
 
+            // El título aparece sobre el puente en llamas, no sobre negro
             AyniAudio.Play2D("titulo_golpe", 0.8f);
-            AyniScreenFX.Title("AYNI", "Prólogo — La Noche de las Cenizas", 4.2f);
-            yield return Wait(3.0f);
-            AyniScreenFX.FadeTo(Color.black, 0f, 2.2f);
+            AyniScreenFX.FadeTo(Color.black, 0f, 1.8f);
+            AyniScreenFX.Title("AYNI", "Prólogo — La Noche de las Cenizas", 4.0f);
 
             Phase("plano 1: el puente sobre la garganta");
-            // Plano 1: la garganta y el puente, con el valle ardiendo al fondo
-            AyniScreenFX.Caption("El General Sayri traicionó al Consejo de los Amautas y tomó el Cusco a sangre y fuego.", 4.6f);
-            yield return Shot(5.0f, u =>
+            // Plano 1: la garganta en llamas; por el puente avanza Sayri con su guardia
+            yield return Shot(6.2f, u =>
             {
-                Vector3 along = Vector3.Cross(acrossBridge, Vector3.up);
-                Vector3 from = deck - acrossBridge * 9f + along * 7f + Vector3.up * 5f;
-                Vector3 to = deck - acrossBridge * 7f + along * 3f + Vector3.up * 2.5f;
-                return (Vector3.Lerp(from, to, Smooth(u)), yariSpot + Vector3.up * 1.2f);
+                if (u > 0.45f && !captionShown)
+                {
+                    captionShown = true;
+                    AyniScreenFX.Caption("El General Sayri traicionó al Consejo de los Amautas y tomó el Cusco a sangre y fuego.", 4.2f);
+                }
+                Vector3 from = deck - acrossBridge * 11f + along * 2f + Vector3.up * 6f;
+                Vector3 to = deck - acrossBridge * 8f + along * 1f + Vector3.up * 3f;
+                Vector3 mid = Vector3.Lerp(yariSpot, SayriPosition(), 0.5f) + Vector3.up * 1.2f;
+                return (Vector3.Lerp(from, to, Smooth(u)), mid);
             });
 
-            Phase("plano 2: Yari en guardia");
-            // Plano 2: Yari en guardia, el abismo detrás
-            AyniScreenFX.Caption("Esa noche su Guardia de Bronce arrasó el Ayllu del Valle Verde.", 4.0f);
-            yield return Shot(4.2f, u =>
+            Phase("plano 2: Sayri avanza");
+            // Plano 2: por encima del hombro de Yari, Sayri se acerca con la Champi en la mano
+            AyniScreenFX.Caption("Esa noche su Guardia de Bronce arrasó el Ayllu del Valle Verde.", 3.8f);
+            yield return Shot(4.0f, u =>
             {
-                float angle = Mathf.Lerp(-35f, 25f, Smooth(u));
-                Vector3 dir = Quaternion.Euler(0f, angle, 0f) * -acrossBridge;
-                return (yariSpot + dir * 3.4f + Vector3.up * 0.9f, yariSpot + Vector3.up * 1.25f);
+                Vector3 pos = yariSpot - along * Mathf.Lerp(2.3f, 1.9f, u) - acrossBridge * 0.55f + Vector3.up * 1.75f;
+                return (pos, SayriPosition() + Vector3.up * 1.5f);
             });
 
-            Phase("plano 3: primer plano");
-            AyniScreenFX.Caption("En el puente sobre la garganta, Yari enfrentó a su antiguo hermano de armas...", 3.8f);
-            yield return Shot(3.6f, u =>
+            Phase("plano 3: el traidor");
+            // Plano 3: contrapicado de Sayri, ya frente a Yari
+            AyniScreenFX.Title("GENERAL SAYRI", "Señor de la Guardia de Bronce · Antiguo hermano de armas de Yari", 3.2f);
+            yield return Shot(3.4f, u =>
             {
-                Vector3 side = Vector3.Cross(acrossBridge, Vector3.up);
-                Vector3 pos = yariSpot - acrossBridge * Mathf.Lerp(2.6f, 1.9f, u) + side * 0.6f + Vector3.up * 1.45f;
-                return (pos, yariSpot + Vector3.up * 1.35f);
+                Vector3 s = SayriPosition();
+                Vector3 pos = s - along * Mathf.Lerp(2.0f, 1.75f, u) - acrossBridge * 0.55f + Vector3.up * 1.35f;
+                return (pos, s + Vector3.up * 1.55f);
             });
+            if (skipRequested) { Finish(); yield break; }
+
+            Phase("el combate en el puente");
+            // Plano de perfil: Sayri golpea, Yari bloquea y contraataca, y la Champi le rompe la guardia
+            AyniScreenFX.Caption("En el puente sobre la garganta, Yari enfrentó a su antiguo hermano de armas...", 3.4f);
+            Vector3 fightMid = Vector3.Lerp(yariSpot, sayriStop, 0.5f);
+            System.Func<float, (Vector3, Vector3)> profile = u =>
+                (fightMid - acrossBridge * Mathf.Lerp(3.6f, 3.2f, u) + along * 0.3f + Vector3.up * 2.15f, fightMid + Vector3.up * 1.3f);
+
+            // Mazazo de arriba abajo (el clip llega al impacto a los 0.3 s)
+            AyniPrologueCast.PlayState(sayri, "Atk_Overhand", 0.08f, 1f);
+            yield return Shot(0.32f, u => profile(u * 0.15f));
+            Play("Guard_BlockHit", 0.04f);
+            AyniAudio.Play2D("bloqueo", 0.9f);
+            Ayni.Combat.CombatFeedback.Flash(yariSpot + along * 0.45f + Vector3.up * 1.45f, new Color(0.8f, 0.9f, 1f), 0.9f, 0.14f);
+            Shake(0.05f, 0.18f);
+            yield return Shot(0.55f, u => profile(0.15f + u * 0.15f));
+
+            // Contraataque: directo de derecha, entrando con la preparación ya avanzada (impacto a los 0.3 s)
+            yariAnimator.SetFloat("AttackSpeed", 1.3f);
+            if (HasState("Atk_Light2")) yariAnimator.CrossFadeInFixedTime("Atk_Light2", 0.06f, 0, 0.5f);
+            AyniAudio.Play2D("swing_ligero", 0.6f);
+            yield return Shot(0.3f, u => profile(0.3f + u * 0.1f));
+            AyniPrologueCast.PlayState(sayri, "Hit_Head", 0.05f);
+            AyniAudio.Play2D("golpe_ligero", 0.8f);
+            Ayni.Combat.CombatFeedback.Flash(sayriStop + Vector3.up * 1.75f - along * 0.2f, Color.white, 0.7f, 0.1f);
+            yield return Shot(0.6f, u => profile(0.4f + u * 0.15f));
+
+            // La Champi: golpe de codo a la guardia, de lado, que lo lanza por encima de la cuerda
+            // (clip de codo: impacto a los 0.68 s; a 1.2x y entrando a los 0.14 s, llega en 0.45 s)
+            AyniPrologueCast.PlayState(sayri, "Atk_Elbow", 0.06f, 1.2f, 0.14f);
+            AyniAudio.Play2D("swing_fuerte", 0.8f);
+            Play("Guard_Stance", 0.1f);
+            yield return Shot(0.45f, u => profile(0.55f + u * 0.15f));
             if (skipRequested) { Finish(); yield break; }
 
             // El golpe de la Champi: destello de fuego, sacudida y cámara lenta
@@ -242,6 +298,8 @@ namespace Ayni.Story
             const float fallGravity = -15f;
             float elapsed = 0f;
             Vector3 camAnchor = deck - acrossBridge * 0.5f + Vector3.up * 2.0f;
+            // Corte seco al plano desde el puente (si la cámara viajara desde el perfil, cruzaría los tablones)
+            Aim(camAnchor, yariSpot + Vector3.up * 1.1f, 1f);
             bool slowEnded = false;
             bool closeShot = false;
 
@@ -284,45 +342,69 @@ namespace Ayni.Story
             AyniAudio.StopLoop(fireLoop, 2f);
             Ayni.Combat.CombatFeedback.Flash(yariTransform.position + Vector3.up, IllaGold, 2.2f, 0.45f);
             AyniScreenFX.FadeTo(IllaGold, 1f, 0.6f);
-            yield return Wait(1.2f);
-            AyniScreenFX.FadeTo(Color.black, 1f, 1.4f);
-            yield return Wait(1.5f);
+            yield return Wait(1.4f);
             if (skipRequested) { Finish(); yield break; }
 
+            // Bajo el destello dorado cambia todo: se acaba la noche y, años después, Yari yace en el camino
             ClearNightOfAshes();
             AyniScreenFX.Hint(null);
-
-            Phase("años después");
-            // Años después: Yari despierta en el camino, tumbado en el suelo
             PlaceYari(spawnPosition, spawnRotation);
             Play("GetUp", 0f);
             yariAnimator.speed = 0f;
+            Vector3 right = spawnRotation * Vector3.right;
+            Vector3 fwd = spawnRotation * Vector3.forward;
+            yield return null; // un fotograma para que el cuerpo tome la pose tumbada antes de medir el antebrazo
+            Transform forearm = yariAnimator.isHuman ? yariAnimator.GetBoneTransform(HumanBodyBones.LeftLowerArm) : null;
+            Vector3 illaPoint = forearm != null ? forearm.position : spawnPosition + Vector3.up * 0.3f;
+            Vector3 illaView = right * 0.8f + Vector3.up * 0.45f + fwd * 0.2f;
 
+            Phase("la Illa");
+            // Primer plano de la Illa en el antebrazo de Yari: late dorada mientras se cuenta el pacto
+            AyniScreenFX.Tint(IllaGold, 0.16f);
+            AyniScreenFX.FadeTo(IllaGold, 0f, 1.8f);
             AyniScreenFX.Caption("En el fondo del cañón, la Illa absorbió el golpe mortal y selló un pacto con Yari.", 4.4f);
-            yield return Wait(4.6f);
-            AyniScreenFX.Caption("No morirá mientras su corazón anhele volver a casa... pero cada vez que caiga, la Illa cobrará años de su vida.", 5.2f);
-            yield return Wait(5.4f);
+            bool secondCaption = false;
+            yield return Shot(9.6f, u =>
+            {
+                LightIlla(0.45f + 0.25f * Mathf.Sin(u * 9.6f * 2.6f));
+                if (u > 0.47f && !secondCaption)
+                {
+                    secondCaption = true;
+                    AyniScreenFX.Caption("No morirá mientras su corazón anhele volver a casa... pero cada vez que caiga, la Illa cobrará años de su vida.", 5.0f);
+                }
+                return (illaPoint + illaView * Mathf.Lerp(1.15f, 0.75f, Smooth(u)), illaPoint);
+            });
+            if (skipRequested) { Finish(); yield break; }
+
+            Phase("años después");
+            // La cámara se eleva hasta ver el camino que tiene por delante, ya de día
             AyniAudio.Play2D("titulo_golpe", 0.7f);
-            AyniScreenFX.Title("AÑOS DESPUÉS", "Nivel 1 · Antisuyo — El dominio de Amaru el Cazador", 3.6f);
-            yield return Wait(3.4f);
+            AyniScreenFX.Title("AÑOS DESPUÉS", "Nivel 1 · Antisuyo — El dominio de Amaru el Cazador", 3.8f);
+            AyniScreenFX.Tint(IllaGold, 0f);
+            Vector3 closeUp = illaPoint + illaView * 0.75f;
+            Vector3 high = spawnPosition - fwd * 7f + right * 1.2f + Vector3.up * 5.5f;
+            Vector3 roadAhead = spawnPosition + fwd * 28f + Vector3.up;
+            // En lo alto se ve a Yari tumbado abajo y el camino que se abre delante
+            Vector3 overview = Vector3.Lerp(spawnPosition, roadAhead, 0.4f);
+            yield return Shot(4.2f, u =>
+            {
+                LightIlla(Mathf.Lerp(0.45f, 0f, u));
+                float k = Smooth(u);
+                return (Vector3.Lerp(closeUp, high, k), Vector3.Lerp(illaPoint, overview, k));
+            });
             if (skipRequested) { Finish(); yield break; }
 
             Phase("despertar");
-            // Despertar: cámara baja junto a Yari, se levanta y la cámara sube hasta quedar detrás de él
-            Vector3 right = spawnRotation * Vector3.right;
-            Vector3 fwd = spawnRotation * Vector3.forward;
-            Aim(spawnPosition + right * 1.6f + fwd * 0.6f + Vector3.up * 0.55f, spawnPosition + Vector3.up * 0.3f, 1f);
-            AyniScreenFX.FadeTo(Color.black, 0f, 2.0f);
-            yield return Wait(1.6f);
+            // Yari se levanta mientras la cámara baja hasta quedar detrás de él, mirando el camino
             AyniScreenFX.Caption("Yari despierta. El camino a casa empieza aquí.", 3.4f);
             yariAnimator.speed = 0.8f;
-
             Vector3 behind = spawnPosition + spawnRotation * new Vector3(0.5f, 1.6f, -3.2f);
-            yield return Shot(3.6f, u =>
+            yield return Shot(3.8f, u =>
             {
-                Vector3 start = spawnPosition + right * 1.6f + fwd * 0.6f + Vector3.up * 0.55f;
-                Vector3 look = spawnPosition + Vector3.up * Mathf.Lerp(0.3f, 1.4f, Smooth(u));
-                return (Vector3.Lerp(start, behind, Smooth(u)), look);
+                float k = Smooth(u);
+                // La cámara no pierde a Yari mientras se levanta; al final mira el camino por encima de su hombro
+                Vector3 look = Vector3.Lerp(overview, spawnPosition + Vector3.up * 1.2f + fwd * 2.5f, k);
+                return (Vector3.Lerp(high, behind, k), look);
             });
             yariAnimator.speed = 1f;
             if (skipRequested) { Finish(); yield break; }
@@ -408,6 +490,38 @@ namespace Ayni.Story
 
         // ───────────────────────── Piezas ─────────────────────────
 
+        private Vector3 SayriPosition()
+        {
+            return sayri != null ? sayri.transform.parent.position : deck;
+        }
+
+        /// <summary>
+        /// Sayri y su guardia cruzan el puente al paso, con los dos soldados detrás, y se paran frente a Yari.
+        /// </summary>
+        private IEnumerator March(Vector3 from, Vector3 to, Vector3 side, Vector3 along, float seconds)
+        {
+            float t = 0f;
+            while (t < seconds && !finished && sayri != null)
+            {
+                t += Time.unscaledDeltaTime;
+                float u = Mathf.Clamp01(t / seconds);
+                // Paso constante y frenada corta al final
+                float k = u < 0.85f ? u / 0.85f * 0.94f : 0.94f + 0.06f * Smooth((u - 0.85f) / 0.15f);
+                Vector3 p = Vector3.Lerp(from, to, k);
+                cast.Place(sayri, p, -along);
+                cast.Place(guardA, p + along * 1.8f + side, -along);
+                cast.Place(guardB, p + along * 1.8f - side, -along);
+                float pace = u < 0.85f ? 0.5f : Mathf.Lerp(0.5f, 0f, (u - 0.85f) / 0.15f);
+                AyniPrologueCast.SetSpeed(sayri, pace);
+                AyniPrologueCast.SetSpeed(guardA, pace);
+                AyniPrologueCast.SetSpeed(guardB, pace);
+                yield return null;
+            }
+            AyniPrologueCast.SetSpeed(sayri, 0f);
+            AyniPrologueCast.SetSpeed(guardA, 0f);
+            AyniPrologueCast.SetSpeed(guardB, 0f);
+        }
+
         private void PlaceYari(Vector3 position, Quaternion rotation)
         {
             if (yariTransform == null) return;
@@ -477,7 +591,7 @@ namespace Ayni.Story
         /// <summary>La noche de las cenizas: resplandor rojizo, brasas que suben de la garganta y el fuego del valle.</summary>
         private void BuildNightOfAshes()
         {
-            AyniScreenFX.Tint(new Color(0.2f, 0.035f, 0.015f), 0.42f);
+            AyniScreenFX.Tint(new Color(0.2f, 0.035f, 0.015f), 0.22f);
 
             Vector3 along = Vector3.Cross(acrossBridge, Vector3.up);
             var fireGo = new GameObject("Prologo_FuegoDelValle");
@@ -530,6 +644,9 @@ namespace Ayni.Story
         private void ClearNightOfAshes()
         {
             AyniScreenFX.Tint(Color.clear, 0f);
+            if (cast != null) cast.Clear();
+            cast = null;
+            sayri = guardA = guardB = null;
             if (embers != null) Destroy(embers);
             if (fireLight != null) Destroy(fireLight.gameObject);
             if (illaLight != null) Destroy(illaLight.gameObject);
