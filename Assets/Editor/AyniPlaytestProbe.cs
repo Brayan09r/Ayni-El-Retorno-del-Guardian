@@ -109,6 +109,21 @@ namespace Ayni.Editor
             Debug.Log($"[Ayni Prueba] Bloque de {height} m de alto y {depth} m de fondo a {distance} m de Yari");
         }
 
+        /// <summary>Lleva a Yari al centro del conjunto número <paramref name="index"/> (0 = el más cercano) para empezar su combate.</summary>
+        public static void GoToEncounter(int index)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null) return;
+            var sites = new System.Collections.Generic.List<Ayni.World.AyniEncounterSite>(
+                Object.FindObjectsByType<Ayni.World.AyniEncounterSite>(FindObjectsSortMode.None));
+            if (sites.Count == 0) return;
+            Vector3 p = player.transform.position;
+            sites.Sort((a, b) => (a.transform.position - p).sqrMagnitude.CompareTo((b.transform.position - p).sqrMagnitude));
+            var site = sites[Mathf.Clamp(index, 0, sites.Count - 1)];
+            TeleportYari(site.transform.position.x, site.transform.position.y + 1.5f, site.transform.position.z);
+            Debug.Log($"[Ayni Prueba] Yari en el conjunto {site.name}");
+        }
+
         /// <summary>Qué puede saltar o trepar Yari hacia donde mira, y por qué no si no puede.</summary>
         public static string Traversal(float speed)
         {
