@@ -83,6 +83,7 @@ namespace Ayni.Combat
             Hitstop(0.045f);
             Kick(direction, 0.03f);
             Shake(0.015f, 0.10f);
+            AyniRumble.Pulse(0.12f, 0.35f, 0.08f);
             Flash(point, Color.white, 0.75f);
         }
 
@@ -92,6 +93,7 @@ namespace Ayni.Combat
             Hitstop(0.085f);
             Kick(direction, 0.07f);
             Shake(0.035f, 0.16f);
+            AyniRumble.Pulse(0.55f, 0.4f, 0.15f);
             Flash(point, new Color(1f, 0.95f, 0.8f), 1.15f, 0.14f);
         }
 
@@ -101,6 +103,7 @@ namespace Ayni.Combat
             Hitstop(0.14f);
             Kick(direction, 0.12f);
             Shake(0.06f, 0.24f);
+            AyniRumble.Pulse(0.9f, 0.55f, 0.28f);
             Flash(point, new Color(1f, 0.85f, 0.5f), 1.7f, 0.18f);
         }
 
@@ -110,6 +113,7 @@ namespace Ayni.Combat
             Hitstop(0.10f);
             Kick(direction, 0.045f);
             Shake(0.02f, 0.12f);
+            AyniRumble.Pulse(0.2f, 0.75f, 0.1f);
             Flash(point, new Color(1f, 0.9f, 0.4f), 1.25f, 0.16f);
         }
 
@@ -119,6 +123,7 @@ namespace Ayni.Combat
             Hitstop(0.03f);
             Kick(direction, 0.03f);
             Shake(0.012f, 0.08f);
+            AyniRumble.Pulse(0.3f, 0.15f, 0.08f);
             Flash(point, new Color(0.8f, 0.9f, 1f), 0.55f);
         }
 
@@ -128,6 +133,7 @@ namespace Ayni.Combat
             AyniAudio.Play("esquiva", point, 0.9f, 0.05f);
             SlowMotion(0.22f, 0.3f);
             Shake(0.02f, 0.08f);
+            AyniRumble.Pulse(0f, 0.25f, 0.06f);
             Flash(point, new Color(0.65f, 0.9f, 1f, 0.85f), 0.9f, 0.16f);
         }
 
@@ -138,6 +144,7 @@ namespace Ayni.Combat
             Hitstop(0.06f);
             Kick(direction, 0.08f);
             Shake(0.045f, 0.18f);
+            AyniRumble.Pulse(0.8f, 0.3f, 0.22f);
             Flash(point, new Color(1f, 0.3f, 0.25f), 0.95f, 0.14f);
         }
 

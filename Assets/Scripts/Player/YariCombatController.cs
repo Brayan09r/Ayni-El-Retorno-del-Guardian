@@ -1235,6 +1235,7 @@ namespace Ayni.Player
                 animator.CrossFadeInFixedTime("Land_Hard", 0.04f);
                 stunnedUntil = Mathf.Max(stunnedUntil, Time.time + Mathf.Lerp(0.35f, 0.7f, Mathf.InverseLerp(hardLandingHeight, fallDamageHeight, drop)));
                 CombatFeedback.Shake(Mathf.Lerp(0.05f, 0.14f, Mathf.InverseLerp(hardLandingHeight, 14f, drop)), 0.22f);
+                AyniRumble.Pulse(Mathf.Lerp(0.4f, 0.8f, Mathf.InverseLerp(hardLandingHeight, 14f, drop)), 0.2f, 0.18f);
                 CombatFeedback.Flash(transform.position + Vector3.up * 0.1f, new Color(0.85f, 0.75f, 0.6f, 0.8f), 1.6f, 0.2f);
             }
             else
