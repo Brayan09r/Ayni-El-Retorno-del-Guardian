@@ -74,7 +74,8 @@ namespace Ayni.UI
             avoidMessageUntil = Time.unscaledTime + 0.7f;
         }
 
-        private bool showControls = true;
+        // Oculto al empezar (como en Sifu, la pantalla limpia); [H] lo muestra y el tutorial está en F1
+        private bool showControls = false;
 
         private void Update()
         {
