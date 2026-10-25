@@ -161,7 +161,7 @@ namespace Ayni.UI
             GUILayout.BeginArea(new Rect(20, Screen.height - 195, Mathf.Min(680f, Screen.width - 40f), 175), GUI.skin.box);
             GUILayout.Label($"<b>CONTROLES RUMI MAKI — {(pad ? "MANDO" : "TECLADO Y RATÓN")}</b>  ([{Key(AyniInput.Action.ToggleHud)}] ocultar · [{Key(AyniInput.Action.Tutorial)}] tutorial · [{Key(AyniInput.Action.Pause)}] pausa y volumen)");
             GUILayout.Label($"• <b>[{Key(AyniInput.Action.LightAttack)}]:</b> Golpe Ligero  |  <b>[{Key(AyniInput.Action.HeavyAttack)}]:</b> Golpe Pesado  |  <b>[{Key(AyniInput.Action.Sprint)}]:</b> Correr");
-            GUILayout.Label($"• <b>[{Key(AyniInput.Action.LockOn)}]:</b> Fijar o soltar al rival (Lock-On)");
+            GUILayout.Label($"• <b>[{Key(AyniInput.Action.LockOn)}]:</b> Fijar o soltar al rival (Lock-On)  |  <b>[{Key(AyniInput.Action.Jump)}]:</b> Saltar obstáculo / Trepar");
             GUILayout.Label($"• <b>[{Key(AyniInput.Action.Guard)}] mantener:</b> Guardia (Yari se planta) — púlsala justo antes del impacto para el Parry");
             GUILayout.Label($"• <b>Guardia + {down}:</b> Agacharse (evita altos)  |  <b>+ {up}:</b> Saltito (evita barridos)  |  <b>+ {sides}:</b> Balanceo (evita todo)");
             GUILayout.Label($"• <b>Postura del rival rota:</b> [{Key(AyniInput.Action.Execute)}] Venganza (Matar)  |  [{Key(AyniInput.Action.Mercy)}] Restaurar Ayni (Perdonar)");

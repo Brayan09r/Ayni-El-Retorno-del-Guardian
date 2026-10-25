@@ -54,6 +54,7 @@ namespace Ayni.UI
                         new Row(K(AyniInput.Action.LockOn), "<b>Fijar al rival.</b> Yari lo encara siempre y la cámara los encuadra."),
                         new Row(pad ? "Stick + golpe" : "WASD + golpe", "<b>Elegir rival.</b> El golpe va al que señalas; si está a tu espalda, <b>patada hacia atrás</b>."),
                         new Row(K(AyniInput.Action.Sprint), "<b>Correr.</b> " + (pad ? "Mantén RT (o pulsa el stick izquierdo)." : "Mantén Shift.")),
+                        new Row(K(AyniInput.Action.Jump), "<b>Saltar y trepar.</b> Ante un tronco o un muro bajo, Yari lo salta apoyando la mano; ante una cornisa, trepa. No hay salto libre."),
                     },
                     tip = "Sin dirección, Yari se gira solo hacia el rival más cercano y da un paso hacia él."
                 },
@@ -67,6 +68,7 @@ namespace Ayni.UI
                         new Row($"{heavyShort} · {heavyShort} · {heavyShort}", "<b>Cadena pesada:</b> puñetazo descendente, gancho ascendente y codazo."),
                         new Row($"{lightShort} · {lightShort} · {heavyShort}", "<b>Cabezazo.</b> Remate tras 2 o 3 golpes ligeros; castiga la postura."),
                         new Row($"{lightShort} ×4 · {heavyShort}", "<b>Patada de empuje.</b> Remate tras la cadena completa; el que más postura rompe."),
+                        new Row(pad ? $"{guardShort} / Stick" : "Guardia / WASD", "<b>Cortar el golpe:</b> en cuanto conecta, cubrirte o moverte te devuelve el control."),
                     },
                     tip = "Si dejas pasar más de medio segundo sin atacar, el combo vuelve a empezar."
                 },

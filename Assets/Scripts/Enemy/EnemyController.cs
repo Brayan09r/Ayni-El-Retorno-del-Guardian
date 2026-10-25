@@ -742,7 +742,7 @@ namespace Ayni.Enemy
             if (killed)
             {
                 Vector3 from = playerTarget != null ? playerTarget.position : transform.position + transform.forward;
-                CombatFeedback.Finisher(GetHitPoint(HitReaction.Head, from));
+                CombatFeedback.Finisher(GetHitPoint(HitReaction.Head, from), transform.position - from);
             }
         }
 

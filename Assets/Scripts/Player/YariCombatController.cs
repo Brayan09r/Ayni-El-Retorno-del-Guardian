@@ -23,6 +23,13 @@ namespace Ayni.Player
         [SerializeField] private float rotationSpeed = 12f;
         [SerializeField] private float gravity = -18f;
 
+        [Header("Inercia")]
+        [Tooltip("Aceleración al arrancar o al pedir más ritmo (m/s²). Con 20 llega a correr en unas dos décimas: " +
+                 "seco como en Sifu, pero sin pasar de 0 a tope en un fotograma.")]
+        [SerializeField] private float moveAcceleration = 20f;
+        [Tooltip("Frenado al soltar el stick, al bajar el ritmo o al cambiar de sentido (m/s²).")]
+        [SerializeField] private float moveDeceleration = 26f;
+
         [Header("Caminar con el stick")]
         [Tooltip("Por debajo de esta inclinación del stick Yari camina; por encima, corre como con el teclado.")]
         [Range(0.3f, 0.95f)] [SerializeField] private float runStickThreshold = 0.75f;
@@ -41,6 +48,10 @@ namespace Ayni.Player
         [SerializeField] private float maxCrouchCadence = 1.4f;
         [Tooltip("Tope para los pasos laterales y hacia atrás con el rival fijado.")]
         [SerializeField] private float maxStrafeCadence = 1.3f;
+
+        [Header("Saltar obstáculos y trepar")]
+        [Tooltip("Segundos que se recuerda la pulsación de salto: pulsando un poco antes de llegar al obstáculo, salta al llegar.")]
+        [SerializeField] private float traversalPressBuffer = 0.25f;
 
         [Header("Salto en carrera")]
         [Tooltip("A partir de este ritmo (1 = corriendo a fondo) el salto se convierte en un salto largo hacia delante.")]
@@ -138,6 +149,13 @@ namespace Ayni.Player
         [SerializeField] private float hitStunDuration = 0.35f;
         [Tooltip("Segundos sin control cuando la guardia de Yari se rompe.")]
         [SerializeField] private float guardBreakStun = 1.5f;
+        [Tooltip("Tras el impacto y su recorrido (Follow Through), la guardia corta el resto del golpe, como en Sifu: " +
+                 "se puede cubrir o esquivar sin esperar a que Yari recoja el brazo.")]
+        [SerializeField] private bool guardCancelsRecovery = true;
+        [Tooltip("Tras el impacto y su recorrido, inclinar el stick (o WASD) corta la recuperación y Yari echa a andar. " +
+                 "Si hay otro golpe en cola, manda el golpe.")]
+        [SerializeField] private bool moveCancelsRecovery = true;
+        [Range(0.2f, 0.95f)] [SerializeField] private float moveCancelThreshold = 0.5f;
 
         [Header("Fijación de Blanco (Lock-On)")]
         [Tooltip("Distancia máxima para fijar a un rival con Tab o clic central.")]
@@ -272,6 +290,10 @@ namespace Ayni.Player
             new System.Collections.Generic.Dictionary<HumanBodyBones, TrailRenderer>();
         private FootIK footIK;
         private AndeanCombatStanceModifier andeanStance;
+        // Saltar obstáculos y trepar (estilo Sifu: no hay salto libre)
+        private YariTraversal traversal;
+        private YariTraversal.Kind shownHint = YariTraversal.Kind.None;
+        private float nextHintCheck;
         private bool jumpInAir;
         private float jumpStartTime;
 
@@ -305,6 +327,8 @@ namespace Ayni.Player
         private int paceFrame = -10;
         private float locomotionCadence = 1f;
         private float appliedCadence = 1f;
+        // Velocidad horizontal real de la locomoción (con inercia); los golpes y la guardia la ponen a cero
+        private Vector3 planarVelocity;
 
         private bool isCrouching;
         private bool isSprinting;
@@ -401,6 +425,10 @@ namespace Ayni.Player
             ApplyVisualGroundOffset();
             footIK = FootIK.Attach(animator, characterController);
             AyniFootsteps.Attach(gameObject, 0.5f);
+
+            traversal = GetComponent<YariTraversal>();
+            if (traversal == null) traversal = gameObject.AddComponent<YariTraversal>();
+            traversal.OnFinished += HandleTraversalFinished;
         }
 
         /// <summary>
@@ -505,18 +533,33 @@ namespace Ayni.Player
             }
             HookRootMotion();
 
-            if (footIK != null) footIK.Suspended = isDead || jumpInAir || fallAnimPlaying || CinematicControl;
+            bool traversing = traversal != null && traversal.Active;
+            if (footIK != null) footIK.Suspended = isDead || jumpInAir || fallAnimPlaying || CinematicControl || traversing;
 
             // Postura andina: solo en guardia de pelea, no al pasear, correr, agacharse, saltar o caer
             if (andeanStance == null && animator != null) andeanStance = animator.GetComponent<AndeanCombatStanceModifier>();
             if (andeanStance != null)
             {
-                bool fighting = inCombatStance && !isDead && !jumpInAir && !fallAnimPlaying && !isCrouching && !isSprinting && !CinematicControl;
+                bool fighting = inCombatStance && !isDead && !jumpInAir && !fallAnimPlaying && !isCrouching && !isSprinting &&
+                                !CinematicControl && !traversing;
                 andeanStance.SetStanceWeight(fighting ? 1f : 0f);
             }
 
             // Escena cinemática: la escena mueve y anima a Yari
-            if (CinematicControl) return;
+            if (CinematicControl)
+            {
+                planarVelocity = Vector3.zero;
+                if (traversing) traversal.Abort();
+                ShowTraversalHint(YariTraversal.Kind.None);
+                return;
+            }
+
+            // Saltando un obstáculo o trepando: YariTraversal mueve a Yari por su recorrido
+            if (traversing)
+            {
+                ShowTraversalHint(YariTraversal.Kind.None);
+                return;
+            }
 
             // Tutorial o pausa: no se procesa ninguna entrada
             if (AyniGameState.InputLocked) return;
@@ -543,6 +586,7 @@ namespace Ayni.Player
 
             if (isDead)
             {
+                planarVelocity = Vector3.zero;
                 UpdateUpperGuardLayer();
                 ApplyGravity();
                 return;
@@ -551,6 +595,7 @@ namespace Ayni.Player
             // Aturdido por un golpe o por rotura de guardia: sin control
             if (IsStunned)
             {
+                planarVelocity = Vector3.zero;
                 currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 10f * Time.deltaTime);
                 if (animator) animator.SetFloat("Speed", currentAnimSpeed);
                 UpdateUpperGuardLayer();
@@ -562,6 +607,8 @@ namespace Ayni.Player
             HandleCrouch();
             HandleMovement();
             HandleJump();
+            if (traversal != null && traversal.Active) return; // acaba de empezar a saltar o trepar
+            UpdateTraversalHint();
             ApplyGravity();
             HandleDefense();
             HandleAttacks();
@@ -746,7 +793,13 @@ namespace Ayni.Player
                 LeapAirMove();
                 return;
             }
-            if (isAttacking) return;
+            if (isAttacking)
+            {
+                // Golpe ya conectado y recorrido: moverse corta la recuperación (si no hay otro golpe en cola)
+                if (!moveCancelsRecovery || !CanCancelAttack || bufferedAttack != 0 ||
+                    AyniInput.Move.magnitude < moveCancelThreshold) return;
+                EndAttackEarly(lockTarget != null && HasState("LockOn_Locomotion") ? "LockOn_Locomotion" : "Combat_Locomotion", 0.15f);
+            }
 
             if (cameraTransform == null)
             {
@@ -876,11 +929,21 @@ namespace Ayni.Player
                     locomotionCadence = Mathf.Clamp(currentSpeed / Mathf.Max(0.1f, lockStride), 0.6f, maxStrafeCadence);
                 }
 
-                characterController.Move(moveDir * (currentSpeed * Time.deltaTime));
-                paceRatio = currentSpeed / Mathf.Max(0.1f, baseMoveSpeed * speedMul);
+                // Inercia: la velocidad real va hacia la pedida con aceleración y frenado finitos. En un cambio de
+                // sentido primero frena y luego arranca, en vez de deslizarse hacia atrás mientras se da la vuelta.
+                planarVelocity = AccelerateTowards(planarVelocity, moveDir * currentSpeed);
+                float actualSpeed = planarVelocity.magnitude;
+                // Mientras acelera, los pasos van al ritmo de la velocidad real (sin bajar del tope inferior de cada marcha)
+                if (currentSpeed > 0.01f)
+                {
+                    locomotionCadence = Mathf.Clamp(locomotionCadence * actualSpeed / currentSpeed, 0.6f, locomotionCadence);
+                }
+
+                characterController.Move(planarVelocity * Time.deltaTime);
+                paceRatio = actualSpeed / Mathf.Max(0.1f, baseMoveSpeed * speedMul);
                 paceFrame = Time.frameCount;
-                lastMoveDir = moveDir;
-                lastMoveSpeed = currentSpeed;
+                lastMoveDir = actualSpeed > 0.05f ? planarVelocity / actualSpeed : moveDir;
+                lastMoveSpeed = actualSpeed;
 
                 if (!locked)
                 {
@@ -896,6 +959,9 @@ namespace Ayni.Player
                 currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 10f * Time.deltaTime);
                 // Desde parado siempre se arranca caminando y, si toca correr, se acelera
                 runBlend = 0f;
+                // Al soltar el stick frena en unas décimas en vez de clavarse en seco
+                planarVelocity = AccelerateTowards(planarVelocity, Vector3.zero);
+                if (planarVelocity.sqrMagnitude > 0.0001f) characterController.Move(planarVelocity * Time.deltaTime);
             }
 
             if (animator) animator.SetFloat("Speed", currentAnimSpeed);
@@ -915,12 +981,24 @@ namespace Ayni.Player
         }
 
         /// <summary>
+        /// Lleva la velocidad horizontal hacia la pedida: acelera al pedir más y frena (con más fuerza) al pedir
+        /// menos o al cambiar de dirección.
+        /// </summary>
+        private Vector3 AccelerateTowards(Vector3 current, Vector3 desired)
+        {
+            bool speedingUp = desired.sqrMagnitude >= current.sqrMagnitude && Vector3.Dot(desired, current) >= 0f;
+            float rate = speedingUp ? moveAcceleration : moveDeceleration;
+            return Vector3.MoveTowards(current, desired, rate * Time.deltaTime);
+        }
+
+        /// <summary>
         /// Guardia plantada estilo Sifu: los pies no se mueven del sitio. Yari solo gira para encarar al rival
         /// (el fijado o el más cercano) y la locomoción se detiene.
         /// </summary>
         private void HoldGuardStance()
         {
             isSprinting = false;
+            planarVelocity = Vector3.zero;
             locomotionCadence = 1f;
             currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 14f * Time.deltaTime);
             if (animator)
@@ -1004,9 +1082,26 @@ namespace Ayni.Player
             bool onGround = characterController.isGrounded || Time.time - lastGroundedAt < 0.12f;
             if (!onGround || jumpInAir || velocity.y > 0.5f) return;
 
-            // Salto estándar (Espacio / A sin estar en guardia). Con un rival para el Juicio Ayni, A del mando es "perdonar".
-            if (Time.time - jumpPressedAt < 0.15f && !isGuarding && !isAttacking &&
-                !(AyniInput.UsingGamepad && HasJudgeableEnemy()))
+            // Con un rival para el Juicio Ayni, A del mando es "perdonar". En guardia, A es la esquiva de saltito.
+            if (Time.time - jumpPressedAt >= traversalPressBuffer || isGuarding || isAttacking ||
+                (AyniInput.UsingGamepad && HasJudgeableEnemy())) return;
+
+            // Como en Sifu no hay salto libre: A / Espacio salta el obstáculo que hay delante o trepa a la cornisa.
+            // La pulsación se recuerda un instante: pulsando un poco antes de llegar, salta al llegar.
+            if (traversal != null && traversal.TryStart(TraversalDirection(), planarVelocity.magnitude, animator))
+            {
+                jumpPressedAt = -10f;
+                if (isCrouching) SetCrouch(false);
+                planarVelocity = Vector3.zero;
+                velocity = Vector3.zero;
+                currentAnimSpeed = 0f;
+                return;
+            }
+
+            // El salto largo queda solo para cruzar un hueco corriendo (sin rival fijado)
+            bool runningJump = lockTarget == null && Time.frameCount == paceFrame && paceRatio >= leapMinPace &&
+                               lastMoveDir.sqrMagnitude > 0.5f && traversal != null && traversal.CanLeapGap(lastMoveDir);
+            if (runningJump)
             {
                 jumpPressedAt = -10f;
                 if (isCrouching)
@@ -1014,25 +1109,73 @@ namespace Ayni.Player
                     SetCrouch(false);
                 }
 
-                // Corriendo (sin rival fijado) el salto es largo: Yari no se frena, sale lanzado hacia donde corría
-                bool runningJump = lockTarget == null && Time.frameCount == paceFrame && paceRatio >= leapMinPace &&
-                                   lastMoveDir.sqrMagnitude > 0.5f;
-
-                velocity.y = Mathf.Sqrt((runningJump ? leapHeight : jumpHeight) * -2f * gravity);
+                velocity.y = Mathf.Sqrt(leapHeight * -2f * gravity);
                 float airTime = 2f * velocity.y / Mathf.Max(0.01f, -gravity);
-                PlayJumpAnimation(airTime, runningJump);
+                PlayJumpAnimation(airTime, true);
                 jumpInAir = true;
                 jumpStartTime = Time.time;
                 AyniAudio.Play("salto", transform.position + Vector3.up, 0.6f);
 
-                if (runningJump)
-                {
-                    leaping = true;
-                    leapDir = lastMoveDir.normalized;
-                    leapSpeed = lastMoveSpeed * leapSpeedBoost;
-                    runBlend = 1f;
-                }
+                leaping = true;
+                leapDir = lastMoveDir.normalized;
+                leapSpeed = lastMoveSpeed * leapSpeedBoost;
+                runBlend = 1f;
             }
+        }
+
+        /// <summary>Hacia dónde salta o trepa: hacia donde señala el stick (relativo a la cámara) o, si no, hacia donde mira.</summary>
+        private Vector3 TraversalDirection()
+        {
+            Vector2 move = AyniInput.Move;
+            if (move.sqrMagnitude > 0.04f && cameraTransform != null)
+            {
+                Vector3 camForward = cameraTransform.forward;
+                Vector3 camRight = cameraTransform.right;
+                camForward.y = 0f;
+                camRight.y = 0f;
+                Vector3 wanted = camForward.normalized * move.y + camRight.normalized * move.x;
+                if (wanted.sqrMagnitude > 0.01f) return wanted.normalized;
+            }
+            return transform.forward;
+        }
+
+        /// <summary>Al terminar de saltar o trepar: vuelve a la locomoción y, si iba corriendo, sigue corriendo.</summary>
+        private void HandleTraversalFinished()
+        {
+            velocity = new Vector3(0f, -2f, 0f);
+            lastGroundedAt = Time.time;
+            airborne = false;
+            planarVelocity = traversal.Direction * traversal.ExitSpeed;
+            currentAnimSpeed = traversal.ExitSpeed > 0.1f ? Mathf.Clamp01(traversal.ExitSpeed / Mathf.Max(0.1f, baseMoveSpeed)) : 0f;
+            if (!animator) return;
+            animator.SetFloat("Speed", currentAnimSpeed);
+            string state = lockTarget != null && HasState("LockOn_Locomotion") ? "LockOn_Locomotion"
+                         : inCombatStance ? "Combat_Locomotion" : "Relaxed_Locomotion";
+            if (HasState(state)) animator.CrossFadeInFixedTime(state, 0.15f);
+        }
+
+        /// <summary>
+        /// Aviso "[A] Saltar" / "[A] Trepar" cuando hay algo que saltar o trepar delante (fuera de combate). Se mira unas
+        /// diez veces por segundo: son unos pocos rayos.
+        /// </summary>
+        private void UpdateTraversalHint()
+        {
+            if (Time.time < nextHintCheck) return;
+            nextHintCheck = Time.time + 0.1f;
+
+            YariTraversal.Kind kind = YariTraversal.Kind.None;
+            bool calm = !inCombatStance && !isGuarding && !isAttacking && !AyniGameState.InputLocked;
+            if (calm && traversal != null) kind = traversal.Probe(TraversalDirection(), planarVelocity.magnitude);
+            ShowTraversalHint(kind);
+        }
+
+        private void ShowTraversalHint(YariTraversal.Kind kind)
+        {
+            if (kind == shownHint) return;
+            shownHint = kind;
+            string key = AyniInput.Label(AyniInput.Action.Jump);
+            Ayni.UI.AyniScreenFX.Hint(kind == YariTraversal.Kind.None ? null
+                : kind == YariTraversal.Kind.Climb ? $"[{key}] Trepar" : $"[{key}] Saltar");
         }
 
         /// <summary>
@@ -1101,6 +1244,7 @@ namespace Ayni.Player
         {
             if (!jumpInAir || Time.time - jumpStartTime < 0.15f || !characterController.isGrounded) return;
             jumpInAir = false;
+            if (leaping) planarVelocity = leapDir * leapSpeed;
             leaping = false;
             if (!fallAnimPlaying) AyniAudio.Play("aterrizaje", transform.position, 0.7f);
             if (!animator) return;
@@ -1181,6 +1325,7 @@ namespace Ayni.Player
                 animator.CrossFadeInFixedTime("Land_Hard", 0.04f);
                 stunnedUntil = Mathf.Max(stunnedUntil, Time.time + Mathf.Lerp(0.35f, 0.7f, Mathf.InverseLerp(hardLandingHeight, fallDamageHeight, drop)));
                 CombatFeedback.Shake(Mathf.Lerp(0.05f, 0.14f, Mathf.InverseLerp(hardLandingHeight, 14f, drop)), 0.22f);
+                AyniRumble.Pulse(Mathf.Lerp(0.4f, 0.8f, Mathf.InverseLerp(hardLandingHeight, 14f, drop)), 0.2f, 0.18f);
                 CombatFeedback.Flash(transform.position + Vector3.up * 0.1f, new Color(0.85f, 0.75f, 0.6f, 0.8f), 1.6f, 0.2f);
             }
             else
@@ -1426,16 +1571,24 @@ namespace Ayni.Player
 
         private void Teleport(Vector3 position)
         {
+            if (traversal != null) traversal.Abort();
             characterController.enabled = false;
             transform.position = position;
             characterController.enabled = true;
             velocity = Vector3.zero;
+            planarVelocity = Vector3.zero;
         }
 
         private void HandleDefense()
         {
             // Guardia mientras se mantiene pulsada (clic derecho, G o LB del mando)
             bool guardHeld = AyniInput.Held(AyniInput.Action.Guard);
+            // El golpe ya conectó y terminó su recorrido: la guardia corta la recuperación
+            if (guardHeld && guardCancelsRecovery && CanCancelAttack)
+            {
+                bufferedAttack = 0;
+                EndAttackEarly("Guard_Stance", 0.08f);
+            }
             if (guardHeld && !isGuarding && !isAttacking)
             {
                 if (isCrouching) SetCrouch(false);
@@ -1589,6 +1742,7 @@ namespace Ayni.Player
         private void StartAttack(bool isHeavy)
         {
             bufferedAttack = 0;
+            planarVelocity = Vector3.zero;
             if (isCrouching) SetCrouch(false);
             EnterCombatStance();
 
@@ -1776,6 +1930,23 @@ namespace Ayni.Player
             trailOffTime = attackHitTime + 0.1f;
         }
 
+        /// <summary>El golpe en curso ya conectó y terminó su recorrido: lo que queda es recuperación y se puede cortar.</summary>
+        private bool CanCancelAttack => isAttacking && attackHitDone && Time.time >= attackCancelTime;
+
+        /// <summary>Corta la recuperación del golpe y pasa al estado indicado. El combo sigue vivo el tiempo de siempre.</summary>
+        private void EndAttackEarly(string nextState, float fade)
+        {
+            reachAssistRemaining = 0f;
+            if (activeTrail != null)
+            {
+                activeTrail.emitting = false;
+                activeTrail = null;
+            }
+            isAttacking = false;
+            comboExpireTime = Time.time + comboResetTime;
+            if (animator && HasState(nextState)) animator.CrossFadeInFixedTime(nextState, fade);
+        }
+
         private void CancelPendingAttack()
         {
             reachAssistRemaining = 0f;
@@ -1838,9 +2009,10 @@ namespace Ayni.Player
                 Vector3 hitPoint = enemy.GetHitPoint(attack.reaction, transform.position);
                 enemy.TakeHit(dmg, structDmg, transform.position, isHeavy, attack.reaction, attack.knockback);
 
-                if (attack.impact >= 2) CombatFeedback.Finisher(hitPoint);
-                else if (attack.impact == 1 || counter) CombatFeedback.HeavyHit(hitPoint);
-                else CombatFeedback.LightHit(hitPoint);
+                // La cámara se empuja hacia donde va el golpe
+                if (attack.impact >= 2) CombatFeedback.Finisher(hitPoint, toEnemy);
+                else if (attack.impact == 1 || counter) CombatFeedback.HeavyHit(hitPoint, toEnemy);
+                else CombatFeedback.LightHit(hitPoint, toEnemy);
 
                 OnAttackLanded?.Invoke(enemy, isHeavy);
             }
@@ -1956,6 +2128,8 @@ namespace Ayni.Player
         public AttackResult ReceiveAttack(float damage, float structureDamage, AttackHeight height)
         {
             if (isDead || Time.time < invulnerableUntil) return AttackResult.Missed;
+            // Saltando un obstáculo o trepando (menos de un segundo) no se le puede golpear
+            if (traversal != null && traversal.Active) return AttackResult.Missed;
 
             AttackResult result;
             Vector3 impactPoint = transform.position + Vector3.up * (height == AttackHeight.High ? 1.4f : 0.6f) + transform.forward * 0.3f;
@@ -1974,7 +2148,7 @@ namespace Ayni.Player
                 guardReactionUntil = Time.time + 0.6f;
                 counterUntil = Time.time + counterWindow;
                 PlayState("Parry_Deflect", 0.04f);
-                CombatFeedback.Parry(impactPoint);
+                CombatFeedback.Parry(impactPoint, -transform.forward);
                 result = AttackResult.Parried;
             }
             else if (isGuarding)
@@ -1983,7 +2157,7 @@ namespace Ayni.Player
                 structure.AddStructureDamage(structureDamage);
                 guardReactionUntil = Time.time + 0.5f;
                 if (!structure.IsBroken) PlayState("Guard_BlockHit", 0.05f);
-                CombatFeedback.Block(impactPoint);
+                CombatFeedback.Block(impactPoint, -transform.forward);
                 result = AttackResult.Blocked;
             }
             else
@@ -1992,7 +2166,8 @@ namespace Ayni.Player
                 CancelPendingAttack();
                 currentHealth = Mathf.Max(0f, currentHealth - damage);
                 structure.AddStructureDamage(structureDamage * 0.5f);
-                CombatFeedback.PlayerHurt(impactPoint);
+                // El golpe llega de frente: empuja la cámara hacia atrás, hacia Yari
+                CombatFeedback.PlayerHurt(impactPoint, -transform.forward);
 
                 if (currentHealth <= 0f)
                 {
@@ -2043,6 +2218,7 @@ namespace Ayni.Player
         private void Die()
         {
             isDead = true;
+            if (traversal != null) traversal.Abort();
             CancelPendingAttack();
             isSprinting = false;
             SetGuard(false);

@@ -12,6 +12,7 @@ namespace Ayni.Editor
     ///   call Ayni.Editor.AyniLocomotionProbe.MeasureClips       (fuera de Play) lo que cubre cada clip de locomoción
     ///   call Ayni.Editor.AyniLocomotionProbe.MeasureJump 3      mide el próximo salto (largo, alto y tiempo en el aire)
     ///   call Ayni.Editor.AyniLocomotionProbe.TraceStates 4      registra los cambios de estado del Animator durante 4 s
+    ///   call Ayni.Editor.AyniLocomotionProbe.TraceSpeed 2       registra la velocidad horizontal de Yari cada 0.05 s durante 2 s
     ///   call Ayni.Editor.AyniLocomotionProbe.RemoveEnemies      aparta a los rivales para probar sin que ataquen
     ///   call Ayni.Editor.AyniLocomotionProbe.SetYariField campo valor   cambia un ajuste de Yari durante el Play
     ///   call Ayni.Editor.AyniLocomotionProbe.ReloadSceneFromDisk        reabre la escena guardada (fuera de Play)
@@ -23,7 +24,7 @@ namespace Ayni.Editor
             "Relaxed_Locomotion", "Combat_Locomotion", "Crouch_Locomotion", "LockOn_Locomotion", "Guard_Stance",
             "Fall_Loop", "Fall_Back", "Land_Hard", "Jump", "Run_Jump", "GetUp", "Defeat_Death",
             "Atk_Light1", "Atk_Light2", "Atk_Light3", "Atk_Light4", "Atk_Overhand", "Atk_Uppercut", "Atk_Elbow",
-            "Atk_Headbutt", "Atk_FrontKick"
+            "Atk_Headbutt", "Atk_FrontKick", "Traverse_Vault", "Traverse_Climb"
         };
 
         // ───────────────────────── Patinaje de los pies ─────────────────────────
@@ -334,6 +335,54 @@ namespace Ayni.Editor
             if (Time.time < traceEnd) return;
             EditorApplication.update -= TraceTick;
             Debug.Log("[Ayni Traza] estados del Animator:" + trace);
+        }
+
+        // ───────────────────────── Velocidad ─────────────────────────
+
+        private static Transform speedRoot;
+        private static float speedEnd, speedStart, speedNextSample;
+        private static Vector3 speedLastPos;
+        private static StringBuilder speedTrace;
+
+        /// <summary>
+        /// Velocidad horizontal de Yari (m/s, en tiempo de juego) cada 0.05 s: sirve para ver la aceleración al arrancar,
+        /// el frenado al soltar el stick y el giro en los cambios de sentido.
+        /// </summary>
+        public static void TraceSpeed(float seconds)
+        {
+            if (!Application.isPlaying) return;
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null) return;
+            speedRoot = player.transform;
+            speedStart = Time.time;
+            speedEnd = Time.time + seconds;
+            speedNextSample = Time.time + 0.05f;
+            speedLastPos = speedRoot.position;
+            speedTrace = new StringBuilder();
+            EditorApplication.update -= SpeedTick;
+            EditorApplication.update += SpeedTick;
+        }
+
+        private static void SpeedTick()
+        {
+            if (!Application.isPlaying || speedRoot == null)
+            {
+                EditorApplication.update -= SpeedTick;
+                return;
+            }
+            if (Time.time < speedNextSample) return;
+
+            Vector3 p = speedRoot.position;
+            Vector3 d = p - speedLastPos;
+            d.y = 0f;
+            float dt = Time.time - (speedNextSample - 0.05f);
+            speedTrace.Append($"\n   {Time.time - speedStart:F2} s  {d.magnitude / Mathf.Max(0.001f, dt):F2} m/s  rumbo={Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg:F0}°  mira={speedRoot.eulerAngles.y:F0}°");
+            speedLastPos = p;
+            speedNextSample = Time.time + 0.05f;
+
+            if (Time.time < speedEnd) return;
+            EditorApplication.update -= SpeedTick;
+            Debug.Log("[Ayni Velocidad] Yari:" + speedTrace);
         }
 
         // ───────────────────────── Utilidades ─────────────────────────

@@ -62,6 +62,65 @@ namespace Ayni.Editor
             Debug.Log($"[Ayni Prueba] Yari teletransportado a ({x}, {y}, {z})");
         }
 
+        /// <summary>
+        /// Pone a Yari sobre el suelo en (x, z) mirando hacia <paramref name="yaw"/> grados, con la cámara detrás.
+        /// Para probar los saltos de obstáculos y la trepada sin caer desde lo alto.
+        /// </summary>
+        public static void PlaceYariOnGround(float x, float z, float yaw)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null) return;
+            Vector3 pos = new Vector3(x, 400f, z);
+            foreach (RaycastHit hit in Physics.RaycastAll(pos, Vector3.down, 600f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.transform.IsChildOf(player.transform)) continue;
+                if (pos.y > 399f || hit.point.y > pos.y) pos.y = hit.point.y;
+            }
+            pos.y += 0.05f;
+
+            var mover = player.GetComponent<CharacterController>();
+            if (mover != null) mover.enabled = false;
+            player.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, yaw, 0f));
+            if (mover != null) mover.enabled = true;
+
+            var cam = Camera.main != null ? Camera.main.GetComponent<Ayni.Player.ThirdPersonSifuCamera>() : null;
+            if (cam != null) cam.SnapBehindTarget();
+            Debug.Log($"[Ayni Prueba] Yari en el suelo en ({pos.x:F1}, {pos.y:F2}, {pos.z:F1}) mirando a {yaw}°");
+        }
+
+        /// <summary>
+        /// Pone delante de Yari (a <paramref name="distance"/> m) un bloque de prueba de la altura y el fondo indicados,
+        /// apoyado en el suelo. Solo en Play: desaparece al salir. Para probar saltar, subirse y trepar.
+        /// </summary>
+        public static void SpawnTestBlock(float height, float distance, float depth)
+        {
+            if (!Application.isPlaying) return;
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null) return;
+            Transform t = player.transform;
+            Vector3 forward = t.forward;
+            forward.y = 0f;
+            forward.Normalize();
+            var block = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            block.name = $"BloquePrueba_{height:F1}m";
+            block.transform.localScale = new Vector3(3f, height, depth);
+            block.transform.rotation = Quaternion.LookRotation(forward);
+            block.transform.position = t.position + forward * (distance + depth * 0.5f) + Vector3.up * (height * 0.5f);
+            Debug.Log($"[Ayni Prueba] Bloque de {height} m de alto y {depth} m de fondo a {distance} m de Yari");
+        }
+
+        /// <summary>Qué puede saltar o trepar Yari hacia donde mira, y por qué no si no puede.</summary>
+        public static string Traversal(float speed)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            var traversal = player != null ? player.GetComponent<Ayni.Player.YariTraversal>() : null;
+            if (traversal == null) return "sin YariTraversal";
+            var kind = traversal.Probe(player.transform.forward, speed);
+            string text = $"{kind}: {traversal.LastReason}";
+            Debug.Log("[Ayni Prueba] Saltar / trepar → " + text);
+            return text;
+        }
+
         /// <summary>Golpea al jefe con el daño indicado (vida y postura) como si fuera un golpe pesado de Yari.</summary>
         public static void HitBoss(float health, float structure)
         {

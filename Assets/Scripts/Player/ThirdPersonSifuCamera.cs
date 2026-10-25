@@ -77,17 +77,31 @@ namespace Ayni.Player
         [Header("Impacto")]
         [Tooltip("Cuánto se acerca la cámara durante un remate (1 = nada, 0.6 = bastante).")]
         [Range(0.4f, 1f)] [SerializeField] private float finisherZoom = 0.62f;
+        [Tooltip("Rigidez del muelle del empujón de los golpes. Más alto = vuelve antes a su sitio.")]
+        [SerializeField] private float kickStiffness = 260f;
+        [Tooltip("Amortiguación del muelle. Con 18 da un único rebote pequeño; con 32 vuelve sin rebotar.")]
+        [SerializeField] private float kickDamping = 18f;
+        [Tooltip("Grados que se inclina la cámara por cada metro de fuerza del golpe.")]
+        [SerializeField] private float kickTiltPerMeter = 30f;
+
+        // Empujón con muelle: posición (x derecha, y arriba, z adelante de la cámara) e inclinación (cabeceo, giro, alabeo)
+        private Vector3 kickOffset, kickVelocity;
+        private Vector3 kickAngles, kickAngularVelocity;
+        private float shakeSeed;
 
         private void OnEnable()
         {
             Ayni.Combat.CombatFeedback.OnShake += HandleShake;
+            Ayni.Combat.CombatFeedback.OnKick += HandleKick;
             Ayni.Combat.CombatFeedback.OnFinisherCamera += HandleFinisherCamera;
         }
 
         private void OnDisable()
         {
             Ayni.Combat.CombatFeedback.OnShake -= HandleShake;
+            Ayni.Combat.CombatFeedback.OnKick -= HandleKick;
             Ayni.Combat.CombatFeedback.OnFinisherCamera -= HandleFinisherCamera;
+            kickOffset = kickVelocity = kickAngles = kickAngularVelocity = Vector3.zero;
 
             // Una escena toma la cámara: se le devuelve con su campo de visión normal
             speedFeel = 0f;
@@ -127,6 +141,31 @@ namespace Ayni.Player
             shakeAmplitude = amplitude;
             shakeDuration = Mathf.Max(0.02f, duration);
             shakeStart = Time.unscaledTime;
+            shakeSeed = Random.Range(0f, 100f);
+        }
+
+        /// <summary>
+        /// Empuja la cámara hacia donde va el golpe (un puñetazo hacia delante la mete un poco hacia el rival) y la
+        /// inclina hacia ese lado; el muelle la devuelve a su sitio con un rebote. Es lo que da peso al impacto:
+        /// un golpe seco en una dirección, no un temblor.
+        /// </summary>
+        private void HandleKick(Vector3 worldDirection, float strength)
+        {
+            if (strength <= 0f) return;
+            Vector3 dir = worldDirection.sqrMagnitude > 0.0001f
+                ? worldDirection.normalized
+                : transform.right * (Random.value < 0.5f ? -1f : 1f);
+
+            // A la cámara: x derecha, y arriba, z adelante. Los golpes horizontales también la hunden un poco.
+            Vector3 local = new Vector3(Vector3.Dot(dir, transform.right), Vector3.Dot(dir, transform.up) - 0.35f,
+                                        Vector3.Dot(dir, transform.forward));
+            // Velocidad inicial del muelle: el pico de desplazamiento queda cerca de la fuerza pedida
+            float omega = Mathf.Sqrt(Mathf.Max(1f, kickStiffness));
+            kickVelocity += local * (strength * omega * 1.6f);
+
+            // Cabeceo hacia abajo (asiente con el golpe) y alabeo hacia el lado del impacto
+            float tilt = strength * kickTiltPerMeter * omega * 1.6f;
+            kickAngularVelocity += new Vector3(tilt * (0.6f + Mathf.Abs(local.z) * 0.4f), tilt * 0.25f * local.x, -tilt * local.x);
         }
 
         // Caída al vacío: la cámara no sigue a Yari hacia abajo, se queda arriba y lo mira caer
@@ -230,14 +269,37 @@ namespace Ayni.Player
             return desired;
         }
 
-        /// <summary>Sacudida de impacto (en tiempo real, para que se note también durante la micro-pausa del golpe).</summary>
+        /// <summary>
+        /// Empujón con muelle y sacudida de impacto, en tiempo real para que se noten también durante la micro-pausa
+        /// del golpe. La sacudida es ruido suave (Perlin), no una posición al azar en cada fotograma: así se siente
+        /// como un temblor del cuerpo y no como un zumbido.
+        /// </summary>
         private void ApplyShake()
         {
+            float dt = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
+            kickVelocity += (-kickStiffness * kickOffset - kickDamping * kickVelocity) * dt;
+            kickOffset += kickVelocity * dt;
+            kickAngularVelocity += (-kickStiffness * kickAngles - kickDamping * kickAngularVelocity) * dt;
+            kickAngles += kickAngularVelocity * dt;
+
+            Vector3 offset = transform.right * kickOffset.x + transform.up * kickOffset.y + transform.forward * kickOffset.z;
+            Vector3 angles = kickAngles;
+
             float shakeT = (Time.unscaledTime - shakeStart) / Mathf.Max(0.01f, shakeDuration);
-            if (shakeT >= 1f) return;
-            float strength = shakeAmplitude * (1f - shakeT);
-            Vector2 jitter = Random.insideUnitCircle * strength;
-            transform.position = smoothedPosition + transform.right * jitter.x + transform.up * jitter.y;
+            if (shakeT < 1f)
+            {
+                float strength = shakeAmplitude * (1f - shakeT) * (1f - shakeT);
+                float t = Time.unscaledTime * 28f;
+                float nx = Mathf.PerlinNoise(shakeSeed, t) * 2f - 1f;
+                float ny = Mathf.PerlinNoise(shakeSeed + 31.7f, t) * 2f - 1f;
+                float nr = Mathf.PerlinNoise(shakeSeed + 63.1f, t) * 2f - 1f;
+                offset += (transform.right * nx + transform.up * ny) * strength;
+                angles.z += nr * strength * 40f;
+            }
+
+            if (offset.sqrMagnitude < 1e-8f && angles.sqrMagnitude < 1e-6f) return;
+            transform.position = smoothedPosition + offset;
+            transform.rotation *= Quaternion.Euler(angles);
         }
 
         private void LateUpdate()
