@@ -10,6 +10,37 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.8.0 — Game feel: golpes con peso, movimiento fluido y parkour estilo Sifu · 25 de octubre de 2026
+
+**Controles más rápidos**
+- **La guardia corta la recuperación de los golpes:** en cuanto el golpe conecta y termina su recorrido, subir la guardia (o
+  esquivar) es inmediato. Antes Yari quedaba bloqueado 0.46 s tras un golpe ligero y 0.66 s tras uno pesado.
+- **Moverse también la corta:** inclinar el stick tras el impacto termina el golpe y Yari echa a andar. Si hay otro golpe en cola,
+  manda el golpe (los combos no se rompen).
+
+**Movimiento fluido**
+- **Inercia:** Yari ya no pasa de 0 a velocidad máxima en un fotograma ni se clava en seco. Acelera a 20 m/s² (corre en ~0.25 s) y
+  frena a 26 m/s² (~0.17 s). En una media vuelta primero frena mientras se gira y luego arranca: ya no patina de espaldas.
+
+**Golpes con peso**
+- **Empujón de cámara:** cada golpe empuja la cámara hacia donde va (el puñetazo la mete hacia el rival, el golpe recibido la echa
+  hacia Yari), la hace asentir e inclinarse, y vuelve con un rebote. La sacudida de antes (un punto al azar en cada fotograma, que
+  se sentía como un zumbido) pasa a ser un temblor suave de ruido Perlin.
+- **Vibración del mando** (XInput, Windows): golpes ligeros y fuertes, remates, bloqueos, desvíos, esquivas, golpes recibidos y
+  aterrizajes pesados, cada uno con su mezcla de motor grave y agudo. Solo con el mando y nunca en pausa ni en escenas.
+
+**Parkour estilo Sifu (sin salto libre)**
+- `A` / `Espacio` hace lo que haya delante (`YariTraversal`): **salta** troncos y muros bajos (0.3–1.3 m) apoyando la mano y
+  sigue corriendo, **se sube** a lo bajo y ancho y **trepa** cornisas de 1.3 a 2.4 m. El salto largo queda solo para cruzar un
+  hueco corriendo. Sin nada delante, el botón no hace nada. Aviso `[A] Saltar` / `[A] Trepar` fuera de combate.
+- Animaciones nuevas de la Fragua: `Yari_Vault` y `Yari_Climb` (estados `Traverse_Vault` y `Traverse_Climb`).
+- Tutorial, HUD, `CONTROLES.md`, `README.md` y `ALDEA_INCA.md` actualizados.
+
+**Herramientas**
+- El puente de agentes ya no se queda atascado pidiendo Play cuando hay errores de compilación: descarta la cola y recompila.
+- Sondas nuevas: `TraceSpeed` (velocidad fotograma a fotograma), `PlaceYariOnGround`, `SpawnTestBlock` y `Traversal` (qué puede
+  saltar o trepar Yari y, si no puede, por qué).
+
 ## v0.7.0 — Jefes en dos fases, menú de pausa y balanceo nuevo · 6 de octubre de 2026
 
 **Jefes en dos fases (como en Sifu)**
