@@ -62,6 +62,7 @@ namespace Ayni.Story
             root.SetActive(false);
             GameObject body = Object.Instantiate(source.gameObject, root.transform);
             body.name = name;
+            body.SetActive(true); // los rivales esperan apagados hasta que Yari entra en su conjunto
             foreach (MonoBehaviour mb in body.GetComponentsInChildren<MonoBehaviour>(true)) Object.DestroyImmediate(mb);
             foreach (Collider c in body.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
             body.transform.localPosition = Vector3.zero;
