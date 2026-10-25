@@ -342,45 +342,69 @@ namespace Ayni.Story
             AyniAudio.StopLoop(fireLoop, 2f);
             Ayni.Combat.CombatFeedback.Flash(yariTransform.position + Vector3.up, IllaGold, 2.2f, 0.45f);
             AyniScreenFX.FadeTo(IllaGold, 1f, 0.6f);
-            yield return Wait(1.2f);
-            AyniScreenFX.FadeTo(Color.black, 1f, 1.4f);
-            yield return Wait(1.5f);
+            yield return Wait(1.4f);
             if (skipRequested) { Finish(); yield break; }
 
+            // Bajo el destello dorado cambia todo: se acaba la noche y, años después, Yari yace en el camino
             ClearNightOfAshes();
             AyniScreenFX.Hint(null);
-
-            Phase("años después");
-            // Años después: Yari despierta en el camino, tumbado en el suelo
             PlaceYari(spawnPosition, spawnRotation);
             Play("GetUp", 0f);
             yariAnimator.speed = 0f;
+            Vector3 right = spawnRotation * Vector3.right;
+            Vector3 fwd = spawnRotation * Vector3.forward;
+            yield return null; // un fotograma para que el cuerpo tome la pose tumbada antes de medir el antebrazo
+            Transform forearm = yariAnimator.isHuman ? yariAnimator.GetBoneTransform(HumanBodyBones.LeftLowerArm) : null;
+            Vector3 illaPoint = forearm != null ? forearm.position : spawnPosition + Vector3.up * 0.3f;
+            Vector3 illaView = right * 0.8f + Vector3.up * 0.45f + fwd * 0.2f;
 
+            Phase("la Illa");
+            // Primer plano de la Illa en el antebrazo de Yari: late dorada mientras se cuenta el pacto
+            AyniScreenFX.Tint(IllaGold, 0.16f);
+            AyniScreenFX.FadeTo(IllaGold, 0f, 1.8f);
             AyniScreenFX.Caption("En el fondo del cañón, la Illa absorbió el golpe mortal y selló un pacto con Yari.", 4.4f);
-            yield return Wait(4.6f);
-            AyniScreenFX.Caption("No morirá mientras su corazón anhele volver a casa... pero cada vez que caiga, la Illa cobrará años de su vida.", 5.2f);
-            yield return Wait(5.4f);
+            bool secondCaption = false;
+            yield return Shot(9.6f, u =>
+            {
+                LightIlla(0.45f + 0.25f * Mathf.Sin(u * 9.6f * 2.6f));
+                if (u > 0.47f && !secondCaption)
+                {
+                    secondCaption = true;
+                    AyniScreenFX.Caption("No morirá mientras su corazón anhele volver a casa... pero cada vez que caiga, la Illa cobrará años de su vida.", 5.0f);
+                }
+                return (illaPoint + illaView * Mathf.Lerp(1.15f, 0.75f, Smooth(u)), illaPoint);
+            });
+            if (skipRequested) { Finish(); yield break; }
+
+            Phase("años después");
+            // La cámara se eleva hasta ver el camino que tiene por delante, ya de día
             AyniAudio.Play2D("titulo_golpe", 0.7f);
-            AyniScreenFX.Title("AÑOS DESPUÉS", "Nivel 1 · Antisuyo — El dominio de Amaru el Cazador", 3.6f);
-            yield return Wait(3.4f);
+            AyniScreenFX.Title("AÑOS DESPUÉS", "Nivel 1 · Antisuyo — El dominio de Amaru el Cazador", 3.8f);
+            AyniScreenFX.Tint(IllaGold, 0f);
+            Vector3 closeUp = illaPoint + illaView * 0.75f;
+            Vector3 high = spawnPosition - fwd * 7f + right * 1.2f + Vector3.up * 5.5f;
+            Vector3 roadAhead = spawnPosition + fwd * 28f + Vector3.up;
+            // En lo alto se ve a Yari tumbado abajo y el camino que se abre delante
+            Vector3 overview = Vector3.Lerp(spawnPosition, roadAhead, 0.4f);
+            yield return Shot(4.2f, u =>
+            {
+                LightIlla(Mathf.Lerp(0.45f, 0f, u));
+                float k = Smooth(u);
+                return (Vector3.Lerp(closeUp, high, k), Vector3.Lerp(illaPoint, overview, k));
+            });
             if (skipRequested) { Finish(); yield break; }
 
             Phase("despertar");
-            // Despertar: cámara baja junto a Yari, se levanta y la cámara sube hasta quedar detrás de él
-            Vector3 right = spawnRotation * Vector3.right;
-            Vector3 fwd = spawnRotation * Vector3.forward;
-            Aim(spawnPosition + right * 1.6f + fwd * 0.6f + Vector3.up * 0.55f, spawnPosition + Vector3.up * 0.3f, 1f);
-            AyniScreenFX.FadeTo(Color.black, 0f, 2.0f);
-            yield return Wait(1.6f);
+            // Yari se levanta mientras la cámara baja hasta quedar detrás de él, mirando el camino
             AyniScreenFX.Caption("Yari despierta. El camino a casa empieza aquí.", 3.4f);
             yariAnimator.speed = 0.8f;
-
             Vector3 behind = spawnPosition + spawnRotation * new Vector3(0.5f, 1.6f, -3.2f);
-            yield return Shot(3.6f, u =>
+            yield return Shot(3.8f, u =>
             {
-                Vector3 start = spawnPosition + right * 1.6f + fwd * 0.6f + Vector3.up * 0.55f;
-                Vector3 look = spawnPosition + Vector3.up * Mathf.Lerp(0.3f, 1.4f, Smooth(u));
-                return (Vector3.Lerp(start, behind, Smooth(u)), look);
+                float k = Smooth(u);
+                // La cámara no pierde a Yari mientras se levanta; al final mira el camino por encima de su hombro
+                Vector3 look = Vector3.Lerp(overview, spawnPosition + Vector3.up * 1.2f + fwd * 2.5f, k);
+                return (Vector3.Lerp(high, behind, k), look);
             });
             yariAnimator.speed = 1f;
             if (skipRequested) { Finish(); yield break; }
