@@ -31,7 +31,7 @@
 | **Moverse (Trotar)** | `W` `A` `S` `D` | Movimiento en 3ª persona relativo a la cámara |
 | **Correr / Sprint** | `Shift Izquierdo` (mantener) | Aumenta la velocidad y pasa a animación de carrera rápida |
 | **Agacharse / Cuclillas** | `C` (alternar) o `Ctrl Izq` (mantener) | Reduce el perfil de colisión y permite avanzar sigilosamente |
-| **Saltar** | `Espacio` | Salto vertical dinámico con impulso y gravedad |
+| **Saltar obstáculo / Trepar** | `Espacio` (mando: `A`) | Como en Sifu, sin salto libre: salta troncos y muros bajos apoyando la mano y trepa cornisas de hasta 2.4 m |
 | **Postura Relajada / Combate** | Automático | Brazos abajo en descanso; al combatir o defender levanta la guardia |
 | **Guardia / Bloqueo** | `Clic Derecho` o `G` (mando: `LB`) | Yari se planta en el sitio; desvío perfecto (parry) si es en el último instante |
 | **Esquivas Estilo Sifu** | En Guardia + `S` / `W` o `Espacio` / `A`·`D` | Agacharse (golpes altos), saltito (barridos) o balanceo (cualquiera), sin moverse del sitio |

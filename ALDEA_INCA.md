@@ -30,14 +30,14 @@ Cada uno se supera con algo que Yari ya sabe hacer.
 
 | # | A cuánto de la plaza | Tipo | Cómo se pasa |
 | --- | --- | --- | --- |
-| O1 | 592 m | Tronco quemado caído | Saltando (en carrera o en parado) |
+| O1 | 592 m | Tronco quemado caído | Saltándolo con `A` / `Espacio` (en carrera o en parado) |
 | O2 | 550 m | Derrumbe de peñascos | Serpenteando: tres hileras con el paso alternado |
 | O3 | 450 m | Empalizada doble | En ese: se entra por un lado y se sale por el contrario |
-| O4 | 420 m | Dos troncos seguidos | Dos saltos |
-| O5 | 335 m | Muro de pirca a medio caer | Saltando, mejor por el tramo más bajo |
+| O4 | 420 m | Dos troncos seguidos | Saltando los dos (comprobado en carrera: sigue corriendo entre uno y otro) |
+| O5 | 335 m | Muro de pirca a medio caer | Saltándolo (no pasa de 1,25 m, así que todo él se salta) |
 | O6 | 312 m | Derrumbe de peñascos | Serpenteando |
 | O7 | 205 m | Empalizada doble | En ese |
-| O8 | 168 m | Dos troncos seguidos | Dos saltos |
+| O8 | 168 m | Dos troncos seguidos | Saltando los dos |
 
 - Están en `Editor/AyniVillageObstacles.cs` (tabla `Obstacles`: tipo, posición sobre el camino, sentido de la marcha). Se construyen y se
   borran con la aldea, y cuelgan de `Aldea_Inca/Obstaculos`.
@@ -45,7 +45,8 @@ Cada uno se supera con algo que Yari ya sabe hacer.
 - Al construir la aldea se comprueban solos con la física (`Ayni > Entorno > Comprobar Obstáculos del Camino`): se busca el camino más
   corto **a pie** de un lado a otro. Troncos y muro no deben tener ninguno (hay que saltar); derrumbes y empalizadas deben tener uno,
   más largo que ir recto (ahora 31 y 29 m, frente a 20).
-- Yari salta 1,60 m en parado y 1,05 m en carrera (unos 3,4 m de largo). Los troncos asoman 0,6 m; el muro, de 0,5 a 1,25 m.
+- Desde la v0.8.0 no hay salto libre (como en Sifu): `A` / `Espacio` salta lo que hay delante apoyando la mano (de 0,3 a 1,3 m) o trepa
+  cornisas (de 1,3 a 2,4 m). Ver `YariTraversal`. Los troncos asoman 0,6 m; el muro, de 0,5 a 1,25 m: todo se salta.
 
 ### Los árboles quemados renacen con el perdón
 
