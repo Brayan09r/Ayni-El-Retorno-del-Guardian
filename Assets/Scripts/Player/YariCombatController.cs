@@ -141,6 +141,10 @@ namespace Ayni.Player
         [Tooltip("Tras el impacto y su recorrido (Follow Through), la guardia corta el resto del golpe, como en Sifu: " +
                  "se puede cubrir o esquivar sin esperar a que Yari recoja el brazo.")]
         [SerializeField] private bool guardCancelsRecovery = true;
+        [Tooltip("Tras el impacto y su recorrido, inclinar el stick (o WASD) corta la recuperación y Yari echa a andar. " +
+                 "Si hay otro golpe en cola, manda el golpe.")]
+        [SerializeField] private bool moveCancelsRecovery = true;
+        [Range(0.2f, 0.95f)] [SerializeField] private float moveCancelThreshold = 0.5f;
 
         [Header("Fijación de Blanco (Lock-On)")]
         [Tooltip("Distancia máxima para fijar a un rival con Tab o clic central.")]
@@ -749,7 +753,13 @@ namespace Ayni.Player
                 LeapAirMove();
                 return;
             }
-            if (isAttacking) return;
+            if (isAttacking)
+            {
+                // Golpe ya conectado y recorrido: moverse corta la recuperación (si no hay otro golpe en cola)
+                if (!moveCancelsRecovery || !CanCancelAttack || bufferedAttack != 0 ||
+                    AyniInput.Move.magnitude < moveCancelThreshold) return;
+                EndAttackEarly(lockTarget != null && HasState("LockOn_Locomotion") ? "LockOn_Locomotion" : "Combat_Locomotion", 0.15f);
+            }
 
             if (cameraTransform == null)
             {
