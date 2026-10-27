@@ -1,5 +1,5 @@
 # 🗺️ DISEÑO DE NIVELES 2 AL 5 Y EXPANSIÓN DEL MUNDO
-# 🌄 AYNI: EL RETORNO DEL GUARDIÁN (`v0.7.0`)
+# 🌄 AYNI: EL RETORNO DEL GUARDIÁN (`v0.8.0`)
 
 > **Documento de Diseño de Niveles (Level Design), Jefes Multifase y Progresión Ecológica**  
 > **Referencia Base:** [`GDD_AYNI.md`](GDD_AYNI.md) · [`ALDEA_INCA.md`](ALDEA_INCA.md) · [`NIVEL_1_PROLOGO_Y_JUGABILIDAD.md`](NIVEL_1_PROLOGO_Y_JUGABILIDAD.md)
@@ -8,16 +8,15 @@
 
 ## 📌 1. ARQUITECTURA DE PROGRESIÓN DEL JUEGO COMPLETO
 
-Tras la implementación completa de la **Misión 1 (Valle de las Sombras — Amaru el Cazador)**, el diseño de los **Niveles 2 al 5** mantiene el estándar arquitectónico modular ya probado en código ([`AyniEncounterSite`](Assets/Scripts/World/AyniEncounterSite.cs), [`EnemyController`](Assets/Scripts/Enemy/EnemyController.cs) con `bossPhaseHealth` en dos fases, [`AyniBossPhaseDirector`](Assets/Scripts/Story/AyniBossPhaseDirector.cs) y [`AyniJudgment`](Assets/Scripts/Story/AyniJudgment.cs)).
+Tras la implementación completa de la **Misión 0 (Prólogo en el puente colgante con el General Sayri, su guardia y el incendio)** y la **Misión 1 (Valle de las Sombras — Amaru el Cazador)**, el diseño de los **Niveles 2 al 5** mantiene el estándar arquitectónico modular ya probado en código ([`AyniEncounterSite`](Assets/Scripts/World/AyniEncounterSite.cs), [`YariTraversal`](Assets/Scripts/Player/YariTraversal.cs) para obstáculos de parkour, [`EnemyController`](Assets/Scripts/Enemy/EnemyController.cs) con `bossPhaseHealth` en dos fases, [`AyniBossPhaseDirector`](Assets/Scripts/Story/AyniBossPhaseDirector.cs), [`AyniDynamicLighting`](Assets/Scripts/World/AyniDynamicLighting.cs) y [`AyniJudgment`](Assets/Scripts/Story/AyniJudgment.cs)).
 
-```mermaid
-flowchart LR
-    P["Misión 0: Prólogo\nPuente Colgante\n(General Sayri)"] --> N1["Misión 1: Antisuyo\nValle de las Sombras\n(Amaru · ODS 15)"]
-    N1 --> N2["Misión 2: Qullasuyu\nCanteras de Bronce\n(Túpac · ODS 8/12)"]
-    N2 --> N3["Misión 3: Kuntisuyu\nTerrazas y Acueductos\n(Apo Rumi · ODS 6)"]
-    N3 --> N4["Misión 4: Chinchaysuyu\nPalacio Alquímico\n(Mama Churi · ODS 12)"]
-    N4 --> N5["Misión 5: Cusco Sagrado\nCumbre del Intihuatana\n(General Sayri · ODS 16)"]
-```
+### Secuencia de Misiones a lo largo del Tawantinsuyu
+1. **Misión 0 (Prólogo):** *Puente Colgante en Llamas* — Emboscada del **General Sayri** y su guardia durante la Noche de las Cenizas, caída al abismo y pacto visual con el Talismán Illa.
+2. **Misión 1 (Antisuyo):** *Valle de las Sombras* — Travesía por las 4 kanchas de la aldea inca, encuentro con fauna andina (llamas y pumas) y duelo contra **Amaru el Cazador** (**ODS 15**).
+3. **Misión 2 (Qullasuyu):** *Canteras de Piedra y Bronce* — Ascenso por las minas megalíticas contra **Túpac el Capataz de Bronce** (**ODS 8 y ODS 12**).
+4. **Misión 3 (Kuntisuyu):** *Terrazas y Acueductos Sagrados* — Escalinatas y canales secos contra **Apo Rumi el Acaparador** (**ODS 6**).
+5. **Misión 4 (Chinchaysuyu):** *Palacio Alquímico del Sol Corrupto* — Recinto imperial contra **Mama Churi la Alquimista** (**ODS 12**).
+6. **Misión 5 (Cusco Sagrado — Clímax):** *Cumbre Nevada del Intihuatana* — Duelo final a 5,000 m.s.n.m. contra el **General Sayri el Usurpador** (**ODS 16**).
 
 ---
 
@@ -25,10 +24,10 @@ flowchart LR
 
 ### 2.1. Ambientación y Diseño Espacial
 - **Bioma:** Desfiladero árido de roca granítica rosada y minas a tajo abierto a 3,800 m.s.n.m., con hornos de fundición (*huayras*) que emiten humo espeso.
-- **Tramo del Qhapaq Ñan (700 m):** Calzada tallada directamente en la pared del cañón con rampas de arrastre de bloques megalíticos, andamios de troncos y socavones iluminados por antorchas.
-- **Obstáculos del Camino:**
-  1. Bloques de granito suspendidos y rodillos de madera que obligan a usar el salto en carrera (`Run_Jump`).
-  2. Zanjas de escoria caliente que exigen esquiva lateral o paso por cornisas estrechas (`Crouch`).
+- **Tramo del Qhapaq Ñan (700 m):** Calzada tallada directamente en la pared del cañón con rampas de arrastre de bloques megalíticos, andamios de troncos y socavones iluminados por antorchas (`AyniFireLight`).
+- **Obstáculos de Parkour (`YariTraversal`):**
+  1. Bloques bajos de granito (`0.3 a 1.3 m`) que Yari salta apoyando la mano (`Traverse_Vault`).
+  2. Plataformas y cornisas de cantera (`1.3 a 2.4 m`) que exigen trepar agarrándose al borde (`Traverse_Climb`).
   3. Portadas megalíticas a medio labrar (`AyniMuroInca.shader` en modo `2 = Monolítico`).
 
 ### 2.2. Kanchas y Arquetipos de Rivales del Nivel 2
@@ -54,7 +53,7 @@ flowchart LR
 
 ### 3.1. Ambientación y Diseño Espacial
 - **Bioma:** Complejo monumental de andenes agrícolas escalonados y fuentes ceremoniales (*Tipón / Ollantaytambo*) actualmente secos y agrietados por el bloqueo de la represa superior.
-- **Tramo del Qhapaq Ñan (680 m):** Escalinatas de piedra integradas en los muros de contención de los andenes (requiere uso intensivo de [`FootIK`](Assets/Scripts/Combat/FootIK.cs)), canales secos de sillería fina y caídas verticales hacia terrazas inferiores.
+- **Tramo del Qhapaq Ñan (680 m):** Escalinatas de piedra integradas en los muros de contención de los andenes (requiere uso intensivo de [`FootIK`](Assets/Scripts/Combat/FootIK.cs) y trepada de muros de terraza de hasta `2.4 m` con `YariTraversal`), canales secos de sillería fina y caídas verticales hacia terrazas inferiores.
 
 ### 3.2. Jefe del Nivel 3: **Apo Rumi el Acaparador**
 - **Referencia Visual:** `Assets/Art/Characters/02_jefe_apo_rumi_pose_neutral.jpg`.
@@ -70,7 +69,7 @@ flowchart LR
 ## 🔥 4. MISIÓN 4: EL PALACIO ALQUÍMICO DEL SOL CORRUPTO (CHINCHAYSUYU)
 
 ### 4.1. Ambientación y Diseño Espacial
-- **Bioma:** Recinto palaciego de sillería imperial almohadillada (`AyniMuroInca.shader` modo `1`) con patios ceremoniales, espejos de agua contaminados por mercurio/cinabrio y braseros rituales.
+- **Bioma:** Recinto palaciego de sillería imperial almohadillada (`AyniMuroInca.shader` modo `1`) con patios ceremoniales, espejos de agua contaminados por mercurio/cinabrio y braseros rituales (`AyniFireLight`).
 - **Tramo del Qhapaq Ñan (650 m):** Corredores trapezoidales interconectados, puentes de losa de piedra sobre patios hundidos y cámaras de fundición de oro.
 
 ### 4.2. Jefe del Nivel 4: **Mama Churi la Alquimista**
@@ -99,4 +98,4 @@ flowchart LR
   - **Camino de la Venganza (Final Kármico):** Yari ejecuta a Sayri, pero el Talismán Illa se resquebraja consumido por la ira, dejando a Yari solitario en una cumbre cubierta de ceniza perpetua.
 
 ---
-*Documento de Diseño de Niveles y Expansión — Proyecto Ayni: El Retorno del Guardián.*
+*Documento de Diseño de Niveles y Expansión — Proyecto Ayni: El Retorno del Guardián (`v0.8.0`).*
