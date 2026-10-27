@@ -13,8 +13,8 @@
 | Cámara | Stick derecho | Ratón |
 | Correr | Stick izquierdo a fondo | Mantener `Shift Izq.` mientras te mueves |
 | Esprintar | Mantener `RT` (o pulsar el stick izquierdo, `L3`) | — (solo con mando) |
-| Saltar | `A` | `Espacio` |
-| Salto largo | `A` mientras corres o esprintas | `Espacio` mientras corres con `Shift` |
+| Saltar un obstáculo / trepar (no hay salto libre) | `A` delante de un tronco, un muro bajo o una cornisa | `Espacio` |
+| Salto largo sobre un hueco | `A` corriendo hacia un borde con suelo al otro lado | `Espacio` corriendo con `Shift` |
 | Agacharse | `B` (alternar) | `C` / `Ctrl Izq.` |
 | Golpe ligero | `X` | `Clic Izq.` |
 | Golpe pesado | `Y` | `Q` / `E` |
@@ -67,14 +67,17 @@ Reduce la altura de la cápsula de colisión de Yari (de `2.0 m` a `1.15 m`), pe
 
 ---
 
-## 4. Salto Dinámico: `[ESPACIO]`
-Permite sortear desniveles, grietas en la calzada incaica y abismos entre puentes colgantes con impulso físico y aceleración por gravedad.
+## 4. Saltar Obstáculos y Trepar (estilo Sifu): `[ESPACIO]` / `[A]`
+Como en *Sifu*, **no hay salto libre**: el botón hace lo que tenga Yari delante (lo detecta `YariTraversal`). Fuera de combate aparece el aviso `[A] Saltar` o `[A] Trepar` cuando hay algo.
 
 ![Control Salto con Espacio](Assets/Art/Controls_Art/04_Control_Salto_Espacio.jpg)
 
-- **Tecla:** `Espacio` (cuando no estás en guardia).
-- **Efecto:** Salto vertical en parábola con detección de suelo (`IsGrounded`).
-- **Salto largo:** si saltas corriendo (o esprintando con el mando), Yari no se frena: sale lanzado hacia delante un 30 % más rápido de lo que venía y cae a unos 3.5 m (unos 4.5 m en sprint). En el aire la dirección se puede corregir un poco.
+- **Tecla:** `Espacio` / `A` (cuando no estás en guardia). La pulsación se recuerda 0.25 s: puedes pulsar un poco antes de llegar.
+- **Saltar un obstáculo (0.3 a 1.3 m: troncos, muros a medio caer):** Yari apoya una mano y pasa las piernas recogidas por encima. Si iba corriendo, sigue corriendo al caer.
+- **Subirse:** si el obstáculo es bajo pero ancho (no hay suelo cerca al otro lado), se sube encima.
+- **Trepar (1.3 a 2.4 m):** se agarra al borde, tira con los brazos, sube la rodilla y se pone de pie arriba.
+- **Salto largo:** solo corriendo hacia un borde con suelo al otro lado (hasta unos 3.6 m). Sale lanzado un 30 % más rápido de lo que venía.
+- **Sin nada delante** el botón no hace nada. Mientras salta o trepa (menos de un segundo) no se le puede golpear.
 
 ---
 
@@ -90,6 +93,7 @@ Como en *Sifu*, **en guardia Yari se planta y no camina**: solo gira para encara
 - **Esquiva Jump (Saltito sobre barridos bajos, aviso amarillo):** En guardia + `W` o `Espacio` (stick ↑ o `A`).
 - **Balanceo lateral (evita cualquier golpe, con menos margen):** En guardia + `A` / `D` (stick ← →).
 - Hay que volver a inclinar la dirección para encadenar otra esquiva (mantenerla pulsada no repite).
+- **Cortar un golpe:** en cuanto tu golpe conecta y termina su recorrido, subir la guardia (o mover el stick) corta el resto: no hace falta esperar a que Yari recoja el brazo.
 
 ---
 

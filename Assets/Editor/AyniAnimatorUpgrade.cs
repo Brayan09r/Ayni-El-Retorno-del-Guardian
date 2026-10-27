@@ -25,6 +25,8 @@ namespace Ayni.Editor
         public const string StateFallBack = "Fall_Back";
         public const string StateLandHard = "Land_Hard";
         public const string StateBackKick = "Atk_BackKick";
+        public const string StateVault = "Traverse_Vault";
+        public const string StateClimb = "Traverse_Climb";
 
         [MenuItem("Ayni/Animaciones/3. Añadir Estados Nuevos al Animator de Yari")]
         public static void Apply()
@@ -63,9 +65,22 @@ namespace Ayni.Editor
                 backKick.speedParameter = "AttackSpeed";
             }
 
+            // Saltar obstáculos y trepar: los lanza YariTraversal, con la velocidad del parámetro JumpSpeed para que el
+            // clip dure lo mismo que el recorrido. Al terminar, el código pasa a la locomoción; la salida por tiempo es
+            // solo un respaldo.
+            added += AddState(sm, StateVault, AyniAnimationForge.Vault, combat, 1.0f, 0.98f, false);
+            added += AddState(sm, StateClimb, AyniAnimationForge.Climb, combat, 1.0f, 0.98f, false);
+            foreach (string traverse in new[] { StateVault, StateClimb })
+            {
+                AnimatorState state = Find(sm, traverse);
+                if (state == null) continue;
+                state.speedParameterActive = true;
+                state.speedParameter = "JumpSpeed";
+            }
+
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
-            Debug.Log($"<color=green>[Ayni Animator]</color> {added} estados nuevos en el Animator de Yari (esquivas en el sitio, caídas y aterrizaje).");
+            Debug.Log($"<color=green>[Ayni Animator]</color> {added} estados nuevos en el Animator de Yari (esquivas en el sitio, caídas, aterrizaje, saltar obstáculos y trepar).");
 
             ApplyAmaru();
         }

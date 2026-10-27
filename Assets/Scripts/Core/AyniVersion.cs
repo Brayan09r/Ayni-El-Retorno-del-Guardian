@@ -9,8 +9,8 @@ namespace Ayni.Core
     /// </summary>
     public static class AyniVersion
     {
-        public const string Number = "0.7.0";
-        public const string Title = "Jefes en dos fases, menú de pausa y balanceo nuevo";
+        public const string Number = "0.8.0";
+        public const string Title = "Game feel: golpes con peso, movimiento fluido y parkour estilo Sifu";
 
         public static string Label => "v" + Number;
     }
