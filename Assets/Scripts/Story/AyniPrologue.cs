@@ -193,7 +193,7 @@ namespace Ayni.Story
             Vector3 sayriStop = yariSpot + along * 1.6f;
             Vector3 sayriStart = deck + along * 11f;
             Quaternion towardYari = Quaternion.LookRotation(-along);
-            sayri = cast.Spawn("General_Sayri", "CazadorElite", sayriStart, towardYari, 1.1f, new Color(0.9f, 0.66f, 0.42f));
+            sayri = cast.Spawn("General_Sayri", "Sayri", sayriStart, towardYari, 1.1f, new Color(0.9f, 0.66f, 0.42f));
             cast.GiveChampi(sayri);
             Vector3 flank = acrossBridge * 0.5f;
             guardA = cast.Spawn("Guardia_de_Bronce_1", "Guardia", sayriStart + along * 1.8f + flank, towardYari, 1f, new Color(0.78f, 0.56f, 0.36f));

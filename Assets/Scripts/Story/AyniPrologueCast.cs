@@ -43,24 +43,47 @@ namespace Ayni.Story
         /// </summary>
         public Animator Spawn(string name, string controllerHint, Vector3 position, Quaternion rotation, float scale, Color tint)
         {
-            Animator source = null;
-            foreach (Animator a in Object.FindObjectsByType<Animator>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            GameObject template = null;
+            if (name == "General_Sayri")
             {
-                if (a == null || a.runtimeAnimatorController == null || !a.isHuman) continue;
-                if (a.GetComponentInParent<Ayni.Player.YariCombatController>() != null) continue;
-                if (a.runtimeAnimatorController.name.Contains(controllerHint))
+                template = Resources.Load<GameObject>("General_Sayri");
+#if UNITY_EDITOR
+                if (template == null)
                 {
-                    source = a;
-                    break;
+                    template = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/General_Sayri.prefab");
                 }
-                if (source == null && a.GetComponentInParent<Ayni.Enemy.EnemyController>() != null) source = a;
+#endif
             }
-            if (source == null) return null;
+
+            GameObject sourceObject = null;
+            if (template != null)
+            {
+                var templateAnim = template.GetComponentInChildren<Animator>(true);
+                sourceObject = templateAnim != null ? templateAnim.gameObject : template;
+            }
+            else
+            {
+                Animator source = null;
+                foreach (Animator a in Object.FindObjectsByType<Animator>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    if (a == null || a.runtimeAnimatorController == null || !a.isHuman) continue;
+                    if (a.GetComponentInParent<Ayni.Player.YariCombatController>() != null) continue;
+                    if (a.runtimeAnimatorController.name.Contains(controllerHint))
+                    {
+                        source = a;
+                        break;
+                    }
+                    if (source == null && a.GetComponentInParent<Ayni.Enemy.EnemyController>() != null) source = a;
+                }
+                if (source != null) sourceObject = source.gameObject;
+            }
+
+            if (sourceObject == null) return null;
 
             // Se copia dentro de un contenedor apagado: así no llega a despertar ningún script de la copia
             var root = new GameObject("Prologo_" + name);
             root.SetActive(false);
-            GameObject body = Object.Instantiate(source.gameObject, root.transform);
+            GameObject body = Object.Instantiate(sourceObject, root.transform);
             body.name = name;
             body.SetActive(true); // los rivales esperan apagados hasta que Yari entra en su conjunto
             foreach (MonoBehaviour mb in body.GetComponentsInChildren<MonoBehaviour>(true)) Object.DestroyImmediate(mb);
@@ -71,14 +94,18 @@ namespace Ayni.Story
 
             root.transform.SetPositionAndRotation(OnDeck(position), rotation);
             root.transform.localScale = Vector3.one * scale;
-            Tint(body, tint);
+            if (name != "General_Sayri") Tint(body, tint);
             root.SetActive(true);
             spawned.Add(root);
 
             var anim = body.GetComponent<Animator>();
-            anim.applyRootMotion = false;
-            anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            if (anim.HasState(0, Animator.StringToHash("Idle"))) anim.Play("Idle", 0, Random.value);
+            if (anim == null) anim = body.GetComponentInChildren<Animator>();
+            if (anim != null)
+            {
+                anim.applyRootMotion = false;
+                anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                if (anim.HasState(0, Animator.StringToHash("Idle"))) anim.Play("Idle", 0, Random.value);
+            }
             return anim;
         }
 

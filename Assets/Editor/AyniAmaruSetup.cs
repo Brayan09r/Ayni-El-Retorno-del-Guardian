@@ -570,6 +570,379 @@ namespace Ayni.Editor
             t.exitTime = exitTime;
             t.duration = 0.2f;
         }
+
+        // ─────────────────────────────────────────────────────────────
+        // GENERAL SAYRI (ANTAGONISTA PRINCIPAL - PRÓLOGO Y JEFE SUPREMO)
+        // ─────────────────────────────────────────────────────────────
+
+        [MenuItem("Ayni/Jefes/Configurar e Integrar General Sayri")]
+        public static void SetupSayri()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning("[AyniSayri] Sal del modo Play antes de configurar a Sayri.");
+                return;
+            }
+
+            string sayriRiggedFbxPath = "Assets/Art/Characters/GeneralSayri_Rigged.fbx";
+            string sayriWalkFbxPath = "Assets/Art/Characters/Animations/Sayri_Walk.fbx";
+            string sayriDiffusePath = "Assets/Art/Characters/Textures/Sayri_Diffuse.png";
+            string sayriNormalPath = "Assets/Art/Characters/Textures/Sayri_Normal.png";
+            string sayriMetallicPath = "Assets/Art/Characters/Textures/Sayri_MetallicRoughness.png";
+            string sayriMatPath = "Assets/Art/Characters/M_GeneralSayri_PBR.mat";
+            string sayriControllerPath = "Assets/Art/Characters/GeneralSayri_AnimatorController.controller";
+            string sayriPrefabPath = "Assets/Prefabs/General_Sayri.prefab";
+            string sayriResourcesPrefabPath = "Assets/Resources/General_Sayri.prefab";
+
+            if (!File.Exists(sayriRiggedFbxPath))
+            {
+                Debug.LogError($"[AyniSayri] No se encontró el modelo {sayriRiggedFbxPath}.");
+                return;
+            }
+
+            // 1. Configurar mapas de textura
+            if (File.Exists(sayriNormalPath))
+            {
+                TextureImporter imp = AssetImporter.GetAtPath(sayriNormalPath) as TextureImporter;
+                if (imp != null && imp.textureType != TextureImporterType.NormalMap)
+                {
+                    imp.textureType = TextureImporterType.NormalMap;
+                    imp.SaveAndReimport();
+                    Debug.Log($"[AyniSayri] {Path.GetFileName(sayriNormalPath)} configurado como NormalMap.");
+                }
+            }
+
+            // 2. Configurar importador Humanoid en el modelo base
+            ModelImporter importer = AssetImporter.GetAtPath(sayriRiggedFbxPath) as ModelImporter;
+            if (importer != null)
+            {
+                bool reimportNeeded = false;
+                if (importer.animationType != ModelImporterAnimationType.Human)
+                {
+                    importer.animationType = ModelImporterAnimationType.Human;
+                    importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                    reimportNeeded = true;
+                }
+
+                if (reimportNeeded)
+                {
+                    importer.SaveAndReimport();
+                }
+
+                FixSayriScale(importer, sayriRiggedFbxPath);
+            }
+
+            // 3. Obtener el Avatar Humanoid generado
+            Avatar sayriAvatar = null;
+            foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(sayriRiggedFbxPath))
+            {
+                if (asset is Avatar av && av.isValid)
+                {
+                    sayriAvatar = av;
+                    break;
+                }
+            }
+
+            // 4. Configurar clip de caminata
+            ConfigureSayriWalkAnimation(sayriWalkFbxPath, sayriAvatar);
+
+            // 5. Crear / Actualizar Material PBR URP
+            Material pbrMat = CreateOrUpdateSayriMaterial(sayriMatPath, sayriDiffusePath, sayriNormalPath, sayriMetallicPath);
+
+            // 6. Crear / Configurar Animator Controller
+            AnimatorController animController = CreateOrGetSayriAnimatorController(sayriControllerPath, sayriWalkFbxPath);
+
+            // 7. Crear Prefabs (en Prefabs y Resources)
+            CreateOrUpdateSayriPrefab(sayriPrefabPath, sayriResourcesPrefabPath, sayriRiggedFbxPath, sayriAvatar, pbrMat, animController);
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green>[AyniSayri]</color> ¡General Sayri (FBX Humanoid, Caminata, Material PBR y Prefab) configurado e integrado con éxito!");
+        }
+
+        private static void FixSayriScale(ModelImporter importer, string fbxPath)
+        {
+            if (importer == null) return;
+            float height = MeasureModelHeight(fbxPath);
+            float targetHeight = 2.15f;
+            if (height > 0.001f && (height < 1.8f || height > 2.5f))
+            {
+                float oldScale = importer.globalScale;
+                importer.globalScale = oldScale * (targetHeight / height);
+                importer.SaveAndReimport();
+                Debug.Log($"<color=green>[AyniSayri]</color> Escala de Sayri ajustada a {targetHeight:0.00}m.");
+            }
+            RebuildAvatarIfInconsistent(importer, fbxPath);
+        }
+
+        private static void ConfigureSayriWalkAnimation(string walkFbxPath, Avatar avatar)
+        {
+            if (!File.Exists(walkFbxPath)) return;
+            ModelImporter imp = AssetImporter.GetAtPath(walkFbxPath) as ModelImporter;
+            if (imp == null) return;
+
+            bool needReimport = false;
+            if (imp.animationType != ModelImporterAnimationType.Human)
+            {
+                imp.animationType = ModelImporterAnimationType.Human;
+                if (avatar != null)
+                {
+                    imp.avatarSetup = ModelImporterAvatarSetup.CopyFromOther;
+                    imp.sourceAvatar = avatar;
+                }
+                else
+                {
+                    imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                }
+                needReimport = true;
+            }
+
+            var clips = imp.clipAnimations;
+            if (clips == null || clips.Length == 0) clips = imp.defaultClipAnimations;
+            if (clips != null && clips.Length > 0)
+            {
+                foreach (var c in clips)
+                {
+                    c.name = "Sayri_Walk";
+                    c.loopTime = true;
+                    c.lockRootRotation = true;
+                    c.lockRootHeightY = true;
+                    c.lockRootPositionXZ = true;
+                }
+                imp.clipAnimations = clips;
+                needReimport = true;
+            }
+
+            if (needReimport)
+            {
+                imp.SaveAndReimport();
+                Debug.Log($"[AyniSayri] Clip de caminata {walkFbxPath} configurado con Humanoid y loop cíclico.");
+            }
+        }
+
+        private static Material CreateOrUpdateSayriMaterial(string matPath, string diffusePath, string normalPath, string metallicPath)
+        {
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+            Shader litShader = Shader.Find("Universal Render Pipeline/Lit");
+            if (litShader == null) litShader = Shader.Find("Standard");
+
+            if (mat == null)
+            {
+                mat = new Material(litShader);
+                AssetDatabase.CreateAsset(mat, matPath);
+            }
+            else
+            {
+                mat.shader = litShader;
+            }
+
+            Texture2D diffuseTex = AssetDatabase.LoadAssetAtPath<Texture2D>(diffusePath);
+            Texture2D normalTex = AssetDatabase.LoadAssetAtPath<Texture2D>(normalPath);
+            Texture2D metallicTex = AssetDatabase.LoadAssetAtPath<Texture2D>(metallicPath);
+
+            if (diffuseTex != null)
+            {
+                mat.SetTexture("_BaseMap", diffuseTex);
+                mat.SetColor("_BaseColor", Color.white);
+            }
+
+            if (normalTex != null)
+            {
+                mat.SetTexture("_BumpMap", normalTex);
+                mat.EnableKeyword("_NORMALMAP");
+            }
+
+            if (metallicTex != null)
+            {
+                mat.SetTexture("_MetallicGlossMap", metallicTex);
+                mat.EnableKeyword("_METALLICSPECGLOSSMAP");
+            }
+
+            mat.SetFloat("_Smoothness", 0.35f);
+            mat.SetFloat("_Metallic", 0.20f);
+
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static AnimatorController CreateOrGetSayriAnimatorController(string controllerPath, string walkFbxPath)
+        {
+            AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+            if (controller == null)
+            {
+                string amaruControllerPath = "Assets/Art/Characters/Amaru_AnimatorController.controller";
+                if (File.Exists(amaruControllerPath))
+                {
+                    AssetDatabase.CopyAsset(amaruControllerPath, controllerPath);
+                    controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+                }
+                else
+                {
+                    controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+                }
+            }
+
+            if (controller != null)
+            {
+                AnimationClip walkClip = LoadClip(walkFbxPath);
+                if (walkClip != null)
+                {
+                    var rootSm = controller.layers[0].stateMachine;
+                    foreach (var s in rootSm.states)
+                    {
+                        if (s.state.name == "Move" || s.state.name == "Walk")
+                        {
+                            s.state.motion = walkClip;
+                        }
+                    }
+
+                    bool hasWalk = false;
+                    foreach (var s in rootSm.states)
+                    {
+                        if (s.state.name == "Walk") { hasWalk = true; break; }
+                    }
+                    if (!hasWalk)
+                    {
+                        var walkState = rootSm.AddState("Walk");
+                        walkState.motion = walkClip;
+                    }
+                    EditorUtility.SetDirty(controller);
+                }
+            }
+
+            return controller;
+        }
+
+        private static GameObject CreateOrUpdateSayriPrefab(string prefabPath, string resourcesPath, string fbxPath, Avatar avatar, Material mat, RuntimeAnimatorController animController)
+        {
+            string prefabDir = Path.GetDirectoryName(prefabPath);
+            if (!Directory.Exists(prefabDir)) Directory.CreateDirectory(prefabDir);
+
+            GameObject root = new GameObject("General_Sayri");
+            root.transform.position = Vector3.zero;
+
+            // CharacterController para el General
+            var cc = root.AddComponent<CharacterController>();
+            cc.height = 2.15f;
+            cc.radius = 0.52f;
+            cc.center = new Vector3(0f, 1.075f, 0f);
+
+            // StructureSystem (alta postura de jefe de estado mayor)
+            var structure = root.AddComponent<StructureSystem>();
+            SerializedObject soStruct = new SerializedObject(structure);
+            soStruct.FindProperty("maxStructure").floatValue = 150f;
+            soStruct.ApplyModifiedProperties();
+
+            // EnemyController (Stats de General Sayri)
+            var enemy = root.AddComponent<EnemyController>();
+            SerializedObject soEnemy = new SerializedObject(enemy);
+            soEnemy.FindProperty("characterName").stringValue = "General Sayri";
+            soEnemy.FindProperty("isBoss").boolValue = true;
+            soEnemy.FindProperty("maxHealth").floatValue = 250f;
+            soEnemy.FindProperty("attackDamage").floatValue = 25f;
+            soEnemy.FindProperty("structureDamageOnPlayer").floatValue = 30f;
+            soEnemy.FindProperty("attackRange").floatValue = 2.2f;
+            soEnemy.FindProperty("windupTime").floatValue = 0.50f;
+            soEnemy.FindProperty("recoverTime").floatValue = 0.65f;
+            soEnemy.FindProperty("moveSpeed").floatValue = 3.2f;
+            soEnemy.FindProperty("turnSpeed").floatValue = 8.0f;
+            soEnemy.FindProperty("aggroRange").floatValue = 22f;
+            soEnemy.ApplyModifiedProperties();
+
+            // Visual 3D
+            GameObject fbxModel = AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath);
+            if (fbxModel != null)
+            {
+                GameObject visual = UnityEngine.Object.Instantiate(fbxModel, root.transform);
+                visual.name = "Visual_GeneralSayri_3D";
+                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localRotation = Quaternion.identity;
+                visual.transform.localScale = Vector3.one;
+
+                if (mat != null)
+                {
+                    foreach (var smr in visual.GetComponentsInChildren<SkinnedMeshRenderer>())
+                    {
+                        smr.sharedMaterial = mat;
+                    }
+                }
+
+                var anim = visual.GetComponent<Animator>();
+                if (anim == null) anim = visual.AddComponent<Animator>();
+                anim.runtimeAnimatorController = animController;
+                if (avatar != null) anim.avatar = avatar;
+                anim.applyRootMotion = false;
+
+                if (visual.GetComponent<AndeanCombatStanceModifier>() == null)
+                {
+                    visual.AddComponent<AndeanCombatStanceModifier>();
+                }
+            }
+
+            GameObject prefabAsset = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+
+            string resourcesDir = Path.GetDirectoryName(resourcesPath);
+            if (!Directory.Exists(resourcesDir)) Directory.CreateDirectory(resourcesDir);
+            PrefabUtility.SaveAsPrefabAsset(root, resourcesPath);
+
+            UnityEngine.Object.DestroyImmediate(root);
+            Debug.Log($"[AyniSayri] Prefab guardado en {prefabPath} y {resourcesPath}.");
+            return prefabAsset;
+        }
+
+        [MenuItem("Ayni/Jefes/Foto Primer Plano Sayri")]
+        public static void ShotSayri()
+        {
+            string sayriPrefabPath = "Assets/Prefabs/General_Sayri.prefab";
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(sayriPrefabPath);
+            if (prefab == null)
+            {
+                Debug.LogWarning("[AyniSayri] Prefab de Sayri no encontrado.");
+                return;
+            }
+
+            var instance = UnityEngine.Object.Instantiate(prefab);
+            instance.transform.position = new Vector3(0f, 0f, 0f);
+            instance.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+
+            Vector3 targetPos = instance.transform.position + Vector3.up * 1.5f;
+            Vector3 camPos = targetPos + instance.transform.forward * 2.5f + Vector3.up * 0.2f;
+
+            string dir = "DebugCaptures";
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            string path = Path.Combine(dir, "sayri_close_up.png");
+
+            var go = new GameObject("Ayni_CapturaSayri") { hideFlags = HideFlags.HideAndDontSave };
+            RenderTexture rt = null;
+            Texture2D tex = null;
+            try
+            {
+                var cam = go.AddComponent<Camera>();
+                cam.transform.position = camPos;
+                cam.transform.LookAt(targetPos);
+                cam.fieldOfView = 35f;
+                cam.nearClipPlane = 0.1f;
+                cam.farClipPlane = 100f;
+
+                rt = RenderTexture.GetTemporary(1280, 720, 24, RenderTextureFormat.ARGB32);
+                cam.targetTexture = rt;
+                cam.Render();
+
+                RenderTexture.active = rt;
+                tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+                tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+                tex.Apply();
+
+                File.WriteAllBytes(path, tex.EncodeToPNG());
+                Debug.Log($"<color=green>[AyniSayri]</color> Captura de primer plano de Sayri guardada en {path}.");
+            }
+            finally
+            {
+                if (tex != null) UnityEngine.Object.DestroyImmediate(tex);
+                if (rt != null) RenderTexture.ReleaseTemporary(rt);
+                UnityEngine.Object.DestroyImmediate(go);
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
     }
 }
 #endif
