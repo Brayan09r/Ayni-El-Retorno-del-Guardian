@@ -155,8 +155,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ayni.Player.YariCombatController
   baseMoveSpeed: 5.5
+  sprintSpeed: 4.9
+  crouchSpeed: 1.1
+  jumpHeight: 1.6
   rotationSpeed: 12
   gravity: -9.81
+  moveAcceleration: 20
+  moveDeceleration: 26
+  runStickThreshold: 0.75
+  walkPaceMin: 0.85
+  walkPaceMax: 1.2
+  runPaceAtThreshold: 0.72
+  maxRunCadence: 1.05
+  maxSprintCadence: 1.3
+  maxCrouchCadence: 1.4
+  maxStrafeCadence: 1.3
+  traversalPressBuffer: 0.25
+  leapMinPace: 0.7
+  leapSpeedBoost: 1.3
+  leapHeight: 1.05
+  leapSteer: 50
+  combatStanceDuration: 4.5
+  standingHeight: 2
+  standingCenter: {x: 0, y: 1, z: 0}
+  crouchHeight: 1.15
+  crouchCenter: {x: 0, y: 0.575, z: 0}
+  crouchLerpSpeed: 10
+  baseMaxHealth: 100
+  reviveDelay: 2.2
+  reviveInvulnerability: 1.5
   lightAttackDamage: 18
   heavyAttackDamage: 35
   attackRange: 2
@@ -164,7 +191,53 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   parryWindow: 0.22
+  lightWindup: 0.26
+  heavyWindup: 0.46
+  lightStrikeSpeed: 1.3
+  heavyStrikeSpeed: 1.2
+  lightFollowThrough: 0.2
+  heavyFollowThrough: 0.3
+  lightRecoverTime: 0.46
+  heavyRecoverTime: 0.66
+  attackBlendTime: 0.09
+  inputBufferTime: 0.3
+  comboResetTime: 0.6
+  attackRootMotionScale: 1
+  lungeStopDistance: 1.3
+  attackReachAssist: 0.4
+  attackTrails: 1
+  attackArc: 120
+  autoFaceRange: 3.5
+  stickTargetRange: 6
+  stickTargetAngle: 55
+  backKickAngle: 115
+  backKickRange: 2.6
+  dodgeWindow: 0.45
+  swayWindow: 0.36
+  avoidCooldown: 0.38
+  avoidStickThreshold: 0.55
+  counterWindow: 0.8
+  counterStructureBonus: 1.6
+  hitStunDuration: 0.35
+  guardBreakStun: 1.5
+  guardCancelsRecovery: 1
+  moveCancelsRecovery: 1
+  moveCancelThreshold: 0.5
+  lockOnRange: 14
+  lockOnBreakRange: 20
+  lockStrafeSpeed: 2.4
+  lockBackSpeed: 2
+  landBlendTime: 0.15
+  fallAnimSpeed: -7.5
+  fallAnimMinDrop: 1.2
+  hardLandingHeight: 3.5
+  fallDamageHeight: 9
+  fallDamagePerMeter: 6
+  abyssFallTimeScale: 0.55
+  abyssBlackoutTime: 1.7
+  getUpDuration: 2
   cameraTransform: {fileID: 0}
+  visualHeightOffset: 0
 --- !u!114 &57525184
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -196,6 +269,7 @@ MonoBehaviour:
   currentStructure: 0
   recoveryRate: 18
   recoveryDelay: 1.2
+  brokenDuration: 4
 --- !u!143 &57525186
 CharacterController:
   m_ObjectHideFlags: 0
@@ -326,6 +400,7 @@ GameObject:
   m_Component:
   - component: {fileID: 194850424}
   - component: {fileID: 194850423}
+  - component: {fileID: 194850425}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -413,6 +488,35 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!114 &194850425
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 194850422}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!21 &382557360
 Material:
   serializedVersion: 8
@@ -539,6 +643,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e41389b1dc70d364ca2254b5feaab11b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ayni.UI.SifuCombatHUD
+  enemyBarRange: 25
 --- !u!114 &484742085
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -554,6 +659,7 @@ MonoBehaviour:
   enemiesKilled: 0
   enemiesSpared: 0
   executionRange: 3
+  bossJudgmentRange: 9
 --- !u!4 &484742086
 Transform:
   m_ObjectHideFlags: 0
@@ -706,6 +812,31 @@ MonoBehaviour:
   structureDamageOnPlayer: 20
   attackCooldown: 2
   attackRange: 2.2
+  windupTime: 0.6
+  recoverTime: 0.7
+  lowAttackChance: 0.3
+  parryStructureDamage: 35
+  parryStaggerTime: 1
+  hitStaggerTime: 0.3
+  dodgedExtraRecover: 0.4
+  attackAnimSpeed: 1
+  bossPhaseHealth:
+  - 380
+  - 460
+  bossStructure: 150
+  phaseCooldownMultiplier: 0.72
+  phaseDamageMultiplier: 1.2
+  phaseWindupMultiplier: 0.9
+  phaseSpeedMultiplier: 1.15
+  judgmentHealthThreshold: 0.4
+  brokenDamageMultiplier: 1.6
+  knockbackDeceleration: 14
+  downedTime: 0.6
+  moveSpeed: 3.2
+  turnSpeed: 8
+  aggroRange: 18
+  gravity: -18
+  visualHeightOffset: 0
 --- !u!114 &1265695576
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -722,6 +853,7 @@ MonoBehaviour:
   currentStructure: 0
   recoveryRate: 18
   recoveryDelay: 1.2
+  brokenDuration: 4
 --- !u!23 &1265695577
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -829,6 +961,7 @@ GameObject:
   - component: {fileID: 1719692427}
   - component: {fileID: 1719692426}
   - component: {fileID: 1719692425}
+  - component: {fileID: 1719692429}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -850,10 +983,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Ayni.Player.ThirdPersonSifuCamera
   target: {fileID: 57525190}
   offset: {x: 0.5, y: 1.6, z: -3.2}
+  lookAtHeight: 1.4
   mouseSensitivity: 3
   smoothSpeed: 10
   minPitch: -20
   maxPitch: 60
+  stickYawSpeed: 170
+  stickPitchSpeed: 110
+  invertStickY: 0
+  collisionRadius: 0.25
+  minDistance: 0.8
+  lockYawSpeed: 6
+  lockPitch: 14
+  lockFraming: 0.35
+  lockTargetHeight: 1.3
+  runFovKick: 4
+  sprintFovKick: 10
+  runPullBack: 0.06
+  sprintPullBack: 0.15
+  speedFeelTime: 0.45
+  finisherZoom: 0.62
+  kickStiffness: 260
+  kickDamping: 18
+  kickTiltPerMeter: 30
 --- !u!81 &1719692426
 AudioListener:
   m_ObjectHideFlags: 0
@@ -928,6 +1080,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1719692429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719692424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!1 &2001323251
 GameObject:
   m_ObjectHideFlags: 0
@@ -1035,7 +1231,7 @@ Transform:
   m_GameObject: {fileID: 2001323251}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 3}
   m_LocalScale: {x: 8, y: 1, z: 8}
   m_ConstrainProportionsScale: 0
   m_Children: []
