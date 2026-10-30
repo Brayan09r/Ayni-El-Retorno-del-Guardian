@@ -155,7 +155,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: -1080}
-  m_SizeDelta: {x: 1100, y: 100}
+  m_SizeDelta: {x: 1100, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &88848753
 MonoBehaviour:
@@ -191,10 +191,36 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<size=150%><b><color=#F5C400>KUNTUR</color></b></size>\n<size=80%><cspace=0.35em>ECOS DEL VALLE</cspace></size>\n<size=60%><color=#BBBBBB>Proyecto Integrador de Videojuegos</color></size>\n\n\n\n<size=70%><color=#F5C400><cspace=0.3em>DESARROLLO Y DIRECCI\xD3N</cspace></color></size>\n\n<size=60%><color=#AAAAAA>Dise\xF1o de juego, programaci\xF3n y arte</color></size>\n<b>Junior Saul Ramirez Espiritu</b>\n\n<size=60%><color=#AAAAAA>Docente del curso</color></size>\nMiguel Torres Vargas\n\n<size=60%><color=#AAAAAA>Curso</color></size>\nDesarrollo de Videojuegos\n\n<size=60%><color=#AAAAAA>Carrera</color></size>\nIngenier\xEDa de Sistemas e Inform\xE1tica\n\n<size=60%><color=#AAAAAA>Instituci\xF3n</color></size>\nUniversidad Continental \xB7 Huancayo, Per\xFA\n\n\n\n<size=70%><color=#F5C400><cspace=0.3em>TECNOLOG\xCDA Y RECURSOS</cspace></color></size>\n\n<size=60%><color=#AAAAAA>Motor de desarrollo y programaci\xF3n</color></size>\nUnity 6 \xB7 C#\n\n<size=60%><color=#AAAAAA>Arte conceptual y modelo 3D del personaje</color></size>\nGoogle Gemini \xB7 Tripo AI\n\n<size=60%><color=#AAAAAA>Modelado y edici\xF3n 3D</color></size>\nBlender\n\n<size=60%><color=#AAAAAA>Rigging y animaciones 3D</color></size>\nMixamo (Adobe)\n\n<size=60%><color=#AAAAAA>Banda sonora y efectos de audio</color></size>\nPixabay \xB7 m\xFAsica andina y sonidos ambientales\n\n<size=60%><color=#AAAAAA>Recursos de la Unity Asset Store</color></size>\n<size=75%>City People FREE Samples (Denys Almaral) \xB7 ARCADE: FREE Racing Car (Mena)\nSimple Retro Car (Polyeler) \xB7 Ukraine only truck (KOS-store)\nGerman Shepherd 3D Model (RetroStyle Games) \xB7 Free chibi cat (Ladymito)\nCity Traffic Lights Pack \xB7 WasteOvergrowth \xB7 WaterWorks \xB7 AllSky Free\nNorthern Mountain FREE \xB7 Free Stylized Low Poly Tree \xB7 Modular Lowpoly Streets\nUnderwater Camera FX</size>\n\n\n\n<size=70%><color=#7BE3A0><cspace=0.3em>CONCIENCIA AMBIENTAL</cspace></color></size>\n\n<size=85%>Inspirado en la acumulaci\xF3n de residuos y la contaminaci\xF3n\nde los r\xEDos del Valle del Mantaro, Huancayo.\n\nUn proyecto para concientizar sobre la limpieza de nuestras calles,\nel cuidado del agua y la preservaci\xF3n de nuestro entorno.</size>\n\n<size=65%><color=#7DD3FC>ODS 6 \xB7 Agua limpia y saneamiento\nODS 11 \xB7 Ciudades y comunidades sostenibles</color></size>\n\n\n\n\n<size=90%><b>Gracias por jugar.</b></size>\n<size=65%><color=#BBBBBB>Cada bolsa que recoges es un r\xEDo que respira.</color></size>"
+  m_text: "<size=150%><b><color=#F5C400>KUNTUR</color></b></size>\n<size=80%><cspace=0.35em>ECOS
+    DEL VALLE</cspace></size>\n<size=60%><color=#BBBBBB>Proyecto Integrador de Videojuegos</color></size>\n\n\n\n<size=70%><color=#F5C400><cspace=0.3em>DESARROLLO
+    Y DIRECCI\xD3N</cspace></color></size>\n\n<size=60%><color=#AAAAAA>Dise\xF1o
+    de juego, programaci\xF3n y arte</color></size>\n<b>Junior Saul Ramirez Espiritu</b>\n\n<size=60%><color=#AAAAAA>Docente
+    del curso</color></size>\nMiguel Torres Vargas\n\n<size=60%><color=#AAAAAA>Curso</color></size>\nDesarrollo
+    de Videojuegos\n\n<size=60%><color=#AAAAAA>Carrera</color></size>\nIngenier\xEDa
+    de Sistemas e Inform\xE1tica\n\n<size=60%><color=#AAAAAA>Instituci\xF3n</color></size>\nUniversidad
+    Continental \xB7 Huancayo, Per\xFA\n\n\n\n<size=70%><color=#F5C400><cspace=0.3em>TECNOLOG\xCDA
+    Y RECURSOS</cspace></color></size>\n\n<size=60%><color=#AAAAAA>Motor de desarrollo
+    y programaci\xF3n</color></size>\nUnity 6 \xB7 C#\n\n<size=60%><color=#AAAAAA>Arte
+    conceptual y modelo 3D del personaje</color></size>\nGoogle Gemini \xB7 Tripo
+    AI\n\n<size=60%><color=#AAAAAA>Modelado y edici\xF3n 3D</color></size>\nBlender\n\n<size=60%><color=#AAAAAA>Rigging
+    y animaciones 3D</color></size>\nMixamo (Adobe)\n\n<size=60%><color=#AAAAAA>Banda
+    sonora y efectos de audio</color></size>\nPixabay \xB7 m\xFAsica andina y sonidos
+    ambientales\n\n<size=60%><color=#AAAAAA>Recursos de la Unity Asset Store</color></size>\n<size=75%>City
+    People FREE Samples (Denys Almaral) \xB7 ARCADE: FREE Racing Car (Mena)\nSimple
+    Retro Car (Polyeler) \xB7 Ukraine only truck (KOS-store)\nGerman Shepherd 3D
+    Model (RetroStyle Games) \xB7 Free chibi cat (Ladymito)\nCity Traffic Lights
+    Pack \xB7 WasteOvergrowth \xB7 WaterWorks \xB7 AllSky Free\nNorthern Mountain
+    FREE \xB7 Free Stylized Low Poly Tree \xB7 Modular Lowpoly Streets\nUnderwater
+    Camera FX</size>\n\n\n\n<size=70%><color=#7BE3A0><cspace=0.3em>CONCIENCIA AMBIENTAL</cspace></color></size>\n\n<size=85%>Inspirado
+    en la acumulaci\xF3n de residuos y la contaminaci\xF3n\nde los r\xEDos del Valle
+    del Mantaro, Huancayo.\n\nUn proyecto para concientizar sobre la limpieza de
+    nuestras calles,\nel cuidado del agua y la preservaci\xF3n de nuestro entorno.</size>\n\n<size=65%><color=#7DD3FC>ODS
+    6 \xB7 Agua limpia y saneamiento\nODS 11 \xB7 Ciudades y comunidades sostenibles</color></size>\n\n\n\n\n<size=90%><b>Gracias
+    por jugar.</b></size>\n<size=65%><color=#BBBBBB>Cada bolsa que recoges es un
+    r\xEDo que respira.</color></size>"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -213,7 +239,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -241,7 +267,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -324,7 +350,6 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
-  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -415,7 +440,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 1cdebdebfeda75e45a52c8edbb3c3bda, type: 3}
+  m_Sprite: {fileID: 5773695094973273901, guid: 73a770551b2faa24081a9ca087b615ba, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -476,8 +501,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd6fcf0e93393b049b4e2630e5bc56a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScreenFader
-  fadeInDuration: 0.65
-  fadeOutDuration: 0.45
 --- !u!225 &106477640
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -705,9 +728,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: -220, y: 0}
-  duration: 0.45
-  delay: 0.45
 --- !u!225 &242270318
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -984,7 +1004,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3520521965
   m_fontColor: {r: 0.93, g: 0.9, b: 0.84, a: 0.82}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -997,7 +1017,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -1025,7 +1045,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -1108,11 +1128,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4f74b3f3a51b514385f10f5cef94161, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SettingsPanel
-  volumeSlider: {fileID: 1177048220}
-  volumeValue: {fileID: 885970989}
-  qualitySlider: {fileID: 156223104}
-  qualityValue: {fileID: 929609138}
-  fullscreenToggle: {fileID: 253252841}
 --- !u!225 &307213468
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -1196,13 +1211,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3d573131a345904e8ccc49f1d28d7a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIButtonHover
-  hoverScale: 1.08
-  hoverSlide: 18
-  speed: 12
-  normalColor: {r: 0.94, g: 0.92, b: 0.86, a: 1}
-  hoverColor: {r: 1, g: 0.82, b: 0.29, a: 1}
-  label: {fileID: 1343231233}
-  marker: {fileID: 1433348141}
 --- !u!114 &372650049
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1327,7 +1335,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 379172216}
-  - component: {fileID: 379172217}
   m_Layer: 0
   m_Name: Fondo
   m_TagString: Untagged
@@ -1356,24 +1363,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &379172217
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 379172215}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0080ab1a32b61dd42b9d0c5cc49ddadc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BackgroundKenBurns
-  zoomMin: 1.05
-  zoomMax: 1.13
-  zoomSpeed: 0.045
-  panX: 26
-  panY: 14
-  panSpeed: 0.035
 --- !u!1 &388436552
 GameObject:
   m_ObjectHideFlags: 0
@@ -1425,9 +1414,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: 0, y: -20}
-  duration: 0.45
-  delay: 0.7
 --- !u!225 &388436555
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -1469,7 +1455,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4074828543
   m_fontColor: {r: 1, g: 0.95, b: 0.88, a: 0.95}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -1482,7 +1468,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -1510,7 +1496,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -1756,7 +1742,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3520521965
   m_fontColor: {r: 0.93, g: 0.9, b: 0.84, a: 0.82}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -1769,7 +1755,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -1797,7 +1783,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -1880,13 +1866,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff120938402abcd4c8f85b34cfddb2c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HorizonMenuItem
-  label: {fileID: 515158367}
-  underline: {fileID: 1547783717}
-  underlineImage: {fileID: 1547783718}
-  underlineWidth: 380
-  normalColor: {r: 0.93, g: 0.9, b: 0.84, a: 0.82}
-  selectedColor: {r: 1, g: 0.84, b: 0.42, a: 1}
-  baseSpacing: 6
 --- !u!114 &485704467
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2034,13 +2013,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff120938402abcd4c8f85b34cfddb2c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HorizonMenuItem
-  label: {fileID: 437466688}
-  underline: {fileID: 555111705}
-  underlineImage: {fileID: 555111706}
-  underlineWidth: 380
-  normalColor: {r: 0.93, g: 0.9, b: 0.84, a: 0.82}
-  selectedColor: {r: 1, g: 0.84, b: 0.42, a: 1}
-  baseSpacing: 6
 --- !u!114 &486415794
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2201,7 +2173,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3520521965
   m_fontColor: {r: 0.93, g: 0.9, b: 0.84, a: 0.82}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -2214,7 +2186,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -2242,7 +2214,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -2302,25 +2274,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
-  m_SendPointerHoverToParent: 1
-  m_MoveRepeatDelay: 0.5
-  m_MoveRepeatRate: 0.1
-  m_XRTrackingOrigin: {fileID: 0}
-  m_ActionsAsset: {fileID: -944628639613478452, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_PointAction: {fileID: -1654692200621890270, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_MoveAction: {fileID: -8784545083839296357, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_SubmitAction: {fileID: 392368643174621059, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_CancelAction: {fileID: 7727032971491509709, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_LeftClickAction: {fileID: 3001919216989983466, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_MiddleClickAction: {fileID: -2185481485913320682, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_RightClickAction: {fileID: -4090225696740746782, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_ScrollWheelAction: {fileID: 6240969308177333660, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_TrackedDevicePositionAction: {fileID: 6564999863303420839, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_TrackedDeviceOrientationAction: {fileID: 7970375526676320489, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_DeselectOnBackgroundClick: 1
-  m_PointerBehavior: 0
-  m_CursorLockBehavior: 0
-  m_ScrollDeltaPerTick: 6
 --- !u!114 &527938363
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2404,13 +2357,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff120938402abcd4c8f85b34cfddb2c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HorizonMenuItem
-  label: {fileID: 279593892}
-  underline: {fileID: 409315890}
-  underlineImage: {fileID: 409315891}
-  underlineWidth: 380
-  normalColor: {r: 0.93, g: 0.9, b: 0.84, a: 0.82}
-  selectedColor: {r: 1, g: 0.84, b: 0.42, a: 1}
-  baseSpacing: 6
 --- !u!114 &547642434
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2630,9 +2576,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: -50, y: 0}
-  duration: 0.45
-  delay: 1.36
 --- !u!225 &556597255
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -2749,10 +2692,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f4cfc0eef91d344f85fef2a5084a0cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MenuController
-  citySelectSceneName: Exploracion
-  explorationSceneName: Exploracion
-  mainMenuSceneName: MenuPrincipal
-  introSceneName: Intro
 --- !u!4 &605302222
 Transform:
   m_ObjectHideFlags: 0
@@ -2896,13 +2835,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff120938402abcd4c8f85b34cfddb2c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HorizonMenuItem
-  label: {fileID: 2100210980}
-  underline: {fileID: 1623926608}
-  underlineImage: {fileID: 1623926609}
-  underlineWidth: 380
-  normalColor: {r: 0.93, g: 0.9, b: 0.84, a: 0.82}
-  selectedColor: {r: 1, g: 0.84, b: 0.42, a: 1}
-  baseSpacing: 6
 --- !u!114 &736328622
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3029,19 +2961,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d82ae2535922ddc49b7110587e03ce51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuUI
-  mainPanel: {fileID: 1442358936}
-  settingsPanel: {fileID: 307213468}
-  creditsPanel: {fileID: 1816580600}
-  backgroundBase: {fileID: 105213762}
-  backgroundOverlay: {fileID: 1470690962}
-  mainBackground: {fileID: 21300000, guid: 1cdebdebfeda75e45a52c8edbb3c3bda, type: 3}
-  settingsBackground: {fileID: 21300000, guid: 4ea9fefaf956d3543a48e0b249e8f351, type: 3}
-  creditsBackground: {fileID: 21300000, guid: 4fe8f52467018d449b798d469624d5f2, type: 3}
-  firstMainButton: {fileID: 1008548486}
-  firstSettingsButton: {fileID: 1745330239}
-  firstCreditsButton: {fileID: 372650047}
-  transitionDuration: 0.35
-  backgroundDuration: 0.55
 --- !u!114 &817349392
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3100,8 +3019,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
-  m_UseReflectionProbes: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -3257,9 +3175,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: -80, y: 0}
-  duration: 0.45
-  delay: 0.45
 --- !u!225 &874421715
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -3462,7 +3377,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -3490,7 +3405,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -3570,9 +3485,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: -80, y: 0}
-  duration: 0.45
-  delay: 0.45
 --- !u!225 &887543788
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -3636,9 +3548,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: 0, y: -12}
-  duration: 0.45
-  delay: 1.5
 --- !u!225 &894956140
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -3671,7 +3580,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: <color=#F5D27A>ENTER</color>  Seleccionar      <color=#F5D27A>ESC</color>  Volver
+  m_text: <color=#F5D27A>ENTER</color>  Seleccionar      <color=#F5D27A>ESC</color> 
+    Volver
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4f07b2caedf612d49a79effc24614c40, type: 2}
   m_sharedMaterial: {fileID: 5558374258727304408, guid: 4f07b2caedf612d49a79effc24614c40, type: 2}
@@ -3680,7 +3590,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3003121663
   m_fontColor: {r: 1, g: 1, b: 1, a: 0.7}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -3693,7 +3603,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -3721,7 +3631,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -3817,7 +3727,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4293063677
   m_fontColor: {r: 0.99215686, g: 0.9529412, b: 0.8862745, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -3830,7 +3740,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -3858,7 +3768,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -3935,7 +3845,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3520521965
   m_fontColor: {r: 0.93, g: 0.9, b: 0.84, a: 0.82}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -3948,7 +3858,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -3976,7 +3886,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -4104,7 +4014,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -4132,7 +4042,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -4195,7 +4105,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70139fb9d9ccfb24ca34b486676ad44d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MenuContinueLabel
-  label: {fileID: 0}
 --- !u!114 &1008548488
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4208,13 +4117,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff120938402abcd4c8f85b34cfddb2c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HorizonMenuItem
-  label: {fileID: 923542271}
-  underline: {fileID: 1476967965}
-  underlineImage: {fileID: 1476967963}
-  underlineWidth: 380
-  normalColor: {r: 0.93, g: 0.9, b: 0.84, a: 0.82}
-  selectedColor: {r: 1, g: 0.84, b: 0.42, a: 1}
-  baseSpacing: 6
 --- !u!114 &1008548489
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4528,12 +4430,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a8cdceb770654641a691af4a12a7400, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MenuAmbientFx
-  moteSprite: {fileID: 21300000, guid: ba579e3d856e8a04a903fd8403c1f9d0, type: 3}
-  moteCount: 46
-  sunGlow: {fileID: 1797787243}
-  mist:
-  - {fileID: 883097519}
-  - {fileID: 406762259}
 --- !u!1 &1176471586
 GameObject:
   m_ObjectHideFlags: 0
@@ -4828,9 +4724,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: -50, y: 0}
-  duration: 0.45
-  delay: 0.15
 --- !u!225 &1279084106
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -4928,7 +4821,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4292799215
   m_fontColor: {r: 0.9372549, g: 0.91764706, b: 0.87058824, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -4941,7 +4834,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -4969,7 +4862,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -5103,10 +4996,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b45de7c795d5174ea59d70027176021, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CreditsRoll
-  content: {fileID: 88848752}
-  speed: 55
-  fastMultiplier: 5
-  startDelay: 0.6
 --- !u!1 &1428365022
 GameObject:
   m_ObjectHideFlags: 0
@@ -5477,6 +5366,7 @@ GameObject:
   - component: {fileID: 1511499939}
   - component: {fileID: 1511499938}
   - component: {fileID: 1511499937}
+  - component: {fileID: 1511499940}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -5558,6 +5448,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1511499940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1511499936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!1 &1547783716
 GameObject:
   m_ObjectHideFlags: 0
@@ -5683,14 +5617,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f4cbf7c6219ad74180da30b9ed3392b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TitleTextAnimator
-  delayBetweenLetters: 0.045
-  letterDuration: 0.35
-  riseDistance: 42
-  startDelay: 0.15
-  idleWave: 1
-  waveAmplitude: 3.2
-  waveSpeed: 2.1
-  waveSpacing: 0.22
 --- !u!114 &1569594686
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5720,7 +5646,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4293982975
   m_fontColor: {r: 1, g: 0.98, b: 0.94, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -5733,7 +5659,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -5761,7 +5687,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -5857,7 +5783,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 2365587455
   m_fontColor: {r: 1, g: 1, b: 1, a: 0.55}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -5870,7 +5796,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -5898,7 +5824,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -6050,7 +5976,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4292799215
   m_fontColor: {r: 0.9372549, g: 0.91764706, b: 0.87058824, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -6063,7 +5989,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -6091,7 +6017,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -6172,13 +6098,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3d573131a345904e8ccc49f1d28d7a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIButtonHover
-  hoverScale: 1.08
-  hoverSlide: 18
-  speed: 12
-  normalColor: {r: 0.94, g: 0.92, b: 0.86, a: 1}
-  hoverColor: {r: 1, g: 0.82, b: 0.29, a: 1}
-  label: {fileID: 1693171101}
-  marker: {fileID: 1048052421}
 --- !u!114 &1745330241
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6344,9 +6263,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: -50, y: 0}
-  duration: 0.45
-  delay: 1.27
 --- !u!225 &1774212370
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -6559,9 +6475,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: -50, y: 0}
-  duration: 0.45
-  delay: 1.09
 --- !u!225 &1809069804
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -6658,10 +6571,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4cfc502a2ccde1348abfb56f6d98115c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MenuSounds
-  changeClip: {fileID: 8300000, guid: efc863979264dab4f83bdf94f2db58ae, type: 3}
-  clickClip: {fileID: 8300000, guid: 8c7edda804eb8f34da54b0bad2fae528, type: 3}
-  changeVolume: 0.8
-  clickVolume: 1
 --- !u!114 &1839146255
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6674,16 +6583,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66f5ee364e9965c4da244ac3e5cf1df0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
-  music: {fileID: 8300000, guid: 6aef6c511e0ebd544b89aa57355f2429, type: 3}
-  musicVolume: 0.7
-  fadeInDuration: 1.5
-  missionMusic: {fileID: 0}
-  sleepMusic: {fileID: 0}
-  trashPickup: {fileID: 0}
-  waterSample: {fileID: 0}
-  victory: {fileID: 0}
-  defeat: {fileID: 0}
-  sfxVolume: 0.95
 --- !u!4 &1839146256
 Transform:
   m_ObjectHideFlags: 0
@@ -6899,14 +6798,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f4cbf7c6219ad74180da30b9ed3392b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TitleTextAnimator
-  delayBetweenLetters: 0.045
-  letterDuration: 0.35
-  riseDistance: 42
-  startDelay: 0.15
-  idleWave: 1
-  waveAmplitude: 3.2
-  waveSpeed: 2.1
-  waveSpacing: 0.22
 --- !u!114 &1889700480
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6936,7 +6827,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4282104310
   m_fontColor: {r: 0.9647059, g: 0.7254902, b: 0.23137255, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -6949,7 +6840,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -6977,7 +6868,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -7149,7 +7040,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4293063677
   m_fontColor: {r: 0.99215686, g: 0.9529412, b: 0.8862745, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -7162,7 +7053,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -7190,7 +7081,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -7270,9 +7161,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: -50, y: 0}
-  duration: 0.45
-  delay: 1.1800001
 --- !u!225 &2012222895
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -7351,7 +7239,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4293063677
   m_fontColor: {r: 0.99215686, g: 0.9529412, b: 0.8862745, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -7364,7 +7252,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -7392,7 +7280,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -7511,9 +7399,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: 60, y: 0}
-  duration: 0.45
-  delay: 0.85
 --- !u!225 &2029588513
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -7739,7 +7624,7 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2045474748}
   m_Enabled: 1
-  serializedVersion: 13
+  serializedVersion: 12
   m_Type: 1
   m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
   m_Intensity: 1
@@ -7791,7 +7676,7 @@ Light:
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ForceVisible: 0
-  m_ShapeRadius: 0.025
+  m_ShadowRadius: 0
   m_ShadowAngle: 0
   m_LightUnit: 1
   m_LuxAtDistance: 1
@@ -7861,9 +7746,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: -50, y: 0}
-  duration: 0.45
-  delay: 1
 --- !u!225 &2061654838
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -7927,9 +7809,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f53345f49787af46b791656b2c33d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISlideIn
-  offset: {x: -60, y: 0}
-  duration: 0.45
-  delay: 0.85
 --- !u!225 &2077780988
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -8046,7 +7925,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3520521965
   m_fontColor: {r: 0.93, g: 0.9, b: 0.84, a: 0.82}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -8059,7 +7938,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -8087,7 +7966,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
