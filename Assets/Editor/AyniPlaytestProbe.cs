@@ -124,6 +124,16 @@ namespace Ayni.Editor
             Debug.Log($"[Ayni Prueba] Yari en el conjunto {site.name}");
         }
 
+        /// <summary>Un golpe alto directo a Yari (sin guardia ni esquiva, cuenta como golpe recibido). Para probar la muerte.</summary>
+        public static void HurtYari(float damage)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            var yari = player != null ? player.GetComponent<Ayni.Player.YariCombatController>() : null;
+            if (yari == null) return;
+            var result = yari.ReceiveAttack(damage, 0f, Ayni.Combat.AttackHeight.High);
+            Debug.Log($"[Ayni Prueba] Golpe de {damage} a Yari: {result}, vida {yari.CurrentHealth:F0}");
+        }
+
         /// <summary>Qué puede saltar o trepar Yari hacia donde mira, y por qué no si no puede.</summary>
         public static string Traversal(float speed)
         {
