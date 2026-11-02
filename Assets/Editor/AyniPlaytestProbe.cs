@@ -70,11 +70,21 @@ namespace Ayni.Editor
         {
             var player = GameObject.FindGameObjectWithTag("Player");
             if (player == null) return;
+            // De todo lo que hay en la vertical, la superficie más cercana al terreno (el camino), no la más alta: si no,
+            // acababa encima de un árbol, una roca grande o un tejado
             Vector3 pos = new Vector3(x, 400f, z);
+            Terrain terrain = Terrain.activeTerrain;
+            float reference = terrain != null ? terrain.SampleHeight(pos) + terrain.transform.position.y : float.NaN;
+            float best = float.MaxValue;
             foreach (RaycastHit hit in Physics.RaycastAll(pos, Vector3.down, 600f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
             {
-                if (hit.transform.IsChildOf(player.transform)) continue;
-                if (pos.y > 399f || hit.point.y > pos.y) pos.y = hit.point.y;
+                if (hit.transform.IsChildOf(player.transform) || hit.normal.y < 0.6f) continue;
+                float score = float.IsNaN(reference) ? -hit.point.y : Mathf.Abs(hit.point.y - (reference + 0.2f));
+                if (score < best)
+                {
+                    best = score;
+                    pos.y = hit.point.y;
+                }
             }
             pos.y += 0.05f;
 
@@ -122,6 +132,16 @@ namespace Ayni.Editor
             var site = sites[Mathf.Clamp(index, 0, sites.Count - 1)];
             TeleportYari(site.transform.position.x, site.transform.position.y + 1.5f, site.transform.position.z);
             Debug.Log($"[Ayni Prueba] Yari en el conjunto {site.name}");
+        }
+
+        /// <summary>Un golpe alto directo a Yari (sin guardia ni esquiva, cuenta como golpe recibido). Para probar la muerte.</summary>
+        public static void HurtYari(float damage)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            var yari = player != null ? player.GetComponent<Ayni.Player.YariCombatController>() : null;
+            if (yari == null) return;
+            var result = yari.ReceiveAttack(damage, 0f, Ayni.Combat.AttackHeight.High);
+            Debug.Log($"[Ayni Prueba] Golpe de {damage} a Yari: {result}, vida {yari.CurrentHealth:F0}");
         }
 
         /// <summary>Qué puede saltar o trepar Yari hacia donde mira, y por qué no si no puede.</summary>

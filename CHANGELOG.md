@@ -10,6 +10,37 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.9.0 — Inicio cinematográfico, cuenta de la Illa, Amaru en el puente y HUD inca · 1 de noviembre de 2026
+
+**Prólogo "La Noche de las Cenizas"** (PR #8)
+- El General Sayri y dos soldados de su Guardia de Bronce cruzan el puente hacia Yari. Sayri lleva la Champi y tiene su propio título; desde
+  `083d2e0` usa su modelo propio (Brayan).
+- Pelea coreografiada: mazazo de Sayri, bloqueo, contraataque de Yari y el codazo de la Champi que lo lanza al abismo.
+- Noche de verdad: cielo oscuro y rojizo, sol bajo, niebla de brasas, ceniza que cae e incendios con humo en el valle (sobre una copia del
+  material del cielo; todo se restaura al terminar).
+- Sin pantalla negra: el título sobre el puente en llamas, el pacto con un primer plano de la Illa latiendo, "AÑOS DESPUÉS" mientras la cámara
+  se eleva sobre el camino, y Yari se levanta sin salir de cuadro. Yari empieza al principio del camino (PR #7).
+- El tutorial se abre en el primer combate; al empezar solo hay una ayuda corta de movimiento. El panel de controles empieza recogido.
+
+**La Illa cobra sus años** (`AyniDeathAging`)
+- Al caer: cámara lenta, la pantalla se apaga, franjas de cine y la cámara rodea a Yari a ras de suelo mientras el medallón de la Illa cuenta,
+  año a año con golpes de tambor, la edad que tendrá al levantarse ("La Illa cobra un año · Próxima caída: +2"). Avisa si madura, si
+  envejece o si la Illa se rompe. Al final el medallón baja a su sitio en el HUD.
+
+**Amaru se interpone en el camino** (`AyniBossIntro`)
+- Amaru espera de pie en la cabeza del puente colgante (sobre el estribo del lado de la plaza). Al acercarse Yari: plano por encima de su
+  hombro con Amaru cerrando el paso, contrapicado de Amaru rugiendo con su título, y baja del estribo para pelear. Se salta con Tab / Esc / Menu.
+
+**HUD minimalista inca** (`AyniInkaUI`, `SifuCombatHUD`)
+- Abajo a la izquierda, el medallón de la Illa (piedra, anillo de oro y chakana) con la edad y una cuenta roja con lo que cobrará la próxima
+  caída; a su lado, la estructura (fina, de oro) y la vida (grana), con remates escalonados, el tramo recién perdido en claro y una franja de
+  tocapu.
+- El rival arriba y centrado: nombre en mayúsculas espaciadas, un rombo por fase del jefe y dos barras finas.
+- Los avisos en bandas de piedra con filetes de oro. Controles, tutorial y versión en una línea discreta arriba a la izquierda.
+
+**Herramientas**
+- Sondas: `GoToEncounter`, `HurtYari`; `PlaceYariOnGround` deja a Yari en el camino y no encima de lo más alto.
+
 ## v0.8.0 — Game feel: golpes con peso, movimiento fluido y parkour estilo Sifu · 25 de octubre de 2026
 
 **Controles más rápidos**

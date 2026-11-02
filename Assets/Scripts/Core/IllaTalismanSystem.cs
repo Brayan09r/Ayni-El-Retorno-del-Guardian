@@ -16,6 +16,9 @@ namespace Ayni.Core
 
         public int CurrentAge { get; private set; }
         public int DeathCounter => deathCounter;
+        public int MaxAge => maxAge;
+        /// <summary>Edad que tendrá Yari si cae ahora (la Illa cobra un año más por cada caída seguida).</summary>
+        public int AgeAfterNextFall => CurrentAge + deathCounter + 1;
         /// <summary>Veces que la Illa ha resucitado a Yari en esta partida.</summary>
         public int TotalResurrections { get; private set; }
 

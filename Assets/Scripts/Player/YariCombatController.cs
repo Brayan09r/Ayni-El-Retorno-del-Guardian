@@ -73,7 +73,7 @@ namespace Ayni.Player
 
         [Header("Vida y Talismán Illa")]
         [SerializeField] private float baseMaxHealth = 100f;
-        [Tooltip("Segundos que Yari permanece caído antes de que el talismán lo resucite.")]
+        [Tooltip("Segundos desde que Yari cae hasta que la Illa lo resucita (incluida la cuenta de años de AyniDeathAging, que dura 2.9 s; la caída previa dura al menos 0.4 s).")]
         [SerializeField] private float reviveDelay = 2.2f;
         [Tooltip("Segundos de invulnerabilidad tras resucitar.")]
         [SerializeField] private float reviveInvulnerability = 1.5f;
@@ -2235,7 +2235,13 @@ namespace Ayni.Player
         /// <summary>Yari cae; tras unos segundos el Talismán Illa lo resucita a cambio de años de vida.</summary>
         private IEnumerator DeathRoutine()
         {
-            yield return new WaitForSeconds(reviveDelay);
+            // Cae; tras un instante la Illa cuenta en pantalla, año a año, lo que cobra (AyniDeathAging) y lo levanta.
+            // En tiempo real: la caída llega a menudo en plena micro-pausa del golpe
+            float collapse = Mathf.Clamp(reviveDelay - Ayni.UI.AyniDeathAging.Duration, 0.4f, 1.5f);
+            yield return new WaitForSecondsRealtime(collapse);
+            int toAge = talisman.AgeAfterNextFall;
+            Ayni.UI.AyniDeathAging.Play(transform, talisman.CurrentAge, toAge, toAge >= talisman.MaxAge);
+            yield return new WaitForSecondsRealtime(Ayni.UI.AyniDeathAging.Duration);
 
             if (talisman.TriggerResurrection())
             {
