@@ -8,8 +8,8 @@ using Ayni.Story;
 namespace Ayni.UI
 {
     /// <summary>
-    /// HUD de combate con dibujo instantáneo en pantalla (OnGUI) para probar de inmediato:
-    /// vida, edad y postura de Yari; vida y postura del rival más cercano; avisos de ataque y Juicio Ayni.
+    /// HUD de combate (OnGUI), minimalista y con motivos incas (ver AyniInkaUI): el medallón de la Illa con la edad,
+    /// la estructura y la vida de Yari abajo a la izquierda; el rival arriba, centrado; y los avisos en bandas de piedra.
     /// </summary>
     public class SifuCombatHUD : MonoBehaviour
     {
@@ -18,11 +18,6 @@ namespace Ayni.UI
         private YariCombatController yari;
         private IllaTalismanSystem talisman;
         private StructureSystem playerStructure;
-
-        private static readonly Color HealthColor = new Color(0.85f, 0.2f, 0.2f);
-        private static readonly Color StructureColor = new Color(0.2f, 0.85f, 0.95f);
-        private static readonly Color StructureDangerColor = new Color(1f, 0.6f, 0.1f);
-        private static readonly Color BarBackColor = new Color(0f, 0f, 0f, 0.6f);
 
         private float avoidMessageUntil;
 
@@ -106,52 +101,102 @@ namespace Ayni.UI
             DrawCenterMessages(enemy);
         }
 
+        // ───────────────────────── Yari ─────────────────────────
+
+        // Valores de hace un instante: el tramo perdido se ve claro y se consume poco a poco
+        private float healthGhost = 1f, structureGhost;
+        private float healthGhostHold, structureGhostHold;
+        private EnemyController ghostEnemy;
+        private float enemyHealthGhost = 1f, enemyGhostHold;
+        private int lastAge = -1;
+        private float ageGlowUntil;
+
+        /// <summary>
+        /// Abajo a la izquierda, como en Sifu: el medallón de la Illa con la edad de Yari, la estructura (fina, de oro)
+        /// y la vida (roja de grana), con remates escalonados y una franja de tocapu. Sin recuadros ni textos largos.
+        /// </summary>
         private void DrawPlayerPanel()
         {
-            GUILayout.BeginArea(new Rect(20, 20, 340, 190), GUI.skin.box);
-            GUILayout.Label($"<b>AYNI: EL RETORNO DEL GUARDIÁN</b>  <color=#a8a8a8>{AyniVersion.Label}</color>");
+            if (yari == null) return;
+            float h = Screen.height;
+            var medal = new Rect(26f, h - 26f - 80f, 80f, 80f);
 
+            int age = talisman != null ? talisman.CurrentAge : 0;
+            if (lastAge >= 0 && age != lastAge) ageGlowUntil = Time.unscaledTime + 2f;
+            lastAge = age;
+            float glow = Mathf.Clamp01((ageGlowUntil - Time.unscaledTime) / 2f);
+            AyniInkaUI.Medallion(medal, talisman != null ? age.ToString() : "—", "AÑOS", glow);
+
+            // Lo que cobrará la Illa en la próxima caída: una cuenta roja en el borde del medallón
             if (talisman != null)
             {
-                GUI.color = Color.yellow;
-                GUILayout.Label($"<b>EDAD DE YARI:</b> {talisman.CurrentAge} años  |  Etapa: {StageName(talisman.GetCurrentStage())}");
-                GUILayout.Label($"<b>ILLA SAGRADA:</b> próxima caída +{talisman.DeathCounter + 1} años");
-                GUI.color = Color.white;
+                var badge = new Rect(medal.xMax - 22f, medal.y - 4f, 26f, 26f);
+                AyniInkaUI.Draw(badge, AyniInkaUI.Disc, new Color(0f, 0f, 0f, 0.7f));
+                AyniInkaUI.Draw(new Rect(badge.x + 2f, badge.y + 2f, 22f, 22f), AyniInkaUI.Disc, AyniInkaUI.Grana);
+                AyniInkaUI.Draw(badge, AyniInkaUI.Ring, AyniInkaUI.Gold);
+                AyniInkaUI.Label(badge, $"+{talisman.DeathCounter + 1}", AyniInkaUI.Style(12, FontStyle.Bold, TextAnchor.MiddleCenter), AyniInkaUI.Bone);
             }
 
-            if (yari != null)
-            {
-                GUILayout.Label($"Vida: {yari.CurrentHealth:F0} / {yari.MaxHealth:F0}");
-                DrawBar(GUILayoutUtility.GetRect(300, 14), yari.MaxHealth > 0f ? yari.CurrentHealth / yari.MaxHealth : 0f, HealthColor);
-            }
+            float x = medal.xMax + 22f;
+            const float width = 250f;
+            var nameRect = new Rect(x, medal.y + 6f, width, 16f);
+            string stage = talisman != null ? StageName(talisman.GetCurrentStage()) : "";
+            AyniInkaUI.Label(nameRect, AyniInkaUI.Spaced("Yari") + $"   <color=#bfae8e><size=11>{AyniInkaUI.Spaced(stage)}</size></color>",
+                             AyniInkaUI.Style(13, FontStyle.Bold, TextAnchor.MiddleLeft), AyniInkaUI.Gold);
 
+            // Estructura: fina, de oro; se enciende en ocre cuando está a punto de romperse
             if (playerStructure != null)
             {
-                GUILayout.Label($"Estructura / Postura: {playerStructure.CurrentStructure:F0} / {playerStructure.MaxStructure:F0}");
-                float fill = playerStructure.StructureRatio;
-                DrawBar(GUILayoutUtility.GetRect(300, 14), fill, fill > 0.8f ? StructureDangerColor : StructureColor);
+                float s = playerStructure.StructureRatio;
+                Ghost(ref structureGhost, ref structureGhostHold, s);
+                Color c = s > 0.8f ? Color.Lerp(AyniInkaUI.Ochre, AyniInkaUI.BrightGold, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 12f)) : AyniInkaUI.Gold;
+                AyniInkaUI.Bar(new Rect(x, medal.y + 30f, width * 0.8f, 4f), s, structureGhost, c);
             }
-            GUILayout.EndArea();
+
+            // Vida
+            float hr = yari.MaxHealth > 0f ? yari.CurrentHealth / yari.MaxHealth : 0f;
+            Ghost(ref healthGhost, ref healthGhostHold, hr);
+            AyniInkaUI.Bar(new Rect(x, medal.y + 44f, width, 8f), hr, healthGhost, AyniInkaUI.Grana);
+
+            AyniInkaUI.TocapuBand(new Rect(x - 4f, medal.y + 62f, width + 8f, 6f), new Color(AyniInkaUI.Gold.r, AyniInkaUI.Gold.g, AyniInkaUI.Gold.b, 0.35f));
+        }
+
+        /// <summary>El valor fantasma espera un instante y luego baja hasta el real (o sube con él al curarse).</summary>
+        private static void Ghost(ref float ghost, ref float hold, float value)
+        {
+            if (value >= ghost)
+            {
+                ghost = value;
+                hold = Time.unscaledTime + 0.45f;
+            }
+            else if (Time.unscaledTime > hold)
+            {
+                ghost = Mathf.MoveTowards(ghost, value, 0.6f * Time.unscaledDeltaTime);
+            }
         }
 
         private static string StageName(IllaTalismanSystem.AgeStage stage)
         {
             switch (stage)
             {
-                case IllaTalismanSystem.AgeStage.Youth: return "Joven";
-                case IllaTalismanSystem.AgeStage.Prime: return "Maduro";
-                default: return "Anciano";
+                case IllaTalismanSystem.AgeStage.Youth: return "joven";
+                case IllaTalismanSystem.AgeStage.Prime: return "maduro";
+                default: return "anciano";
             }
         }
+
+        // ───────────────────────── Controles ─────────────────────────
 
         private void DrawControlsPanel()
         {
             bool pad = AyniInput.UsingGamepad;
+            var small = AyniInkaUI.Style(12, FontStyle.Normal, TextAnchor.MiddleLeft);
             if (!showControls)
             {
-                GUILayout.BeginArea(new Rect(20, Screen.height - 50, 360, 30), GUI.skin.box);
-                GUILayout.Label($"<b>[{Key(AyniInput.Action.ToggleHud)}]</b> Mostrar controles   <b>[{Key(AyniInput.Action.Tutorial)}]</b> Tutorial");
-                GUILayout.EndArea();
+                // Arriba a la izquierda, discreto: cómo ver los controles, el tutorial y la versión que se prueba
+                AyniInkaUI.Label(new Rect(22f, 16f, 360f, 18f),
+                    $"<b>[{Key(AyniInput.Action.ToggleHud)}]</b> Controles   <b>[{Key(AyniInput.Action.Tutorial)}]</b> Tutorial   <color=#8f8572>{AyniVersion.Label}</color>",
+                    small, AyniInkaUI.Bone, 0.75f);
                 return;
             }
 
@@ -159,45 +204,83 @@ namespace Ayni.UI
             string up = pad ? "Stick ↑ / A" : "W / Espacio";
             string sides = pad ? "Stick ← →" : "A / D";
 
-            GUILayout.BeginArea(new Rect(20, Screen.height - 195, Mathf.Min(680f, Screen.width - 40f), 175), GUI.skin.box);
-            GUILayout.Label($"<b>CONTROLES RUMI MAKI — {(pad ? "MANDO" : "TECLADO Y RATÓN")}</b>  ([{Key(AyniInput.Action.ToggleHud)}] ocultar · [{Key(AyniInput.Action.Tutorial)}] tutorial · [{Key(AyniInput.Action.Pause)}] pausa y volumen)");
-            GUILayout.Label($"• <b>[{Key(AyniInput.Action.LightAttack)}]:</b> Golpe Ligero  |  <b>[{Key(AyniInput.Action.HeavyAttack)}]:</b> Golpe Pesado  |  <b>[{Key(AyniInput.Action.Sprint)}]:</b> Correr");
-            GUILayout.Label($"• <b>[{Key(AyniInput.Action.LockOn)}]:</b> Fijar o soltar al rival (Lock-On)  |  <b>[{Key(AyniInput.Action.Jump)}]:</b> Saltar obstáculo / Trepar");
-            GUILayout.Label($"• <b>[{Key(AyniInput.Action.Guard)}] mantener:</b> Guardia (Yari se planta) — púlsala justo antes del impacto para el Parry");
-            GUILayout.Label($"• <b>Guardia + {down}:</b> Agacharse (evita altos)  |  <b>+ {up}:</b> Saltito (evita barridos)  |  <b>+ {sides}:</b> Balanceo (evita todo)");
-            GUILayout.Label($"• <b>Postura del rival rota:</b> [{Key(AyniInput.Action.Execute)}] Venganza (Matar)  |  [{Key(AyniInput.Action.Mercy)}] Restaurar Ayni (Perdonar)");
-            GUILayout.EndArea();
+            var area = new Rect(16f, 12f, Mathf.Min(700f, Screen.width - 32f), 150f);
+            AyniInkaUI.Band(area, 0.95f);
+            var line = AyniInkaUI.Style(13, FontStyle.Normal, TextAnchor.MiddleLeft);
+            float y = area.y + 8f;
+            void Row(string text)
+            {
+                AyniInkaUI.Label(new Rect(area.x + 14f, y, area.width - 28f, 20f), text, line, AyniInkaUI.Bone);
+                y += 22f;
+            }
+            AyniInkaUI.Label(new Rect(area.x + 14f, y, area.width - 28f, 20f),
+                $"<b>{AyniInkaUI.Spaced("Rumi Maki")}</b>   <color=#bfae8e>{(pad ? "mando" : "teclado y ratón")} · [{Key(AyniInput.Action.ToggleHud)}] ocultar · [{Key(AyniInput.Action.Pause)}] pausa</color>",
+                line, AyniInkaUI.Gold);
+            y += 24f;
+            Row($"<b>[{Key(AyniInput.Action.LightAttack)}]</b> golpe ligero   <b>[{Key(AyniInput.Action.HeavyAttack)}]</b> golpe pesado   <b>[{Key(AyniInput.Action.Sprint)}]</b> correr   <b>[{Key(AyniInput.Action.Jump)}]</b> saltar / trepar");
+            Row($"<b>[{Key(AyniInput.Action.Guard)}]</b> guardia (justo antes del golpe: desvío)   <b>[{Key(AyniInput.Action.LockOn)}]</b> fijar rival");
+            Row($"<b>Guardia + {down}</b> agacharse   <b>+ {up}</b> saltito   <b>+ {sides}</b> balanceo");
+            Row($"<b>Postura rota:</b>  [{Key(AyniInput.Action.Execute)}] Venganza   [{Key(AyniInput.Action.Mercy)}] Ayni (perdón)");
         }
 
+        // ───────────────────────── Rival ─────────────────────────
+
+        /// <summary>Arriba, centrado: el nombre en mayúsculas espaciadas, las fases como rombos y dos barras finas.</summary>
         private void DrawEnemyPanel(EnemyController enemy)
         {
-            // Centrado arriba; en ventanas estrechas se coloca a la derecha del panel de Yari para no solaparse
-            float width = Mathf.Clamp(Screen.width - 390f, 220f, 420f);
-            float x = Mathf.Max(Screen.width / 2f - width / 2f, 370f);
-            GUILayout.BeginArea(new Rect(x, 20, width, 90), GUI.skin.box);
-            string phase = enemy.PhaseCount > 1 ? $"   <color=#ffb347>FASE {enemy.Phase}/{enemy.PhaseCount}</color>" : "";
-            GUILayout.Label($"<b>{enemy.CharacterName.ToUpper()}</b>   Vida: {enemy.CurrentHealth:F0} / {enemy.MaxHealth:F0}{phase}");
-            DrawBar(GUILayoutUtility.GetRect(width - 20, 14), enemy.MaxHealth > 0f ? enemy.CurrentHealth / enemy.MaxHealth : 0f, HealthColor);
-            GUILayout.Space(4);
-            float fill = enemy.Structure.StructureRatio;
-            DrawBar(GUILayoutUtility.GetRect(width - 20, 10), fill, fill > 0.8f ? StructureDangerColor : StructureColor);
-            GUILayout.EndArea();
+            float width = Mathf.Clamp(Screen.width * 0.36f, 240f, 440f);
+            float x = Screen.width / 2f - width / 2f;
+            const float top = 22f;
+
+            string name = AyniInkaUI.Spaced(enemy.CharacterName);
+            AyniInkaUI.Label(new Rect(x, top, width, 18f), name, AyniInkaUI.Style(14, FontStyle.Bold, TextAnchor.MiddleCenter), AyniInkaUI.Bone);
+
+            // Fases del jefe: un rombo por fase, lleno el de la fase en curso y las ya pasadas
+            if (enemy.PhaseCount > 1)
+            {
+                float pipX = x + width / 2f - (enemy.PhaseCount * 14f) / 2f;
+                for (int i = 0; i < enemy.PhaseCount; i++)
+                {
+                    var pip = new Rect(pipX + i * 14f + 3f, top + 22f, 8f, 8f);
+                    Matrix4x4 m = GUI.matrix;
+                    GUIUtility.RotateAroundPivot(45f, pip.center);
+                    AyniInkaUI.Fill(pip, i < enemy.Phase ? AyniInkaUI.Gold : new Color(0f, 0f, 0f, 0.6f));
+                    GUI.matrix = m;
+                }
+            }
+
+            if (ghostEnemy != enemy)
+            {
+                ghostEnemy = enemy;
+                enemyHealthGhost = 1f;
+            }
+            float hr = enemy.MaxHealth > 0f ? enemy.CurrentHealth / enemy.MaxHealth : 0f;
+            Ghost(ref enemyHealthGhost, ref enemyGhostHold, hr);
+            float barsY = top + (enemy.PhaseCount > 1 ? 38f : 26f);
+            AyniInkaUI.Bar(new Rect(x, barsY, width, 6f), hr, enemyHealthGhost, AyniInkaUI.Grana);
+
+            float s = enemy.Structure.StructureRatio;
+            Color sc = enemy.Structure.IsBroken ? Color.Lerp(AyniInkaUI.Grana, AyniInkaUI.BrightGold, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 14f))
+                     : s > 0.8f ? AyniInkaUI.Ochre : AyniInkaUI.Gold;
+            AyniInkaUI.Bar(new Rect(x + width * 0.15f, barsY + 12f, width * 0.7f, 3f), enemy.Structure.IsBroken ? 1f : s, s, sc);
         }
+
+        // ───────────────────────── Avisos ─────────────────────────
 
         private void DrawCenterMessages(EnemyController enemy)
         {
-            Rect center = new Rect(Screen.width / 2f - 260, Screen.height / 2f - 110, 520, 70);
-            GUI.skin.box.fontSize = 20;
+            // Al caer, la cuenta de años (AyniDeathAging) dibuja su propia pantalla
+            if (AyniDeathAging.Active) return;
+
+            Rect center = new Rect(Screen.width / 2f - 280, Screen.height / 2f - 120, 560, 64);
+            Rect slim = new Rect(Screen.width / 2f - 230, Screen.height / 2f - 110, 460, 40);
+            var big = AyniInkaUI.Style(18, FontStyle.Bold, TextAnchor.MiddleCenter);
+            var mid = AyniInkaUI.Style(16, FontStyle.Bold, TextAnchor.MiddleCenter);
 
             if (yari != null && yari.IsGameOver)
             {
-                GUI.color = Color.red;
-                GUI.Box(center, $"EL TALISMÁN ILLA SE HA ROTO\n[{Key(AyniInput.Action.Restart)}] Reintentar");
-            }
-            else if (yari != null && yari.IsDead)
-            {
-                GUI.color = Color.yellow;
-                GUI.Box(center, "YARI HA CAÍDO\nEl Talismán Illa reclama sus años...");
+                AyniInkaUI.Band(center);
+                AyniInkaUI.Label(center, $"{AyniInkaUI.Spaced("La Illa se ha roto")}\n<size=13>[{Key(AyniInput.Action.Restart)}] Reintentar</size>", big, new Color(1f, 0.45f, 0.35f));
             }
             else if (AyniJudgment.Active)
             {
@@ -205,38 +288,37 @@ namespace Ayni.UI
             }
             else if (enemy != null && enemy.Structure.IsBroken && !enemy.CanBeJudged)
             {
-                GUI.color = new Color(0.4f, 0.9f, 1f);
-                GUI.Box(center, $"¡POSTURA DE {enemy.CharacterName.ToUpper()} ROTA! ({enemy.Structure.BrokenTimeRemaining:F1} s)\n" +
-                                "¡Castígalo ahora! Sus golpes recibidos duelen más");
+                AyniInkaUI.Band(center);
+                AyniInkaUI.Label(center, $"{AyniInkaUI.Spaced("Postura rota")}  <size=13>({enemy.Structure.BrokenTimeRemaining:F1} s)</size>\n<size=13>¡Castígalo ahora! Sus golpes recibidos duelen más</size>",
+                                 big, new Color(0.55f, 0.92f, 1f));
             }
             else if (enemy != null && enemy.Structure.IsBroken)
             {
-                GUI.color = Color.red;
-                GUI.Box(center, $"¡POSTURA DE {enemy.CharacterName.ToUpper()} ROTA! ({enemy.Structure.BrokenTimeRemaining:F1} s)\n" +
-                                $"[{Key(AyniInput.Action.Execute)}] Golpe Letal (Venganza)  |  [{Key(AyniInput.Action.Mercy)}] Desarme y Perdón (Ayni)");
+                AyniInkaUI.Band(center);
+                AyniInkaUI.Label(center, $"{AyniInkaUI.Spaced("Postura rota")}  <size=13>({enemy.Structure.BrokenTimeRemaining:F1} s)</size>\n" +
+                                 $"<size=13>[{Key(AyniInput.Action.Execute)}] Venganza   ·   [{Key(AyniInput.Action.Mercy)}] Ayni (desarme y perdón)</size>",
+                                 big, new Color(1f, 0.5f, 0.4f));
             }
             else if (AmaruHunter.DartWarning)
             {
                 bool pad = AyniInput.UsingGamepad;
-                GUI.color = new Color(0.45f, 1f, 0.35f);
-                GUI.Box(new Rect(center.x + 60, center.y, 400, 36), "¡DARDO ENVENENADO!  (" + (pad ? "LB + ↓ o ← →" : "Guardia + S o A/D") + ")");
+                AyniInkaUI.Band(slim);
+                AyniInkaUI.Label(slim, $"¡Dardo envenenado!  <size=13>({(pad ? "LB + ↓ o ← →" : "Guardia + S o A/D")})</size>", mid, new Color(0.5f, 1f, 0.4f));
             }
             else if (Time.unscaledTime < avoidMessageUntil)
             {
-                GUI.color = new Color(0.6f, 0.92f, 1f);
-                GUI.Box(new Rect(center.x + 110, center.y, 300, 36), "¡ESQUIVA!  Contraataca ya");
+                AyniInkaUI.Band(slim);
+                AyniInkaUI.Label(slim, "¡Esquiva!  <size=13>contraataca ya</size>", mid, new Color(0.62f, 0.92f, 1f));
             }
             else if (enemy != null && enemy.IsWindingUp)
             {
                 bool high = enemy.PendingAttackHeight == AttackHeight.High;
                 bool pad = AyniInput.UsingGamepad;
-                GUI.color = high ? new Color(1f, 0.4f, 0.3f) : Color.yellow;
                 string tip = high ? (pad ? "LB + ↓" : "Guardia + S") : (pad ? "LB + ↑" : "Guardia + W");
-                GUI.Box(new Rect(center.x + 80, center.y, 360, 36), (high ? "¡ATAQUE ALTO!" : "¡BARRIDO BAJO!") + $"  ({tip})");
+                AyniInkaUI.Band(slim);
+                AyniInkaUI.Label(slim, (high ? "¡Ataque alto!" : "¡Barrido bajo!") + $"  <size=13>({tip})</size>", mid,
+                                 high ? new Color(1f, 0.45f, 0.35f) : new Color(1f, 0.85f, 0.3f));
             }
-
-            GUI.color = Color.white;
-            GUI.skin.box.fontSize = 14;
         }
 
         /// <summary>Marca roja que late sobre cada rival con la postura rota: momento de rematar (F / B) o perdonar (X / A).</summary>
@@ -317,16 +399,6 @@ namespace Ayni.UI
                 }
             }
             return nearest;
-        }
-
-        private static void DrawBar(Rect rect, float ratio, Color fillColor)
-        {
-            Color prev = GUI.color;
-            GUI.color = BarBackColor;
-            GUI.DrawTexture(rect, Texture2D.whiteTexture);
-            GUI.color = fillColor;
-            GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width * Mathf.Clamp01(ratio), rect.height), Texture2D.whiteTexture);
-            GUI.color = prev;
         }
     }
 }
