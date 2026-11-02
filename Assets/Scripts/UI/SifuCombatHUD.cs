@@ -44,6 +44,8 @@ namespace Ayni.UI
             if (GetComponent<AyniLevelOutcome>() == null) gameObject.AddComponent<AyniLevelOutcome>();
             // Viento de la cordillera y tambores al entrar en los patios con rivales
             if (GetComponent<AyniLevelAmbience>() == null) gameObject.AddComponent<AyniLevelAmbience>();
+            // Presentación del jefe: Amaru espera en la cabeza del puente y se interpone en el camino
+            if (GetComponent<AyniBossIntro>() == null) gameObject.AddComponent<AyniBossIntro>();
             // Cambio de fase de los jefes (caída, grito y segunda fase)
             if (GetComponent<AyniBossPhaseDirector>() == null) gameObject.AddComponent<AyniBossPhaseDirector>();
             // Pausa con las opciones de sonido (Esc / Menu)
@@ -81,7 +83,7 @@ namespace Ayni.UI
         private void OnGUI()
         {
             // Durante el prólogo (y el desenlace) la pantalla es de la escena; en el Juicio Ayni, de la decisión
-            if (AyniGameState.CinematicPlaying || AyniJudgment.Active) return;
+            if (AyniGameState.CinematicPlaying || AyniJudgment.Active || AyniBossIntro.Running) return;
             // Caída mortal a la quebrada: la pantalla es de la escena (franjas de cine, fundido y título)
             if (yari != null && yari.IsBeingRescued) return;
 

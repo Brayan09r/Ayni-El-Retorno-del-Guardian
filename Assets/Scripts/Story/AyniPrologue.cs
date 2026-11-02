@@ -419,7 +419,8 @@ namespace Ayni.Story
                 Vector3 dir = toYari.sqrMagnitude > 0.01f ? toYari.normalized : Vector3.forward;
                 Vector3 side = Vector3.Cross(Vector3.up, dir);
                 AyniAudio.Play2D("juicio", 0.6f);
-                AyniScreenFX.Title("AMARU EL CAZADOR", "Primer teniente de Sayri · Señor de los bosques quemados del Antisuyo", 3.2f);
+                // Solo un anticipo: el título de Amaru llega cuando Yari lo encuentra en la cabeza del puente (AyniBossIntro)
+                AyniScreenFX.Caption("Al final del camino, en la cabeza del puente, le espera Amaru el Cazador.", 3.2f);
                 yield return Shot(3.3f, u =>
                 {
                     Vector3 p = a + dir * Mathf.Lerp(3.2f, 2.6f, u) + side * 1.1f + Vector3.up * 0.7f;
