@@ -6,7 +6,7 @@
 ---
 
 ## 1. GENERAL SAYRI — EL USURPADOR (Prólogo en el Puente Colgante y Jefe Final Misión 5)
-- **Prioridad Técnica:** **Alta** — Requerido para reemplazar el golpe fuera de cámara en [`AyniPrologue.cs`](../../Assets/Scripts/Story/AyniPrologue.cs) (*"La Noche de las Cenizas"*).
+- **Estado de Producción 3D:** **Completado e integrado (`083d2e0`)** — Láminas [`jefe_general_sayri_frente.png`](jefe_general_sayri_frente.png) y [`jefe_general_sayri_espalda.png`](jefe_general_sayri_espalda.png) convertidas en malla Humanoid [`GeneralSayri_Rigged.fbx`](../../Assets/Art/Characters/GeneralSayri_Rigged.fbx) (`2.15 m`), texturas PBR (`Sayri_Diffuse`, `Sayri_Normal`, `Sayri_MetallicRoughness`), animación [`Sayri_Walk.fbx`](../../Assets/Art/Characters/Animations/Sayri_Walk.fbx) y prefab [`General_Sayri.prefab`](../../Assets/Prefabs/General_Sayri.prefab) mediante [`AyniAmaruSetup.SetupSayri()`](../../Assets/Editor/AyniAmaruSetup.cs).
 - **Silueta:** Imponente, marcial y regia (general inca renegado con pectoral solar oscurecido y hombreras de bronce).
 - **Color dominante:** Negro obsidiana, oro envejecido y rojo carmesí imperial.
 
