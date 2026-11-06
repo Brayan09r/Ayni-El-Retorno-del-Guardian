@@ -89,9 +89,10 @@ El código de tiempo de ejecución consta de **33 scripts C#** distribuidos en *
 | [`AyniReforestationRevival.cs`](Assets/Scripts/Story/AyniReforestationRevival.cs) | Extiende la ola de vida a lo largo de los 630 m del Qhapaq Ñan para hacer reverdecer los 56 árboles quemados en pie y 5 caídos. |
 | [`AyniLevelAmbience.cs`](Assets/Scripts/Story/AyniLevelAmbience.cs) | Controla el sonido ambiental de viento andino y activa tambores rituales al entrar en las kanchas con rivales. |
 
-### 3.6. Módulos `Ayni.World` y `Ayni.UI`
+### 3.6. Módulos `Ayni.World`, `Ayni.UI` y Menú Principal (`MainMenu`)
 | Script | Responsabilidad Principal |
 | :--- | :--- |
+| [`MenuController.cs`](Assets/Scripts/MainMenu/MenuController.cs) | Controlador de la escena de arranque [`MainMenu.unity`](Assets/MianMenu/MainMenu.unity): gestiona la transición asíncrona/directa desde **Nuevo Juego** (`NewGame()`) hacia `SampleScene` mediante `SceneManager.LoadScene` y el cierre seguro de la aplicación (`QuitGame()`). |
 | [`AyniEncounterSite.cs`](Assets/Scripts/World/AyniEncounterSite.cs) | Gestiona cada una de las 4 kanchas incas (`K1` a `K4`), manteniendo ocultos a sus rivales hasta que Yari cruza el umbral (`triggerRadius`) y emitiendo `OnCleared` al derrotarlos. |
 | [`AyniDynamicLighting.cs`](Assets/Scripts/World/AyniDynamicLighting.cs) | Controlador de iluminación dinámica reactiva que interpola sol, cielo, niebla e intensidad de braseros a través de 5 estados: *Hora Dorada*, *Combate en Kancha*, *Segunda Fase del Jefe*, *Amanecer Sagrado (Ayni)* y *Ocaso de Cenizas (Venganza)*. |
 | [`AyniFireLight.cs`](Assets/Scripts/World/AyniFireLight.cs) | Simula el parpadeo orgánico de fuego y brasas mediante doble octava de ruido Perlin y *Distance Culling* para respetar el límite de luces por objeto en URP. |
@@ -102,6 +103,11 @@ El código de tiempo de ejecución consta de **33 scripts C#** distribuidos en *
 | [`AyniTutorial.cs`](Assets/Scripts/UI/AyniTutorial.cs) | Tutorial paginado adaptable a Teclado/Ratón o Mando de Xbox que se despliega al iniciar el primer combate del nivel (`v0.8.0`). |
 | [`AyniScreenFX.cs`](Assets/Scripts/UI/AyniScreenFX.cs) | Fundidos, franjas cinematográficas (*letterbox*), subtítulos, carteles de título y viñeta verde de envenenamiento. |
 | [`AyniGamepadTester.cs`](Assets/Scripts/UI/AyniGamepadTester.cs) | Depurador superpuesto en vivo (`F9`) para inspeccionar ejes y botones del mando conectado. |
+
+### 3.7. Flujo de Escenas y Configuración de Build Profiles (`EditorBuildSettings.asset`)
+El ciclo de arranque del ejecutable registra dos escenas ordenadas en [`ProjectSettings/EditorBuildSettings.asset`](ProjectSettings/EditorBuildSettings.asset):
+1. **Índice `0` — `Assets/MianMenu/MainMenu.unity`:** Escena inicial de bienvenida construida sobre `Canvas` UGUI a pantalla completa con fondo panorámico andino dotado de movimiento dinámico (`fondo.jpg`), tipografía SDF `JosefinSans-SemiBold` en **TextMesh Pro**, `EventSystem` compatible con Unity 6 y los botones de navegación (**Nuevo Juego**, **Opciones**, **Créditos** y **Salir**).
+2. **Índice `1` — `Assets/network of paths/Scenes/SampleScene.unity`:** Escena jugable principal con jerarquía escénica ordenada de formaciones rocosas, encuadre inicial calibrado de `Main Camera` hacia `Yari_Hero` y auto-ensamblaje en `Start()` de todos los directores narrativos y de combate.
 
 ---
 
