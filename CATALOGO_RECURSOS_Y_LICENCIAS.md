@@ -34,6 +34,7 @@ Todos los personajes humanos utilizan configuración **Humanoid Avatar** en Unit
 | :--- | :--- | :--- | :--- |
 | **Yari (El Guardián)** | `Assets/Art/Characters/Yari_Character.fbx` (`1.80 m`) | Protagonista jugable | Lámina propia + Tripo3D + Mixamo (Propio) |
 | **Amaru el Cazador** | `Assets/Art/Characters/Amaru_Rigged.fbx` (`1.80–1.92 m`) | Jefe del Nivel 1 (2 Fases + Cerbatana) | Lámina propia + Tripo3D + Mixamo (Propio) |
+| **General Sayri (El Usurpador)** | `Assets/Art/Characters/GeneralSayri_Rigged.fbx` (`2.15 m`) + `Assets/Prefabs/General_Sayri.prefab` | Antagonista en el puente del prólogo (`083d2e0`) y Jefe Final | `ConceptArt/Jefes_y_Prologo/jefe_general_sayri_*.png` + **Tripo3D** (malla y mapas PBR `Sayri_Diffuse/Normal/MetallicRoughness`) + **Mixamo** (`Sayri_Walk.fbx`) |
 | **Rastreador (`K1`)** | `Assets/Prefabs/Rival_1_Rastreador.prefab` (`1.78 m`) | Rival ágil del Puesto de Chasquis | `ConceptArt/Rivales/` + Tripo3D + Mixamo (Propio) |
 | **Saqueador (`K2`)** | `Assets/Prefabs/Rival_2_Saqueador.prefab` (`1.76 m`) | Rival robusto de la Kancha de los Tejedores | `ConceptArt/Rivales/` + Tripo3D + Mixamo (Propio) |
 | **Guardia del Tambo (`K3`)** | `Assets/Prefabs/Rival_3_GuardiaTambo.prefab` (`1.86 m`) | Rival defensivo del Tambo del Camino | `ConceptArt/Rivales/` + Tripo3D + Mixamo (Propio) |
@@ -46,7 +47,9 @@ Tras la eliminación definitiva de la carpeta heredada `Assets/Tiger/` (commits 
 
 ---
 
-## 🥋 3. CATÁLOGO DE ANIMACIONES (40 CLIPS EN TOTAL)
+## 🥋 3. CATÁLOGO DE ANIMACIONES (41 CLIPS EN TOTAL: 30 MIXAMO + 11 FRAGUA)
+
+Además de los 29 clips marciales y de locomoción de Yari, rivales y Amaru en `Assets/Art/Characters/Animations/`, el commit `083d2e0` incorporó el clip **`Sayri_Walk.fbx`** (caminata solemne en bucle con *Root Rotation/Position* bloqueados, vinculado a `GeneralSayri_AnimatorController.controller`).
 
 ### 3.1. Las 11 Animaciones Sintetizadas en la Fragua ([`AyniAnimationForge.cs`](Assets/Editor/AyniAnimationForge.cs))
 Todas llevan la etiqueta `SinIK` en el Animator Controller para evitar que `FootIK` y `AndeanCombatStanceModifier` deformen las piernas durante maniobras aéreas, esquivas o parkour:
@@ -84,17 +87,28 @@ Generados mediante [`Herramientas/Audio/generar_sfx.py`](Herramientas/Audio/gene
 
 ---
 
-## 📋 5. ESPECIFICACIÓN DE RECURSOS PENDIENTES PARA PRÓXIMAS ITERACIONES
+## 🖼️ 5. ACTIVOS DEL MENÚ PRINCIPAL Y TIPOGRAFÍAS (`MainMenu` y `TextMesh Pro`)
 
-De acuerdo con la hoja de ruta técnica en [`NIVEL_1_PROLOGO_Y_JUGABILIDAD.md`](NIVEL_1_PROLOGO_Y_JUGABILIDAD.md) y [`ALDEA_INCA.md`](ALDEA_INCA.md), se documentan los recursos listos para ser producidos e integrados:
+| Activo / Recurso UI | Ruta Real en el Repositorio | Origen / Autoría | Licencia aplicable |
+| :--- | :--- | :--- | :--- |
+| **Fondo Panorámico del Menú** | `Assets/MianMenu/fondo.jpg` | Ilustración panorámica de ciudadela y cordillera andina al amanecer generada con IA (Google Gemini, integrada en `52fb1ce` por `@JuniorEspiritu`) | Generación asistida por IA del equipo (sin reclamo de terceros; pendiente confirmar si se mantiene o sustituye por captura en motor) |
+| **Fuente UI `JosefinSans-SemiBold SDF`** | `Assets/TextMesh Pro/Resources/Fonts & Materials/JosefinSans-SemiBold SDF.asset` | Familia tipográfica **Josefin Sans**, diseñada por **Santiago Orozco** (*Typemade* / Google Fonts: `https://fonts.google.com/specimen/Josefin+Sans`) | **SIL Open Font License 1.1 (OFL)** — Uso comercial y académico libre |
+| **Fuente Base `LiberationSans`** | `Assets/TextMesh Pro/Fonts/LiberationSans.ttf` | Familia **Liberation Fonts** (*Red Hat, Inc.*, incluida en TMP Essential Resources) | **SIL Open Font License 1.1 (OFL)** — Texto íntegro en [`LiberationSans - OFL.txt`](Assets/TextMesh%20Pro/Fonts/LiberationSans%20-%20OFL.txt) |
+| **Sprites de Ejemplo TMP (`EmojiOne`)** | `Assets/TextMesh Pro/Sprites/EmojiOne.png` | Paquete por defecto de TextMesh Pro (*EmojiOne Attribution.txt*, no mostrado en HUD de juego) | **CC-BY 4.0** (atribución incluida en `EmojiOne Attribution.txt`) |
 
-1. **Malla 3D Dedicada del General Sayri (`Sayri_Character.fbx`):**
-   - **Estado actual en `v0.8.0`:** El General Sayri y sus guardias ya aparecen en el puente mediante [`AyniPrologueCast.cs`](Assets/Scripts/Story/AyniPrologueCast.cs). Además, los prompts de frente y espalda en A-pose están listos en [`ConceptArt/Jefes_y_Prologo/prompts.md`](ConceptArt/Jefes_y_Prologo/prompts.md) por si se desea reemplazar por una malla exclusiva generada en **Tripo3D Web** + **Mixamo Web**.
+---
+
+## 📋 6. ESPECIFICACIÓN DE RECURSOS PENDIENTES PARA PRÓXIMAS ITERACIONES
+
+Habiéndose completado en `083d2e0` la integración del modelo 3D riggeado y caminata del **General Sayri** (`GeneralSayri_Rigged.fbx`), quedan priorizados los siguientes recursos:
+
+1. **Sustitución de Malla del Puma (`pumacotw.fbx`) y Verificación de `Llama.obj`:**
+   - **Acción:** Generar láminas A-pose / cuadrúpedas propias de puma andino y convertirlas en **Tripo3D**, o sustituir por un activo con licencia **CC0 1.0** verificable para cerrar la observación abierta en los Issues `#4` y `#9`.
 2. **Voces y Exclamaciones Marciales (`voz_yari_ataque_1..3.wav`, `voz_yari_dolor_1..2.wav`, `voz_amaru_fase2.wav`):**
    - **Formato requerido:** `.wav` mono a `44,100 Hz`, normalizados a `-3 dBFS`, colocados en `Assets/Resources/AyniAudio/` para ser invocados mediante `AyniAudio.Play()`.
-   - **Fuentes CC0 recomendadas:** Freesound.org (licencia *CC0 1.0 Universal Public Domain*) o grabación propia con guion en Quechua de [`NARRATIVA_Y_CULTURA_ANDINA.md`](NARRATIVA_Y_CULTURA_ANDINA.md).
+   - **Fuentes CC0 recomendadas:** Grabación propia con el guion en Quechua de [`NARRATIVA_Y_CULTURA_ANDINA.md`](NARRATIVA_Y_CULTURA_ANDINA.md) o Freesound.org bajo *CC0 1.0 Universal*.
 3. **Barreras Físicas de Cierre Temporal en Kanchas (`AyniEncounterSite`):**
    - **Diseño:** Trancas de troncos de queñual o portones de cuerda que se levantan al dispararse `OnPlayerEntered` y descienden al emitirse `OnCleared` en cada una de las 4 kanchas.
 
 ---
-*Catálogo de Recursos Multimedia y Licencias — Proyecto Ayni: El Retorno del Guardián (`v0.8.0`).*
+*Catálogo de Recursos Multimedia y Auditoría de Licencias — Proyecto Ayni: El Retorno del Guardián.*
