@@ -60,16 +60,19 @@ El personaje principal (**Yari**) inicia la partida con **20 años** y una edad 
 
 ---
 
-### 2.3. Balanceo de Rivales y Fases del Jefe Amaru ([`EnemyController.cs`](Assets/Scripts/Enemy/EnemyController.cs) y [`AmaruHunter.cs`](Assets/Scripts/Enemy/AmaruHunter.cs))
+### 2.3. Balanceo de Rivales, Prefab del General Sayri y Fases de Amaru ([`EnemyController.cs`](Assets/Scripts/Enemy/EnemyController.cs), [`AmaruHunter.cs`](Assets/Scripts/Enemy/AmaruHunter.cs) y [`AyniAmaruSetup.cs`](Assets/Editor/AyniAmaruSetup.cs))
 
-| Entidad / Fase | Salud Máxima (HP) | Estructura Máxima | Daño Base | Cooldown de Ataque | Velocidad | Mecánicas Especiales |
+| Entidad / Fase | Salud Máxima (HP) | Estructura Máxima | Daño Base | Cooldown / Cadencia | Velocidad | Mecánicas y Configuración de Prefab |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
 | **Rastreador (`K1`)** | `150 HP` | `100 pts` | `15 HP` | `2.00 s` | `3.20 m/s` | Aproximación ágil en el Puesto de Chasquis. |
 | **Saqueador (`K2`)** | `150 HP` | `100 pts` | `15 HP` | `2.00 s` | `3.20 m/s` | Combate cerrado en la Kancha de los Tejedores. |
 | **Guardia del Tambo (`K3`)** | `150 HP` | `100 pts` | `15 HP` | `2.00 s` | `3.20 m/s` | Defensa de patio en el Tambo del Camino. |
 | **Cazador de Élite (`K4`)** | `150 HP` | `100 pts` | `15 HP` | `2.00 s` | `3.20 m/s` | Custodio de la Portada del Cazador. |
+| **General Sayri (Prólogo / Prefab Base)** | `250 HP` | `150 pts` | `25 HP` (`30` postura) | `Windup 0.50 s` / `Rec. 0.65 s` | `3.20 m/s` | Malla PBR riggeada de `2.15 m` (`radius = 0.52 m`), `aggroRange = 22 m` y caminata cíclica `Sayri_Walk` sobre el puente colgante (`SetupSayri`). |
 | **Jefe: Amaru (Fase 1)** | `380 HP` | `150 pts` | `15 HP` | `2.00 s` | `3.20 m/s` | Combate cuerpo a cuerpo; al vaciar HP dispara `PhaseTransitionRoutine`. |
 | **Jefe: Amaru (Fase 2 · Desatado)** | `460 HP` | `150 pts` | `18 HP` (`×1.2`) | `1.44 s` (`×0.72`) | `3.68 m/s` (`×1.15`) | Aura de brasas, salto atrás de `5.5 m` y ráfagas de **3 dardos envenenados**; abre **Juicio Ayni** al `≤ 40%` HP. |
+
+> **Nota de Calibración Espacial de Escena (`SampleScene.unity`):** Se reorganizó la jerarquía de formaciones rocosas del mapa para despejar líneas de visión en combate, se calibró el ángulo y posición inicial de `Main Camera` apuntando directamente a `Yari_Hero` tras el despertar en el Qhapaq Ñan y se depuró por completo el directorio obsoleto `Assets/Tiger/` para evitar colisiones o referencias huérfanas.
 
 ---
 
