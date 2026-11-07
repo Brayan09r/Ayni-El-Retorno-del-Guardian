@@ -31,7 +31,7 @@ El sistema de combate se inspira en las tradiciones marciales prehispánicas (*R
 | **Ayni** | Reciprocidad mutua, correspondencia y equilibrio comunitario. | Sistema moral central (`AyniJudgment`, `AyniPurificationManager`). |
 | **Yari** | Nombre propio inspirado en el coraje y la luz solar que despierta. | Protagonista y último Guardián del Sol controlado por el jugador. |
 | **Amaru** | Serpiente mítica alada vinculada a los ríos, la selva alta y las fuerzas telúricas. | Jefe del Nivel 1 (*Amaru el Cazador*), líder de los furtivos del Antisuyo. |
-| **Sayri** | Príncipe o caudillo militar. | Antagonista principal (*General Sayri el Usurpador*), presente con su guardia en el puente colgante del prólogo (`AyniPrologueCast`). |
+| **Sayri** | Príncipe o caudillo militar. | Antagonista principal (*General Sayri el Usurpador*), integrado con su propio modelo 3D PBR riggeado (`GeneralSayri_Rigged.fbx`, `2.15 m`) y animación de caminata (`Sayri_Walk`) sobre el puente colgante del prólogo (`AyniPrologueCast`). |
 | **Illa** | Reliquia sagrada portadora de luz, fortuna y energía vital. | Talismán que resucita a Yari a cambio de envejecer (`IllaTalismanSystem`). |
 | **Rumi Maki** | *Rumi* (piedra) + *Maki* (mano/puño): "Puño de Piedra". | Estilo de combate cuerpo a cuerpo de Yari (combos ligeros, pesados y desvíos). |
 | **Takanakuy** | De *takay* (golpear) y *-nakuy* (mutuamente): duelo ritual comunitario. | Postura de guardia plantada y filosofía de resolución sin muerte del oponente. |
@@ -44,7 +44,7 @@ El sistema de combate se inspira en las tradiciones marciales prehispánicas (*R
 | **Pirca (*Pirqa*)** | Muro de piedra rústica asentada con mortero de arcilla. | Modo `0` del shader procedural [`AyniMuroInca.shader`](Assets/Shaders/AyniMuroInca.shader) y obstáculos de salto (`YariTraversal`). |
 | **Huanca (*Wanka*)** | Monolito vertical sagrado que marca el centro energético de un patio o chacra. | Hito de piedra presente en el patio del Puesto de Chasquis (`K1`). |
 | **Champi** | Maza incaica de combate con cabezal estrellado de bronce o piedra. | Arma con la que el General Sayri quiebra la guardia de Yari en el prólogo. |
-| **Puma y Llama** | Felino sagrado símbolo del *Kay Pacha* (mundo terrenal) y camélido andino doméstico. | Fauna autóctona integrada en el mapa: llamas en los campos abiertos de la aldea y pumas custodiando los bordes escarpados. |
+| **Puma y Llama** | Felino sagrado símbolo del *Kay Pacha* (mundo terrenal) y camélido andino doméstico. | Fauna autóctona integrada en `Assets/Art/Animals/` (`Llama.obj` en las planicies de la aldea y `pumacotw.fbx` delimitando bordes escarpados). |
 | **Queñual (*Qiwña* / *Polylepis*)** | Árbol altoandino de corteza rojiza laminar que crece hasta más de 4,500 m.s.n.m. | Especie principal generada por [`AyniReforestation.cs`](Assets/Scripts/Story/AyniReforestation.cs) al perdonar al jefe. |
 | **Ichu** | Gramínea forrajera resistente al frío propia de la puna andina. | Pastizal que brota en el final Ayni y material de los techos de las kanchas. |
 | **Cantuta (*Qantu*)** | Flor sagrada de los incas de cáliz tubular rojo, rosado y amarillo. | Flor que tapiza el claro reforestado en la cinemática del perdón. |

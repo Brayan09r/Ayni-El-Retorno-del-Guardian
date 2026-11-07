@@ -89,8 +89,8 @@ Tras la implementación completa de la **Misión 0 (Prólogo en el puente colgan
 - **Conexión Narrativa con el Prólogo:** El jugador cruza nuevamente un puente colgante monumental, cerrando el círculo iniciado en *"La Noche de las Cenizas"*, pero esta vez con el dominio completo del **Rumi Maki** y la sabiduría acumulada en el Talismán Illa.
 
 ### 5.2. Jefe Final: **General Sayri el Usurpador**
-- **Referencia Visual:** `Assets/Art/Characters/05_jefe_general_sayri_pose_neutral.jpg`.
-- **Estadísticas por Fases (`bossPhaseHealth`):**
+- **Activo 3D Integrado y Referencias Visuales:** Malla PBR riggeada [`Assets/Art/Characters/GeneralSayri_Rigged.fbx`](Assets/Art/Characters/GeneralSayri_Rigged.fbx) (`2.15 m` de estatura, prefab base [`Assets/Prefabs/General_Sayri.prefab`](Assets/Prefabs/General_Sayri.prefab) ya operativo en el puente colgante del prólogo mediante `AyniAmaruSetup.SetupSayri()`), respaldada por las láminas simétricas [`jefe_general_sayri_frente.png`](ConceptArt/Jefes_y_Prologo/jefe_general_sayri_frente.png) y [`jefe_general_sayri_espalda.png`](ConceptArt/Jefes_y_Prologo/jefe_general_sayri_espalda.png).
+- **Estadísticas por Fases (`bossPhaseHealth` — Escalado sobre el Prefab Base de `250 HP`):**
   - **Fase 1 (`500 HP`, `180 Postura`):** General maestro del Rumi Maki corrupto y portador de la maza real (*Champi*). Combina ataques altos demoledores con barridos bajos y desvíos propios si el jugador repite el mismo golpe sin variar el combo.
   - **Fase 2 · *"El Caudillo de las Cenizas"* (`600 HP`, `200 Postura`):** Sayri invoca el fuego de la traición; sus ataques tienen un multiplicador de velocidad de `×1.20` y exigen dominar las tres esquivas (`Duck`, `Jump`, `Sway`) y el *Parry* perfecto (`0.22 s`) para quebrar su estructura de 200 puntos.
 - **Resolución Final del Juego (ODS 16: Paz, Justicia e Instituciones Sólidas):**
