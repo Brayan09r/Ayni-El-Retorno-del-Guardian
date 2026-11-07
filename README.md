@@ -64,9 +64,9 @@
    ```
 2. Abre **Unity Hub** y añade el proyecto seleccionando la carpeta raíz.
 3. Abre el proyecto en Unity 6.
-4. En el menú superior de la barra de herramientas, ejecuta:
+4. En el menú superior de la barra de herramientas, ejecuta (si deseas regenerar la configuración del nivel):
    - `Ayni` ➔ `2. Integrar Combate en el Mapa de Caminos`
-5. Abre la escena en `Assets/network of paths/Scenes/SampleScene.unity` y pulsa **Play (▶)**.
+5. Para iniciar el flujo completo del juego, abre la escena del menú principal en `Assets/MianMenu/MainMenu.unity` y pulsa **Play (▶)** (al elegir **Nuevo Juego**, `MenuController` cargará la escena del nivel). También puedes abrir directamente `Assets/network of paths/Scenes/SampleScene.unity` para pruebas rápidas en el cañón.
 
 ---
 
@@ -81,27 +81,27 @@ El Nivel 1 completo (**Valle de las Sombras / El Camino del Antisuyo**) se encue
 
 | Documento | Descripción y Alcance |
 | :--- | :--- |
-| 📘 **[DOCUMENTACION_INTEGRAL_AYNI.md](DOCUMENTACION_INTEGRAL_AYNI.md)** | **Documento Maestro Consolidado (`v0.8.0`):** Ficha técnica, narrativa, GDD, parkour, arquitectura de software, iluminación, fauna, diseño de niveles, ODS, QA y conclusiones. |
+| 📘 **[DOCUMENTACION_INTEGRAL_AYNI.md](DOCUMENTACION_INTEGRAL_AYNI.md)** | **Documento Maestro Consolidado (`v0.8.0`):** Ficha técnica, narrativa, flujo de escenas (`MainMenu` ➔ `SampleScene`), GDD, parkour, arquitectura, iluminación, fauna, QA y conclusiones. |
 | 📜 **[GDD_AYNI.md](GDD_AYNI.md)** | **Game Design Document (GDD):** Historia ilustrada, mecánicas centrales y estructura de misiones. |
-| 🏗️ **[ARQUITECTURA_TECNICA.md](ARQUITECTURA_TECNICA.md)** | **Arquitectura de Software (`v0.8.0`):** Arquitectura en 4 capas, los 33 scripts C# de runtime, máquina de estados de IA, 6 shaders URP y 29 herramientas de editor. |
-| 🧪 **[PLAN_DE_PRUEBAS_QA.md](PLAN_DE_PRUEBAS_QA.md)** | **Aseguramiento de Calidad y Balanceo:** Curva matemática de envejecimiento de la Illa, métricas anti-patinaje y matriz de casos de prueba funcionales. |
+| 🏗️ **[ARQUITECTURA_TECNICA.md](ARQUITECTURA_TECNICA.md)** | **Arquitectura de Software (`v0.8.0`):** Arquitectura en 4 capas, los 34 scripts C# de runtime (incluido `MenuController`), integración 3D de Sayri, IA, 6 shaders URP y herramientas de editor. |
+| 🧪 **[PLAN_DE_PRUEBAS_QA.md](PLAN_DE_PRUEBAS_QA.md)** | **Aseguramiento de Calidad y Balanceo:** Curva matemática de la Illa, parámetros de rivales y del General Sayri, métricas anti-patinaje y 19 casos de prueba funcionales. |
 | 🏔️ **[NARRATIVA_Y_CULTURA_ANDINA.md](NARRATIVA_Y_CULTURA_ANDINA.md)** | **Fundamentación Cultural y ODS:** Cosmovisión del *Ayni*, *Illa*, *Rumi Maki / Takanakuy*, glosario Quechua–Español, fauna andina y alineación con los **ODS 15, 6, 12 y 16**. |
 | 🔥 **[ILUMINACION_ANDINA.md](ILUMINACION_ANDINA.md)** | **Iluminación Dinámica y Shaders:** Braseros ceremoniales incas, fogones con ruido Perlin, rayos solares volumétricos y 5 estados climáticos. |
 | 🗺️ **[DISENO_NIVELES_2_AL_5.md](DISENO_NIVELES_2_AL_5.md)** | **Diseño de Niveles 2 al 5:** Expansión hacia las Canteras de Bronce (*Túpac*), Terrazas de Agua (*Apo Rumi*), Palacio Alquímico (*Mama Churi*) e Intihuatana (*General Sayri*). |
-| 📦 **[CATALOGO_RECURSOS_Y_LICENCIAS.md](CATALOGO_RECURSOS_Y_LICENCIAS.md)** | **Catálogo de Recursos y Audio:** Inventario de modelos 3D, animaciones de combate y parkour, 42 efectos de sonido sintetizados en Python y fauna. |
+| 📦 **[CATALOGO_RECURSOS_Y_LICENCIAS.md](CATALOGO_RECURSOS_Y_LICENCIAS.md)** | **Catálogo de Recursos y Auditoría de Licencias:** Inventario verificado de modelos 3D (`GeneralSayri_Rigged.fbx`, Yari, Amaru y fauna), fuentes OFL, animaciones y 42 efectos de sonido en Python. |
 | 🏘️ **[ALDEA_INCA.md](ALDEA_INCA.md)** · **[ENTORNO_ACANTILADOS.md](ENTORNO_ACANTILADOS.md)** | Diseño técnico y arquitectónico de las 4 *Kanchas* incas, 8 obstáculos, árboles renacientes y relieve del cañón. |
 | 🕹️ **[CONTROLES.md](CONTROLES.md)** · **[NIVEL_1_PROLOGO_Y_JUGABILIDAD.md](NIVEL_1_PROLOGO_Y_JUGABILIDAD.md)** | Guía ilustrada de controles (Teclado/Ratón y Xbox) y notas técnicas de jugabilidad del Nivel 1. |
-| 🎨 **[ConceptArt/Rivales/prompts.md](ConceptArt/Rivales/prompts.md)** · **[ConceptArt/Jefes_y_Prologo/prompts.md](ConceptArt/Jefes_y_Prologo/prompts.md)** | Prompts técnicos en A-pose simétrica (frente y espalda) para generación 3D de rivales, el General Sayri y jefes. |
+| 🎨 **[ConceptArt/Rivales/prompts.md](ConceptArt/Rivales/prompts.md)** · **[ConceptArt/Jefes_y_Prologo/prompts.md](ConceptArt/Jefes_y_Prologo/prompts.md)** | Prompts técnicos en A-pose simétrica (frente y espalda) y estado de producción 3D de rivales, el General Sayri y jefes. |
 | 📋 **[CHANGELOG.md](CHANGELOG.md)** · **[COLLABORATORS.md](COLLABORATORS.md)** | Historial detallado de versiones (`v0.3.0` a `v0.8.0`) y normas de contribución en Git. |
 
 ---
 
 ## 👥 Equipo de Desarrollo y Colaboradores
 
-- **Brayan (`@Brayan09r`):** Dirección técnica y artística, arquitectura de entorno andino, modelos 3D/animaciones, aldea inca procedural, reforestación, tráiler y compilación WebGL.
+- **Brayan (`@Brayan09r`):** Dirección técnica y artística, arquitectura de entorno andino, modelos 3D/animaciones (incluyendo la malla PBR riggeada y caminata del General Sayri), aldea inca procedural, reforestación, tráiler y compilación WebGL.
 - **Benn / Ragnar (`@BennJulius` / `@RagnarLoth21`):** Programación de sistemas de juego (prólogo escénico con Sayri, mando Xbox con vibración, esquivas y parkour estilo Sifu, síntesis de audio en Python, jefes en dos fases y menú de pausa).
 - **Jhosue (`@Jhosue2330`):** Sistema de iluminación andina (`AyniDynamicLighting`, `AyniFireLight`, braseros ceremoniales incas y shader de rayos solares volumétricos).
-- **Junior (`@JuniorEspiritu`):** Ambientación de fauna andina (llamas y pumas), estructuras de piedra del mapa y optimización de activos del proyecto.
-- **Gilmer Antonny (`@Antonnyy`):** Ingeniería de documentación técnica, arquitectura de software, aseguramiento de calidad (QA), fundamentación cultural/ODS y gestión de recursos de diseño.
+- **Junior (`@JuniorEspiritu`):** Escena e interfaz del Menú Principal (`MainMenu.unity` y `MenuController`), ambientación de fauna andina (llamas y pumas), reorganización de formaciones rocosas, encuadre de cámara y depuración de activos.
+- **Gilmer Antonny (`@Antonnyy`):** Ingeniería de documentación técnica, arquitectura de software, aseguramiento de calidad (QA), auditoría de catálogo y licencias, fundamentación cultural/ODS y gestión de recursos de diseño.
 
 Desarrollado con pasión como proyecto de combate 3D andino y beat 'em up para Unity 6.
