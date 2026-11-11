@@ -107,12 +107,30 @@ public class MainMenuPanels : MonoBehaviour
             PlayerPrefs.SetInt("Ayni_PantallaCompleta", fullscreen ? 1 : 0);
         }
 
+        if (GUI.Button(new Rect(panel.x + 32f, panel.yMax - 66f, 160f, 42f), "RESTABLECER", buttonStyle))
+            ResetOptions();
+
         if (GUI.Button(new Rect(panel.x + panel.width - 178f, panel.yMax - 66f, 146f, 42f), "VOLVER", buttonStyle))
             CloseOptions();
 
         GUI.matrix = previousMatrix;
     }
 
+    private void ResetOptions()
+    {
+        masterVolume = BaseMaster;
+        sfxVolume = BaseSfx;
+        ambienceVolume = BaseAmbience;
+        fullscreen = false;
+        ApplyAudioSettings();
+        Screen.fullScreen = false;
+
+        PlayerPrefs.SetFloat(MasterKey, masterVolume);
+        PlayerPrefs.SetFloat(SfxKey, sfxVolume);
+        PlayerPrefs.SetFloat(AmbienceKey, ambienceVolume);
+        PlayerPrefs.SetInt("Ayni_PantallaCompleta", 0);
+        PlayerPrefs.Save();
+    }
     private void ApplyAudioSettings()
     {
         AudioListener.volume = masterVolume;
