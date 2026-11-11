@@ -26,6 +26,7 @@ public class MainMenuPanels : MonoBehaviour
     private GUIStyle creditsTitleStyle;
     private GUIStyle creditsGameStyle;
     private GUIStyle creditsBodyStyle;
+    private Vector2 creditsScrollPosition;
 
     private void Awake()
     {
@@ -209,13 +210,21 @@ public class MainMenuPanels : MonoBehaviour
         GUI.color = Color.white;
 
         GUI.Label(new Rect(20f, 38f, width - 40f, 52f), "CRÉDITOS", creditsTitleStyle);
-        GUI.Label(new Rect(20f, 112f, width - 40f, 44f), "AYNI: El Retorno del Guardián", creditsGameStyle);
-        GUI.Label(new Rect(20f, 184f, width - 40f, 36f), "Integrantes", creditsTitleStyle);
-        GUI.Label(new Rect(20f, 236f, width - 40f, 34f), "Capani Paytan, Brayan Ronaldo", creditsBodyStyle);
-        GUI.Label(new Rect(20f, 278f, width - 40f, 34f), "De la Cruz Ramos, Benn Julius", creditsBodyStyle);
-        GUI.Label(new Rect(20f, 320f, width - 40f, 34f), "Meza Miranda, Josué Alejandro", creditsBodyStyle);
-        GUI.Label(new Rect(20f, 362f, width - 40f, 34f), "Ramírez Espíritu, Junior Saul", creditsBodyStyle);
-        GUI.Label(new Rect(20f, 430f, width - 40f, 36f), "Universidad Continental", creditsTitleStyle);
+        Rect creditsViewport = new Rect(20f, 104f, width - 40f, Mathf.Max(120f, height - 194f));
+        Rect creditsContent = new Rect(0f, 0f, creditsViewport.width - 24f, 650f);
+        float maxScroll = Mathf.Max(0f, creditsContent.height - creditsViewport.height);
+        creditsScrollPosition.y = Mathf.MoveTowards(creditsScrollPosition.y, maxScroll, Time.unscaledDeltaTime * 12f);
+        creditsScrollPosition = GUI.BeginScrollView(creditsViewport, creditsScrollPosition, creditsContent, false, true);
+
+        GUI.Label(new Rect(0f, 18f, creditsContent.width, 44f), "AYNI: El Retorno del Guardián", creditsGameStyle);
+        GUI.Label(new Rect(0f, 102f, creditsContent.width, 36f), "Integrantes", creditsTitleStyle);
+        GUI.Label(new Rect(0f, 164f, creditsContent.width, 34f), "Capani Paytan, Brayan Ronaldo", creditsBodyStyle);
+        GUI.Label(new Rect(0f, 212f, creditsContent.width, 34f), "De la Cruz Ramos, Benn Julius", creditsBodyStyle);
+        GUI.Label(new Rect(0f, 260f, creditsContent.width, 34f), "Meza Miranda, Josué Alejandro", creditsBodyStyle);
+        GUI.Label(new Rect(0f, 308f, creditsContent.width, 34f), "Ramírez Espíritu, Junior Saul", creditsBodyStyle);
+        GUI.Label(new Rect(0f, 386f, creditsContent.width, 36f), "Universidad Continental", creditsTitleStyle);
+        GUI.Label(new Rect(0f, 480f, creditsContent.width, 34f), "Gracias por jugar", creditsBodyStyle);
+        GUI.EndScrollView();
 
         if (GUI.Button(new Rect((width - 220f) / 2f, height - 72f, 220f, 42f), "VOLVER AL MENÚ", buttonStyle))
             CloseCredits();
