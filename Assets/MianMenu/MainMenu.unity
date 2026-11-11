@@ -127,6 +127,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 2042130801}
   - component: {fileID: 40290656}
   - component: {fileID: 40290659}
   - component: {fileID: 40290658}
@@ -512,6 +513,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 2042130802}
   - component: {fileID: 423438302}
   - component: {fileID: 423438305}
   - component: {fileID: 423438304}
@@ -1120,6 +1122,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 2042130803}
   - component: {fileID: 989017507}
   - component: {fileID: 989017510}
   - component: {fileID: 989017509}
@@ -1590,6 +1593,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 2042130804}
   - component: {fileID: 1650773666}
   - component: {fileID: 1650773669}
   - component: {fileID: 1650773668}
@@ -1711,3 +1715,75 @@ SceneRoots:
   - {fileID: 203844589}
   - {fileID: 527312470}
   - {fileID: 530719199}
+
+--- !u!114 &2042130801
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 40290655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85ea2b9d9e3f4b8c8b62a5e24f9f8d21, type: 3}
+  m_Name: ""
+  m_EditorClassIdentifier: Assembly-CSharp::MenuButtonFeedback
+  hoverScaleMultiplier: 1.06
+  animationSpeed: 14
+  hoverColor: {r: 0.94, g: 0.72, b: 0.36, a: 1}
+  hoverVolume: 0.45
+  confirmVolume: 0.6
+
+--- !u!114 &2042130802
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 423438301}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85ea2b9d9e3f4b8c8b62a5e24f9f8d21, type: 3}
+  m_Name: ""
+  m_EditorClassIdentifier: Assembly-CSharp::MenuButtonFeedback
+  hoverScaleMultiplier: 1.06
+  animationSpeed: 14
+  hoverColor: {r: 0.94, g: 0.72, b: 0.36, a: 1}
+  hoverVolume: 0.45
+  confirmVolume: 0.6
+
+--- !u!114 &2042130803
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 989017506}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85ea2b9d9e3f4b8c8b62a5e24f9f8d21, type: 3}
+  m_Name: ""
+  m_EditorClassIdentifier: Assembly-CSharp::MenuButtonFeedback
+  hoverScaleMultiplier: 1.06
+  animationSpeed: 14
+  hoverColor: {r: 0.94, g: 0.72, b: 0.36, a: 1}
+  hoverVolume: 0.45
+  confirmVolume: 0.6
+
+--- !u!114 &2042130804
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1650773665}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85ea2b9d9e3f4b8c8b62a5e24f9f8d21, type: 3}
+  m_Name: ""
+  m_EditorClassIdentifier: Assembly-CSharp::MenuButtonFeedback
+  hoverScaleMultiplier: 1.06
+  animationSpeed: 14
+  hoverColor: {r: 0.94, g: 0.72, b: 0.36, a: 1}
+  hoverVolume: 0.45
+  confirmVolume: 0.6
