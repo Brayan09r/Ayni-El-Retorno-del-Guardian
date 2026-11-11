@@ -8,6 +8,9 @@ public class MainMenuPanels : MonoBehaviour
     private const float BaseMaster = 0.75f;
     private const float BaseSfx = 0.8f;
     private const float BaseAmbience = 0.7f;
+    private const string MasterKey = "Ayni_VolumenGeneral";
+    private const string SfxKey = "Ayni_VolumenEfectos";
+    private const string AmbienceKey = "Ayni_VolumenMusica";
 
     private Button[] menuButtons;
     private bool optionsOpen;
@@ -29,9 +32,10 @@ public class MainMenuPanels : MonoBehaviour
                 button.onClick.AddListener(OpenOptions);
         }
 
-        masterVolume = AudioListener.volume;
-        sfxVolume = AyniAudio.Volume;
-        ambienceVolume = AyniAudio.AmbienceVolume;
+        masterVolume = PlayerPrefs.GetFloat(MasterKey, BaseMaster);
+        sfxVolume = PlayerPrefs.GetFloat(SfxKey, BaseSfx);
+        ambienceVolume = PlayerPrefs.GetFloat(AmbienceKey, BaseAmbience);
+        ApplyAudioSettings();
     }
 
     private void Update()
@@ -49,6 +53,7 @@ public class MainMenuPanels : MonoBehaviour
     private void CloseOptions()
     {
         optionsOpen = false;
+        PlayerPrefs.Save();
         SetMenuButtonsInteractable(true);
     }
 
@@ -85,9 +90,9 @@ public class MainMenuPanels : MonoBehaviour
         GUI.color = Color.white;
 
         float rowY = panel.y + 86f;
-        masterVolume = DrawVolumeRow(panel, rowY, "Volumen general", masterVolume, value => AudioListener.volume = value);
-        sfxVolume = DrawVolumeRow(panel, rowY + 62f, "Efectos", sfxVolume, value => AyniAudio.Volume = value);
-        ambienceVolume = DrawVolumeRow(panel, rowY + 124f, "Música y ambiente", ambienceVolume, value => AyniAudio.AmbienceVolume = value);
+        masterVolume = DrawVolumeRow(panel, rowY, "Volumen general", masterVolume, ApplyMasterVolume);
+        sfxVolume = DrawVolumeRow(panel, rowY + 62f, "Efectos", sfxVolume, ApplySfxVolume);
+        ambienceVolume = DrawVolumeRow(panel, rowY + 124f, "Música y ambiente", ambienceVolume, ApplyAmbienceVolume);
 
         if (GUI.Button(new Rect(panel.x + panel.width - 178f, panel.yMax - 66f, 146f, 42f), "VOLVER", buttonStyle))
             CloseOptions();
@@ -95,6 +100,33 @@ public class MainMenuPanels : MonoBehaviour
         GUI.matrix = previousMatrix;
     }
 
+    private void ApplyAudioSettings()
+    {
+        AudioListener.volume = masterVolume;
+        AyniAudio.Volume = sfxVolume;
+        AyniAudio.AmbienceVolume = ambienceVolume;
+    }
+
+    private void ApplyMasterVolume(float value)
+    {
+        masterVolume = value;
+        AudioListener.volume = value;
+        PlayerPrefs.SetFloat(MasterKey, value);
+    }
+
+    private void ApplySfxVolume(float value)
+    {
+        sfxVolume = value;
+        AyniAudio.Volume = value;
+        PlayerPrefs.SetFloat(SfxKey, value);
+    }
+
+    private void ApplyAmbienceVolume(float value)
+    {
+        ambienceVolume = value;
+        AyniAudio.AmbienceVolume = value;
+        PlayerPrefs.SetFloat(AmbienceKey, value);
+    }
     private float DrawVolumeRow(Rect panel, float rowY, string label, float currentValue, Action<float> apply)
     {
         GUI.Label(new Rect(panel.x + 32f, rowY, 235f, 36f), label, labelStyle);
