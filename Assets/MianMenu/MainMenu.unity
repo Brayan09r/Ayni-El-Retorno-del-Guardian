@@ -784,6 +784,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 2042130810}
   - component: {fileID: 527312470}
   - component: {fileID: 527312469}
   - component: {fileID: 527312468}
@@ -1787,3 +1788,16 @@ MonoBehaviour:
   hoverColor: {r: 0.94, g: 0.72, b: 0.36, a: 1}
   hoverVolume: 0.45
   confirmVolume: 0.6
+
+--- !u!114 &2042130810
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 527312466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d398b37809246b4aac31dd9a6a0f2c5, type: 3}
+  m_Name: ""
+  m_EditorClassIdentifier: Assembly-CSharp::MainMenuPanels
