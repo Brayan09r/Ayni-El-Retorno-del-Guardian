@@ -14,6 +14,7 @@ public class MainMenuPanels : MonoBehaviour
 
     private Button[] menuButtons;
     private bool optionsOpen;
+    private bool creditsOpen;
     private float masterVolume = BaseMaster;
     private float sfxVolume = BaseSfx;
     private float ambienceVolume = BaseAmbience;
@@ -22,6 +23,9 @@ public class MainMenuPanels : MonoBehaviour
     private GUIStyle labelStyle;
     private GUIStyle valueStyle;
     private GUIStyle buttonStyle;
+    private GUIStyle creditsTitleStyle;
+    private GUIStyle creditsGameStyle;
+    private GUIStyle creditsBodyStyle;
 
     private void Awake()
     {
@@ -31,6 +35,8 @@ public class MainMenuPanels : MonoBehaviour
         {
             if (button.gameObject.name == "opciones")
                 button.onClick.AddListener(OpenOptions);
+            else if (button.gameObject.name == "creditos")
+                button.onClick.AddListener(OpenCredits);
         }
 
         masterVolume = PlayerPrefs.GetFloat(MasterKey, BaseMaster);
@@ -43,8 +49,13 @@ public class MainMenuPanels : MonoBehaviour
 
     private void Update()
     {
-        if (optionsOpen && Input.GetKeyDown(KeyCode.Escape))
-            CloseOptions();
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (optionsOpen)
+                CloseOptions();
+            else if (creditsOpen)
+                CloseCredits();
+        }
     }
 
     private void OpenOptions()
@@ -60,6 +71,17 @@ public class MainMenuPanels : MonoBehaviour
         SetMenuButtonsInteractable(true);
     }
 
+    private void OpenCredits()
+    {
+        creditsOpen = true;
+        SetMenuButtonsInteractable(false);
+    }
+
+    private void CloseCredits()
+    {
+        creditsOpen = false;
+        SetMenuButtonsInteractable(true);
+    }
     private void SetMenuButtonsInteractable(bool value)
     {
         foreach (Button button in menuButtons)
@@ -68,6 +90,11 @@ public class MainMenuPanels : MonoBehaviour
 
     private void OnGUI()
     {
+        if (creditsOpen)
+        {
+            DrawCredits();
+            return;
+        }
         if (!optionsOpen)
             return;
 
@@ -168,6 +195,33 @@ public class MainMenuPanels : MonoBehaviour
         GUI.Label(new Rect(panel.xMax - 84f, rowY, 58f, 36f), Mathf.RoundToInt(updatedValue * 100f) + " %", valueStyle);
         return updatedValue;
     }
+    private void DrawCredits()
+    {
+        EnsureStyles();
+        GUI.depth = -120;
+
+        float scale = Mathf.Clamp(Screen.height / 720f, 0.6f, 2f);
+        float width = Screen.width / scale;
+        float height = Screen.height / scale;
+        Matrix4x4 previousMatrix = GUI.matrix;
+        GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
+        Fill(new Rect(0f, 0f, width, height), Color.black);
+        GUI.color = Color.white;
+
+        GUI.Label(new Rect(20f, 38f, width - 40f, 52f), "CRÉDITOS", creditsTitleStyle);
+        GUI.Label(new Rect(20f, 112f, width - 40f, 44f), "AYNI: El Retorno del Guardián", creditsGameStyle);
+        GUI.Label(new Rect(20f, 184f, width - 40f, 36f), "Integrantes", creditsTitleStyle);
+        GUI.Label(new Rect(20f, 236f, width - 40f, 34f), "Capani Paytan, Brayan Ronaldo", creditsBodyStyle);
+        GUI.Label(new Rect(20f, 278f, width - 40f, 34f), "De la Cruz Ramos, Benn Julius", creditsBodyStyle);
+        GUI.Label(new Rect(20f, 320f, width - 40f, 34f), "Meza Miranda, Josué Alejandro", creditsBodyStyle);
+        GUI.Label(new Rect(20f, 362f, width - 40f, 34f), "Ramírez Espíritu, Junior Saul", creditsBodyStyle);
+        GUI.Label(new Rect(20f, 430f, width - 40f, 36f), "Universidad Continental", creditsTitleStyle);
+
+        if (GUI.Button(new Rect((width - 220f) / 2f, height - 72f, 220f, 42f), "VOLVER AL MENÚ", buttonStyle))
+            CloseCredits();
+
+        GUI.matrix = previousMatrix;
+    }
     private void EnsureStyles()
     {
         if (titleStyle != null)
@@ -193,6 +247,23 @@ public class MainMenuPanels : MonoBehaviour
         {
             fontSize = 16,
             fontStyle = FontStyle.Bold
+        };
+        creditsTitleStyle = new GUIStyle(titleStyle)
+        {
+            normal = { textColor = Color.white }
+        };
+        creditsGameStyle = new GUIStyle(labelStyle)
+        {
+            fontSize = 24,
+            fontStyle = FontStyle.Bold,
+            alignment = TextAnchor.MiddleCenter,
+            normal = { textColor = Color.white }
+        };
+        creditsBodyStyle = new GUIStyle(labelStyle)
+        {
+            fontSize = 20,
+            alignment = TextAnchor.MiddleCenter,
+            normal = { textColor = Color.white }
         };
     }
 
