@@ -1,13 +1,19 @@
+using System;
+using Ayni.Core;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class MainMenuPanels : MonoBehaviour
 {
     private const float BaseMaster = 0.75f;
+    private const float BaseSfx = 0.8f;
+    private const float BaseAmbience = 0.7f;
 
     private Button[] menuButtons;
     private bool optionsOpen;
     private float masterVolume = BaseMaster;
+    private float sfxVolume = BaseSfx;
+    private float ambienceVolume = BaseAmbience;
     private GUIStyle titleStyle;
     private GUIStyle labelStyle;
     private GUIStyle valueStyle;
@@ -24,6 +30,8 @@ public class MainMenuPanels : MonoBehaviour
         }
 
         masterVolume = AudioListener.volume;
+        sfxVolume = AyniAudio.Volume;
+        ambienceVolume = AyniAudio.AmbienceVolume;
     }
 
     private void Update()
@@ -67,7 +75,7 @@ public class MainMenuPanels : MonoBehaviour
         Fill(new Rect(0, 0, width, height), new Color(0f, 0f, 0f, 0.72f));
 
         float panelWidth = Mathf.Min(620f, width - 40f);
-        float panelHeight = 330f;
+        float panelHeight = 410f;
         var panel = new Rect((width - panelWidth) / 2f, (height - panelHeight) / 2f, panelWidth, panelHeight);
         Fill(new Rect(panel.x - 2f, panel.y - 2f, panel.width + 4f, panel.height + 4f), new Color(0.87f, 0.68f, 0.28f));
         Fill(panel, new Color(0.09f, 0.075f, 0.06f, 0.98f));
@@ -76,15 +84,10 @@ public class MainMenuPanels : MonoBehaviour
         GUI.Label(new Rect(panel.x, panel.y + 18f, panel.width, 46f), "OPCIONES", titleStyle);
         GUI.color = Color.white;
 
-        float rowY = panel.y + 104f;
-        GUI.Label(new Rect(panel.x + 32f, rowY, 235f, 36f), "Volumen general", labelStyle);
-        float updatedMaster = GUI.HorizontalSlider(new Rect(panel.x + 270f, rowY + 11f, panel.width - 365f, 18f), masterVolume, 0f, 1f);
-        if (!Mathf.Approximately(updatedMaster, masterVolume))
-        {
-            masterVolume = updatedMaster;
-            AudioListener.volume = masterVolume;
-        }
-        GUI.Label(new Rect(panel.xMax - 84f, rowY, 58f, 36f), Mathf.RoundToInt(masterVolume * 100f) + " %", valueStyle);
+        float rowY = panel.y + 86f;
+        masterVolume = DrawVolumeRow(panel, rowY, "Volumen general", masterVolume, value => AudioListener.volume = value);
+        sfxVolume = DrawVolumeRow(panel, rowY + 62f, "Efectos", sfxVolume, value => AyniAudio.Volume = value);
+        ambienceVolume = DrawVolumeRow(panel, rowY + 124f, "Música y ambiente", ambienceVolume, value => AyniAudio.AmbienceVolume = value);
 
         if (GUI.Button(new Rect(panel.x + panel.width - 178f, panel.yMax - 66f, 146f, 42f), "VOLVER", buttonStyle))
             CloseOptions();
@@ -92,6 +95,16 @@ public class MainMenuPanels : MonoBehaviour
         GUI.matrix = previousMatrix;
     }
 
+    private float DrawVolumeRow(Rect panel, float rowY, string label, float currentValue, Action<float> apply)
+    {
+        GUI.Label(new Rect(panel.x + 32f, rowY, 235f, 36f), label, labelStyle);
+        float updatedValue = GUI.HorizontalSlider(new Rect(panel.x + 270f, rowY + 11f, panel.width - 365f, 18f), currentValue, 0f, 1f);
+        if (!Mathf.Approximately(updatedValue, currentValue))
+            apply(updatedValue);
+
+        GUI.Label(new Rect(panel.xMax - 84f, rowY, 58f, 36f), Mathf.RoundToInt(updatedValue * 100f) + " %", valueStyle);
+        return updatedValue;
+    }
     private void EnsureStyles()
     {
         if (titleStyle != null)
