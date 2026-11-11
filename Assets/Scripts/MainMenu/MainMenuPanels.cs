@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Ayni.Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,6 +12,8 @@ public class MainMenuPanels : MonoBehaviour
     private const string MasterKey = "Ayni_VolumenGeneral";
     private const string SfxKey = "Ayni_VolumenEfectos";
     private const string AmbienceKey = "Ayni_VolumenMusica";
+    private const string ResolutionWidthKey = "Ayni_ResolucionAncho";
+    private const string ResolutionHeightKey = "Ayni_ResolucionAlto";
 
     private Button[] menuButtons;
     private bool optionsOpen;
@@ -27,6 +30,8 @@ public class MainMenuPanels : MonoBehaviour
     private GUIStyle creditsGameStyle;
     private GUIStyle creditsBodyStyle;
     private Vector2 creditsScrollPosition;
+    private readonly List<Resolution> displayResolutions = new List<Resolution>();
+    private int resolutionIndex;
 
     private void Awake()
     {
@@ -46,6 +51,7 @@ public class MainMenuPanels : MonoBehaviour
         ApplyAudioSettings();
         fullscreen = PlayerPrefs.GetInt("Ayni_PantallaCompleta", Screen.fullScreen ? 1 : 0) == 1;
         Screen.fullScreen = fullscreen;
+        InitializeResolutions();
     }
 
     private void Update()
@@ -111,7 +117,7 @@ public class MainMenuPanels : MonoBehaviour
         Fill(new Rect(0, 0, width, height), new Color(0f, 0f, 0f, 0.72f));
 
         float panelWidth = Mathf.Min(620f, width - 40f);
-        float panelHeight = 410f;
+        float panelHeight = 470f;
         var panel = new Rect((width - panelWidth) / 2f, (height - panelHeight) / 2f, panelWidth, panelHeight);
         Fill(new Rect(panel.x - 2f, panel.y - 2f, panel.width + 4f, panel.height + 4f), new Color(0.87f, 0.68f, 0.28f));
         Fill(panel, new Color(0.09f, 0.075f, 0.06f, 0.98f));
@@ -125,15 +131,18 @@ public class MainMenuPanels : MonoBehaviour
         sfxVolume = DrawVolumeRow(panel, rowY + 62f, "Efectos", sfxVolume, ApplySfxVolume);
         ambienceVolume = DrawVolumeRow(panel, rowY + 124f, "Música y ambiente", ambienceVolume, ApplyAmbienceVolume);
 
-        float displayY = panel.y + 272f;
+        float displayY = panel.y + 252f;
         GUI.Label(new Rect(panel.x + 32f, displayY, 235f, 36f), "Pantalla completa", labelStyle);
         bool updatedFullscreen = GUI.Toggle(new Rect(panel.x + 270f, displayY + 8f, 180f, 26f), fullscreen, fullscreen ? "Activada" : "Desactivada");
         if (updatedFullscreen != fullscreen)
         {
             fullscreen = updatedFullscreen;
             Screen.fullScreen = fullscreen;
+        InitializeResolutions();
             PlayerPrefs.SetInt("Ayni_PantallaCompleta", fullscreen ? 1 : 0);
         }
+
+        DrawResolutionRow(panel, panel.y + 300f);
 
         if (GUI.Button(new Rect(panel.x + 32f, panel.yMax - 66f, 160f, 42f), "RESTABLECER", buttonStyle))
             ResetOptions();
@@ -144,6 +153,68 @@ public class MainMenuPanels : MonoBehaviour
         GUI.matrix = previousMatrix;
     }
 
+    private void InitializeResolutions()
+    {
+        displayResolutions.Clear();
+        foreach (Resolution resolution in Screen.resolutions)
+        {
+            bool alreadyAdded = displayResolutions.Exists(item => item.width == resolution.width && item.height == resolution.height);
+            if (!alreadyAdded)
+                displayResolutions.Add(resolution);
+        }
+
+        Resolution current = Screen.currentResolution;
+        if (!displayResolutions.Exists(item => item.width == current.width && item.height == current.height))
+            displayResolutions.Add(current);
+
+        int savedWidth = PlayerPrefs.GetInt(ResolutionWidthKey, current.width);
+        int savedHeight = PlayerPrefs.GetInt(ResolutionHeightKey, current.height);
+        resolutionIndex = displayResolutions.FindIndex(item => item.width == savedWidth && item.height == savedHeight);
+        if (resolutionIndex < 0)
+            resolutionIndex = displayResolutions.FindIndex(item => item.width == current.width && item.height == current.height);
+        if (resolutionIndex < 0)
+            resolutionIndex = 0;
+
+        if (PlayerPrefs.HasKey(ResolutionWidthKey) && PlayerPrefs.HasKey(ResolutionHeightKey))
+            ApplySelectedResolution();
+    }
+
+    private void DrawResolutionRow(Rect panel, float rowY)
+    {
+        if (displayResolutions.Count == 0)
+            return;
+
+        GUI.Label(new Rect(panel.x + 32f, rowY, 235f, 36f), "Resolución", labelStyle);
+        if (GUI.Button(new Rect(panel.x + 270f, rowY + 2f, 38f, 32f), "<", buttonStyle))
+            ChangeResolution(-1);
+
+        Resolution selectedResolution = displayResolutions[resolutionIndex];
+        GUI.Label(
+            new Rect(panel.x + 312f, rowY, panel.width - 424f, 36f),
+            selectedResolution.width + " × " + selectedResolution.height,
+            valueStyle);
+
+        if (GUI.Button(new Rect(panel.xMax - 94f, rowY + 2f, 38f, 32f), ">", buttonStyle))
+            ChangeResolution(1);
+    }
+
+    private void ChangeResolution(int direction)
+    {
+        resolutionIndex = (resolutionIndex + direction + displayResolutions.Count) % displayResolutions.Count;
+        ApplySelectedResolution();
+    }
+
+    private void ApplySelectedResolution()
+    {
+        if (displayResolutions.Count == 0)
+            return;
+
+        Resolution resolution = displayResolutions[resolutionIndex];
+        FullScreenMode mode = fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;
+        Screen.SetResolution(resolution.width, resolution.height, mode);
+        PlayerPrefs.SetInt(ResolutionWidthKey, resolution.width);
+        PlayerPrefs.SetInt(ResolutionHeightKey, resolution.height);
+    }
     private void ResetOptions()
     {
         masterVolume = BaseMaster;
