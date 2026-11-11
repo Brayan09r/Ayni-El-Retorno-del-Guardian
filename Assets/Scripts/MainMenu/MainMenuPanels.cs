@@ -138,7 +138,6 @@ public class MainMenuPanels : MonoBehaviour
         {
             fullscreen = updatedFullscreen;
             Screen.fullScreen = fullscreen;
-        InitializeResolutions();
             PlayerPrefs.SetInt("Ayni_PantallaCompleta", fullscreen ? 1 : 0);
         }
 
