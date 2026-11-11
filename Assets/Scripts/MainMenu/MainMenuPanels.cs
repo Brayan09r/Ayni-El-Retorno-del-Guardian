@@ -17,6 +17,7 @@ public class MainMenuPanels : MonoBehaviour
     private float masterVolume = BaseMaster;
     private float sfxVolume = BaseSfx;
     private float ambienceVolume = BaseAmbience;
+    private bool fullscreen;
     private GUIStyle titleStyle;
     private GUIStyle labelStyle;
     private GUIStyle valueStyle;
@@ -36,6 +37,8 @@ public class MainMenuPanels : MonoBehaviour
         sfxVolume = PlayerPrefs.GetFloat(SfxKey, BaseSfx);
         ambienceVolume = PlayerPrefs.GetFloat(AmbienceKey, BaseAmbience);
         ApplyAudioSettings();
+        fullscreen = PlayerPrefs.GetInt("Ayni_PantallaCompleta", Screen.fullScreen ? 1 : 0) == 1;
+        Screen.fullScreen = fullscreen;
     }
 
     private void Update()
@@ -93,6 +96,16 @@ public class MainMenuPanels : MonoBehaviour
         masterVolume = DrawVolumeRow(panel, rowY, "Volumen general", masterVolume, ApplyMasterVolume);
         sfxVolume = DrawVolumeRow(panel, rowY + 62f, "Efectos", sfxVolume, ApplySfxVolume);
         ambienceVolume = DrawVolumeRow(panel, rowY + 124f, "Música y ambiente", ambienceVolume, ApplyAmbienceVolume);
+
+        float displayY = panel.y + 272f;
+        GUI.Label(new Rect(panel.x + 32f, displayY, 235f, 36f), "Pantalla completa", labelStyle);
+        bool updatedFullscreen = GUI.Toggle(new Rect(panel.x + 270f, displayY + 8f, 180f, 26f), fullscreen, fullscreen ? "Activada" : "Desactivada");
+        if (updatedFullscreen != fullscreen)
+        {
+            fullscreen = updatedFullscreen;
+            Screen.fullScreen = fullscreen;
+            PlayerPrefs.SetInt("Ayni_PantallaCompleta", fullscreen ? 1 : 0);
+        }
 
         if (GUI.Button(new Rect(panel.x + panel.width - 178f, panel.yMax - 66f, 146f, 42f), "VOLVER", buttonStyle))
             CloseOptions();
