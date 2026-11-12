@@ -14,7 +14,7 @@ El repositorio de **AYNI: El Retorno del Guardián** documenta el origen técnic
 | :--- | :--- | :---: | :--- |
 | **Modelos 3D de Personajes (`.fbx`)** | `Assets/Art/Characters/` | 7 | Láminas A-pose propias + **Tripo3D** + Auto-rig en **Adobe Mixamo** (Uso propio del proyecto) |
 | **Prefabs de Rivales y Jefes (`.prefab`)** | `Assets/Prefabs/` | 5 | Generados en Editor con [`AyniRivalSetup.cs`](Assets/Editor/AyniRivalSetup.cs) y [`AyniAmaruSetup.cs`](Assets/Editor/AyniAmaruSetup.cs) |
-| **Fauna en Escena (Llama y Puma)** | `Assets/Art/Animals/` (`Llama.obj`, `pumacotw.fbx`) | 2 mallas | Añadidos en `53bd376` y `828f750` — **⚠️ En auditoría de licencia** (`pumacotw.fbx` pendiente de reemplazo; véase nota en Sección 2.1) |
+| **Fauna en Escena (Llama y Puma)** | `Assets/Art/Animals/Llama.obj`, `Assets/Art/Animals/PumaTripo/Puma_Tripo.fbx` | 2 mallas | Puma: GLB de Tripo proporcionado por Junior, convertido y animado en Blender. Llama: procedencia todavía pendiente. |
 | **Paquete Auxiliar de Animales** | `Assets/ithappy/Animals_FREE/` | Paquete 3D | *Animals FREE* por **ithappy** (Unity Asset Store Standard EULA; presente en repo, no usado para pumas/llamas de la aldea) |
 | **Animaciones de Combate/Locomoción (`.fbx`)** | `Assets/Art/Characters/Animations/` | 30 | **Adobe Mixamo** (Esqueleto Humanoid, 30 fps; licencia gratuita de uso en proyectos para titulares de cuenta Adobe) |
 | **Animaciones Procedurales (`.anim`)** | `Assets/Art/Characters/Animations/Generadas/` | 11 | Producción propia sintetizada por código en [`AyniAnimationForge.cs`](Assets/Editor/AyniAnimationForge.cs) |
@@ -40,10 +40,10 @@ Todos los personajes humanos utilizan configuración **Humanoid Avatar** en Unit
 | **Guardia del Tambo (`K3`)** | `Assets/Prefabs/Rival_3_GuardiaTambo.prefab` (`1.86 m`) | Rival defensivo del Tambo del Camino | `ConceptArt/Rivales/` + Tripo3D + Mixamo (Propio) |
 | **Cazador de Élite (`K4`)** | `Assets/Prefabs/Rival_4_CazadorElite.prefab` (`1.88 m`) | Rival de élite de la Portada del Cazador | `ConceptArt/Rivales/` + Tripo3D + Mixamo (Propio) |
 | **Llama Andina** | `Assets/Art/Animals/Llama.obj` + `textures/Llama_BaseColor.png` | Fauna en campos abiertos cercanos a la aldea (`53bd376`) | **⚠️ Origen externo por documentar:** pendiente confirmar autor, URL y licencia abierta con `@JuniorEspiritu` |
-| **Puma en Bordes** | `Assets/Art/Animals/pumacotw.fbx` + `textures/puma_common1_dif.ddsc.DECA.REFERENCE.png` | Delimitador visual en bordes del camino (`828f750`) | **⚠️ No libre de regalías (pendiente de sustitución):** nomenclatura `.ddsc.DECA` corresponde a extracción de *theHunter: Call of the Wild* (Expansive Worlds); debe reemplazarse por malla propia en Tripo3D o activo CC0 (Issue #4 / #9) |
+| **Puma Tripo** | `Assets/Art/Animals/PumaTripo/` | Ocho pumas territoriales: reposo, carrera, ataque y regreso al origen | Fuente: `tripo_pbr_model_44c7fb93-bc3d-468a-8a82-b60d275eccb3_meshopt.glb`, proporcionada por Junior desde Tripo. Optimizado a 18.000 triángulos, con dos texturas de 1024 px y tres clips propios. Las condiciones de la cuenta/exportación de Tripo no se adjuntaron; no se declara CC0. |
 
 ### 2.1. Nota de Auditoría sobre Activos de Fauna (`Assets/Art/Animals/`)
-Tras la eliminación definitiva de la carpeta heredada `Assets/Tiger/` (commits `a9aaab6` y `c2c93b6`), los modelos de fauna ubicados actualmente en la escena provienen de `Assets/Art/Animals/` y **no** del paquete `Assets/ithappy/Animals_FREE/`. Mientras no se complete la sustitución de `pumacotw.fbx` por un modelo de autoría propia o con licencia CC0 comprobada y se acredite la fuente de `Llama.obj`, estos dos archivos se mantienen registrados bajo observación en el control de calidad legal del repositorio.
+El puma anterior y sus archivos `.ddsc.DECA.REFERENCE` se sustituyeron por el GLB de Tripo proporcionado por Junior. El modelo experimental anterior también se retiró. Se conservan las ocho posiciones del mapa, usando un solo prefab compartido. Sigue pendiente documentar autor y licencia de `Llama.obj`, y conservar el comprobante de condiciones de la exportación de Tripo.
 
 ---
 
@@ -102,8 +102,8 @@ Generados mediante [`Herramientas/Audio/generar_sfx.py`](Herramientas/Audio/gene
 
 Habiéndose completado en `083d2e0` la integración del modelo 3D riggeado y caminata del **General Sayri** (`GeneralSayri_Rigged.fbx`), quedan priorizados los siguientes recursos:
 
-1. **Sustitución de Malla del Puma (`pumacotw.fbx`) y Verificación de `Llama.obj`:**
-   - **Acción:** Generar láminas A-pose / cuadrúpedas propias de puma andino y convertirlas en **Tripo3D**, o sustituir por un activo con licencia **CC0 1.0** verificable para cerrar la observación abierta en los Issues `#4` y `#9`.
+1. **Documentación de procedencia de la fauna:**
+   - **Acción:** adjuntar las condiciones de exportación del puma generado en Tripo y confirmar autor, fuente y licencia de `Llama.obj`.
 2. **Voces y Exclamaciones Marciales (`voz_yari_ataque_1..3.wav`, `voz_yari_dolor_1..2.wav`, `voz_amaru_fase2.wav`):**
    - **Formato requerido:** `.wav` mono a `44,100 Hz`, normalizados a `-3 dBFS`, colocados en `Assets/Resources/AyniAudio/` para ser invocados mediante `AyniAudio.Play()`.
    - **Fuentes CC0 recomendadas:** Grabación propia con el guion en Quechua de [`NARRATIVA_Y_CULTURA_ANDINA.md`](NARRATIVA_Y_CULTURA_ANDINA.md) o Freesound.org bajo *CC0 1.0 Universal*.
