@@ -12,12 +12,14 @@ namespace Ayni.Editor
     /// la aldea, la iluminación ni el combate, y puede quitarse por completo con un clic.
     ///  1. Cóndores planeando en térmicas sobre el cañón, el puente colgante y la aldea.
     ///  2. Rebaños de llamas, alpacas y vicuñas pastando junto a los conjuntos incas.
+    ///  3. Colonias de vizcachas en las rocas y zorros andinos (Atoq) rondando los bordes.
     /// </summary>
     public static class AyniFaunaSetup
     {
         private const string FaunaRootName = "Fauna_Andina";
         private const string CondorGroupName = "Condores";
         private const string HerdGroupName = "Rebanos";
+        private const string SmallFaunaGroupName = "Vizcachas_y_Zorros";
 
         private struct CondorSpot
         {
@@ -92,6 +94,21 @@ namespace Ayni.Editor
             new HerdSpot("Vicunas_Cazador",   523f, 550f, 18f, 1.1f,  16f,   5.5f, V, V, V, V, V),
         };
 
+        // Colonias de vizcachas en los roquedales del cañón y cerca del Tambo: (nombre, x, z, radio, cantidad)
+        private static readonly (string name, float x, float z, float radius, int count)[] VizcachaColonies =
+        {
+            ("Vizcachas_Acantilado_Norte", 628f, 492f, 10f, 4),
+            ("Vizcachas_Garganta_Sur",     636f, 446f, 10f, 3),
+            ("Vizcachas_Tambo",            455f, 410f, 9f,  3),
+        };
+
+        // Zorros andinos que rondan los bordes: (nombre, x, z, radio de recorrido)
+        private static readonly (string name, float x, float z, float radius)[] FoxRanges =
+        {
+            ("Atoq_Bordes_Aldea", 420f, 470f, 35f),
+            ("Atoq_Cerro_Sur",    590f, 430f, 30f),
+        };
+
         [MenuItem("Ayni/Fauna Andina/1. Soltar Cóndores sobre el Cañón y la Aldea")]
         public static void SpawnCondorsFromMenu()
         {
@@ -118,6 +135,20 @@ namespace Ayni.Editor
             int count = SpawnHerds();
             MarkDirty();
             Debug.Log($"[Ayni Fauna] {count} camélidos pastando cerca de la aldea. Guarda la escena (Ctrl+S) para conservarlos.");
+        }
+
+        [MenuItem("Ayni/Fauna Andina/3. Soltar Vizcachas y Zorros Andinos")]
+        public static void SpawnSmallFaunaFromMenu()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning("[Ayni Fauna] Sal del modo Play antes de agregar la fauna.");
+                return;
+            }
+
+            int count = SpawnSmallFauna();
+            MarkDirty();
+            Debug.Log($"[Ayni Fauna] {count} vizcachas y zorros andinos en las rocas y los bordes. Guarda la escena (Ctrl+S) para conservarlos.");
         }
 
         [MenuItem("Ayni/Fauna Andina/Quitar Fauna Andina")]
@@ -219,6 +250,109 @@ namespace Ayni.Editor
 
             Undo.RegisterCreatedObjectUndo(group.gameObject, "Soltar Rebaños");
             return total;
+        }
+
+        public static int SpawnSmallFauna()
+        {
+            Transform group = ResetGroup(SmallFaunaGroupName);
+            Physics.SyncTransforms();
+            int total = 0;
+
+            // Vizcachas: primero buscan rocas o muros de piedra; si no hay, terreno firme
+            for (int c = 0; c < VizcachaColonies.Length; c++)
+            {
+                var colony = VizcachaColonies[c];
+                var colonyRoot = new GameObject(colony.name).transform;
+                colonyRoot.SetParent(group, false);
+                var rng = new System.Random(3000 + c * 53);
+                var center = new Vector3(colony.x, 0f, colony.z);
+                int placed = 0;
+
+                for (int i = 0; i < colony.count; i++)
+                {
+                    if (!FindVizcachaPerch(center, colony.radius, rng, out Vector3 perch)) continue;
+
+                    var parts = AyniCritterModel.BuildVizcacha(colonyRoot, $"Vizcacha_{i + 1}", 0.95f + (float)rng.NextDouble() * 0.1f);
+                    parts.root.transform.SetPositionAndRotation(perch, Quaternion.Euler(0f, (float)(rng.NextDouble() * 360.0), 0f));
+                    parts.root.AddComponent<AyniVizcacha>().Configure(center, colony.radius, parts);
+                    placed++;
+                }
+
+                if (placed == 0)
+                {
+                    Debug.LogWarning($"[Ayni Fauna] No se encontraron rocas para {colony.name} cerca de ({colony.x}, {colony.z}). Ajusta su centro en AyniFaunaSetup.VizcachaColonies.");
+                }
+                total += placed;
+            }
+
+            // Zorros andinos: trotan en diagonal, olfatean el suelo y se apartan de Yari
+            for (int f = 0; f < FoxRanges.Length; f++)
+            {
+                var range = FoxRanges[f];
+                var rng = new System.Random(5000 + f * 71);
+                var center = new Vector3(range.x, 0f, range.z);
+                bool found = false;
+                Vector3 pos = center;
+                for (int attempt = 0; attempt < 30 && !found; attempt++)
+                {
+                    float a = (float)(rng.NextDouble() * Mathf.PI * 2.0);
+                    float r = (float)rng.NextDouble() * range.radius * 0.5f;
+                    pos = new Vector3(center.x + Mathf.Cos(a) * r, 0f, center.z + Mathf.Sin(a) * r);
+                    if (AyniGrazingAnimal.IsOpenGround(pos, 32f, out float groundY))
+                    {
+                        pos.y = groundY;
+                        found = true;
+                    }
+                }
+                if (!found)
+                {
+                    Debug.LogWarning($"[Ayni Fauna] No se encontró terreno despejado para {range.name} cerca de ({range.x}, {range.z}). Ajusta su centro en AyniFaunaSetup.FoxRanges.");
+                    continue;
+                }
+
+                var fox = AyniCritterModel.BuildFox(group, range.name);
+                fox.root.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, (float)(rng.NextDouble() * 360.0), 0f));
+                var behaviour = fox.root.AddComponent<AyniGrazingAnimal>();
+                behaviour.Configure(center, range.radius, 1.3f, fox.body, fox.neck, fox.head, fox.legs, fox.tail);
+                behaviour.ConfigurePose(40f, 100f, 30f, 0.55f, false);
+                behaviour.ConfigureAlert(11f, 5f);
+                total++;
+            }
+
+            Undo.RegisterCreatedObjectUndo(group.gameObject, "Soltar Vizcachas y Zorros");
+            return total;
+        }
+
+        private static bool FindVizcachaPerch(Vector3 center, float radius, System.Random rng, out Vector3 perch)
+        {
+            // 1. Preferir rocas y muros de piedra
+            for (int attempt = 0; attempt < 40; attempt++)
+            {
+                Vector3 p = RandomPointAround(center, radius, rng);
+                if (AyniVizcacha.TryFindPerch(p, out perch) && IsOnStone(perch)) return true;
+            }
+            // 2. Si no hay, cualquier terreno firme
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                Vector3 p = RandomPointAround(center, radius, rng);
+                if (AyniVizcacha.TryFindPerch(p, out perch)) return true;
+            }
+            perch = center;
+            return false;
+        }
+
+        private static bool IsOnStone(Vector3 point)
+        {
+            Vector3 from = point + Vector3.up * 0.5f;
+            return Physics.Raycast(from, Vector3.down, out RaycastHit hit, 1f, ~0, QueryTriggerInteraction.Ignore)
+                   && !(hit.collider is TerrainCollider);
+        }
+
+        private static Vector3 RandomPointAround(Vector3 center, float radius, System.Random rng)
+        {
+            float a = (float)(rng.NextDouble() * Mathf.PI * 2.0);
+            float r = Mathf.Sqrt((float)rng.NextDouble()) * radius;
+            return new Vector3(center.x + Mathf.Cos(a) * r, 0f, center.z + Mathf.Sin(a) * r);
         }
 
         private static string SpeciesName(AyniCamelidSpecies species)
