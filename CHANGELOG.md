@@ -10,9 +10,17 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
-## Sin publicar — Fauna andina en el Nivel 1 (rama `feat/fauna-andina`)
+## Sin publicar — Fauna andina y atmósfera por clima en el Nivel 1 (rama `feat/fauna-andina`)
 
-Propuesta como versión **MENOR** (nuevo sistema ambiental). El número se fija al unir a `main`. Detalle en `FAUNA_ANDINA.md`.
+Propuesta como versión **MENOR** (nuevos sistemas ambientales). El número se fija al unir a `main`.
+Detalle en `FAUNA_ANDINA.md` y en la sección 5 de `ILUMINACION_ANDINA.md`.
+
+**Atmósfera que acompaña al clima** (`AyniClimateBlend`, `AyniClimateGrade`, `AyniLightMotes`, `AyniCloudShadows`)
+- La gradación de color cambia con cada clima: contraste en el combate, tono cobrizo y bloom de brasas en la Fase 2, luz limpia con
+  verdes vivos en el Amanecer Ayni y color ceniciento con viñeta de sangre en el Ocaso de Venganza. La Hora Dorada no cambia.
+- Motas doradas de polvo en el aire de la tarde y brasas que suben durante la Fase 2 de Amaru.
+- Sombras de nubes arrastradas por el viento sobre el valle; el cielo se carga en el Ocaso y se abre en el Amanecer.
+- Todo sigue las transiciones de `AyniDynamicLighting` sin modificarlo y se instala solo en Play. Menú `Ayni > Iluminación > En Play`.
 
 **Cóndores sobre el cañón** (`AyniCondorFlight`, `AyniCondorModel`)
 - Cinco Kuntur planean en térmicas sobre la garganta del puente, el cañón norte, la aldea y muy alto sobre la plaza de Amaru.
