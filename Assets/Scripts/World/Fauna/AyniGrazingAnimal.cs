@@ -10,6 +10,7 @@ namespace Ayni.World.Fauna
     ///  - Mirar: levanta el cuello y gira la cabeza a los lados, atento.
     ///  - Caminar: avanza despacio hacia otro punto de pasto dentro de su zona.
     /// Los camélidos caminan en "paso de andadura": mueven a la vez las dos patas del mismo lado.
+    /// También sirve para el zorro andino, que trota en diagonal y "pasta" olfateando el suelo.
     /// El animal sigue la altura e inclinación del terreno y solo elige destinos sobre el terreno abierto
     /// (nunca dentro de casas, muros o rocas). Es decorativo: no tiene colisionadores.
     /// Si Yari se acerca demasiado, el animal levanta la cabeza y se aleja trotando; la vicuña, que es silvestre,
@@ -39,12 +40,15 @@ namespace Ayni.World.Fauna
         [SerializeField] protected Transform neck;
         [SerializeField] protected Transform head;
         [SerializeField] protected Transform[] legs = new Transform[4];
+        [SerializeField] protected Transform tail;
 
         [Header("Poses")]
         [SerializeField] protected float neckUpAngle = 12f;
         [SerializeField] protected float neckGrazeAngle = 118f;
         [SerializeField] protected float legSwing = 24f;
         [SerializeField] protected float strideLength = 0.85f;
+        [Tooltip("Paso de andadura (patas del mismo lado juntas, camélidos). Desactivado = trote diagonal (zorro).")]
+        [SerializeField] protected bool pacingGait = true;
 
         protected State state = State.Grazing;
         protected float stateTimer;
@@ -60,6 +64,7 @@ namespace Ayni.World.Fauna
         private float nextLookSwitch;
         private Vector3 bodyRestPos;
         private float nextAlertCheck;
+        private Quaternion tailRest = Quaternion.identity;
 
         private static Transform cachedPlayer;
         private static float nextPlayerSearch;
@@ -75,6 +80,30 @@ namespace Ayni.World.Fauna
             legs = parts.legs;
         }
 
+        /// <summary>Configuración genérica para cualquier cuadrúpedo con cuello, cabeza y cuatro patas.</summary>
+        public void Configure(Vector3 homePosition, float radius, float speed,
+            Transform bodyPivot, Transform neckPivot, Transform headPivot, Transform[] legPivots, Transform tailPivot)
+        {
+            home = homePosition;
+            wanderRadius = radius;
+            walkSpeed = speed;
+            body = bodyPivot;
+            neck = neckPivot;
+            head = headPivot;
+            legs = legPivots;
+            tail = tailPivot;
+        }
+
+        /// <summary>Ajusta las poses y la marcha (por ejemplo, para el zorro: cuello corto y trote diagonal).</summary>
+        public void ConfigurePose(float neckUp, float neckDown, float swing, float stride, bool pacing)
+        {
+            neckUpAngle = neckUp;
+            neckGrazeAngle = neckDown;
+            legSwing = swing;
+            strideLength = stride;
+            pacingGait = pacing;
+        }
+
         /// <summary>Ajusta qué tan asustadizo es el animal ante Yari.</summary>
         public void ConfigureAlert(float radius, float runSpeed)
         {
@@ -87,6 +116,7 @@ namespace Ayni.World.Fauna
             if (home == Vector3.zero) home = transform.position;
             yaw = transform.eulerAngles.y;
             if (body != null) bodyRestPos = body.localPosition;
+            if (tail != null) tailRest = tail.localRotation;
 
             // Cada animal empieza en un estado y momento distinto para que el rebaño no se mueva sincronizado
             neckAngle = neckGrazeAngle;
@@ -266,16 +296,25 @@ namespace Ayni.World.Fauna
             // La cabeza compensa el giro del cuello para que el hocico mire al frente (o al pasto)
             if (head != null) head.localRotation = Quaternion.Euler(-neckAngle + headPitch, headYaw, 0f);
 
-            // Patas en paso de andadura: izquierdas (0 y 2) juntas, derechas (1 y 3) en oposición
+            // Paso de andadura: izquierdas (0 y 2) juntas y derechas (1 y 3) en oposición.
+            // Trote diagonal: del-izq con tras-der (0 y 3) y del-der con tras-izq (1 y 2).
             // Al trotar (huida) las patas se abren más que al caminar
             float swing = Mathf.Clamp(currentSpeed / Mathf.Max(0.1f, walkSpeed), 0f, 1.6f) * legSwing;
             float s = Mathf.Sin(gaitPhase) * swing;
             if (legs != null && legs.Length == 4)
             {
                 SetLeg(0, s);
-                SetLeg(2, s);
                 SetLeg(1, -s);
-                SetLeg(3, -s);
+                SetLeg(2, pacingGait ? s : -s);
+                SetLeg(3, pacingGait ? -s : s);
+            }
+
+            // Cola: vaivén suave en reposo, más marcado al moverse
+            if (tail != null)
+            {
+                float tailAmp = 4f + swing * 0.4f;
+                float tailSway = Mathf.Sin(Time.time * (1.2f + currentSpeed) + GetInstanceID() * 0.1f) * tailAmp;
+                tail.localRotation = tailRest * Quaternion.Euler(0f, 0f, tailSway);
             }
 
             // Leve balanceo del cuerpo al caminar
