@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace Ayni.World.Fauna
 {
@@ -36,8 +34,6 @@ namespace Ayni.World.Fauna
             public float legThickness, neckLength, neckThickness;
             public float headLength, headThickness, earLength;
         }
-
-        private static readonly Dictionary<Color, Material> MaterialCache = new Dictionary<Color, Material>();
 
         // Paletas de color naturales de cada especie
         private static readonly Color[] LlamaCoats =
@@ -237,41 +233,10 @@ namespace Ayni.World.Fauna
         }
 
         // ------------------------------------------------------------------------------------------------
-        private static Material Mat(Color color)
-        {
-            if (MaterialCache.TryGetValue(color, out Material cached) && cached != null) return cached;
-
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null) shader = Shader.Find("Standard");
-            var mat = new Material(shader) { name = "Ayni_Camelido_" + ColorUtility.ToHtmlStringRGB(color), color = color };
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
-            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.08f); // lana mate
-            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.08f);
-            MaterialCache[color] = mat;
-            return mat;
-        }
+        private static Material Mat(Color color) => AyniFaunaPrimitives.Mat(color, 0.08f); // lana mate
 
         private static GameObject Primitive(PrimitiveType type, string name, Transform parent, Material mat,
             Vector3 pos, Vector3 euler, Vector3 scale)
-        {
-            GameObject go = GameObject.CreatePrimitive(type);
-            go.name = name;
-            Collider col = go.GetComponent<Collider>();
-            if (col != null)
-            {
-                if (Application.isPlaying) Object.Destroy(col);
-                else Object.DestroyImmediate(col);
-            }
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = pos;
-            go.transform.localRotation = Quaternion.Euler(euler);
-            go.transform.localScale = scale;
-
-            var mr = go.GetComponent<MeshRenderer>();
-            mr.sharedMaterial = mat;
-            mr.shadowCastingMode = ShadowCastingMode.On;
-            mr.lightProbeUsage = LightProbeUsage.BlendProbes;
-            return go;
-        }
+            => AyniFaunaPrimitives.Primitive(type, name, parent, mat, pos, euler, scale);
     }
 }

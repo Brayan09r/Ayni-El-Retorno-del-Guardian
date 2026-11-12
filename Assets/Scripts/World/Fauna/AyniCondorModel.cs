@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace Ayni.World.Fauna
 {
@@ -91,51 +90,18 @@ namespace Ayni.World.Fauna
         }
 
         private static Material MakeMaterial(string name, Color color, float smoothness)
-        {
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null) shader = Shader.Find("Standard");
-            var mat = new Material(shader) { name = name, color = color };
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
-            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", smoothness);
-            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", smoothness);
-            return mat;
-        }
+            => AyniFaunaPrimitives.Mat(color, smoothness);
 
         private static GameObject Primitive(PrimitiveType type, string name, Transform parent, Material mat,
             Vector3 pos, Vector3 euler, Vector3 scale)
-        {
-            GameObject go = GameObject.CreatePrimitive(type);
-            go.name = name;
-            Collider col = go.GetComponent<Collider>();
-            if (col != null) DestroyCollider(col);
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = pos;
-            go.transform.localRotation = Quaternion.Euler(euler);
-            go.transform.localScale = scale;
-            ConfigureRenderer(go.GetComponent<MeshRenderer>(), mat);
-            return go;
-        }
+            => AyniFaunaPrimitives.Primitive(type, name, parent, mat, pos, euler, scale, receiveShadows: false);
 
         private static void AddMesh(Transform parent, string name, Mesh mesh, Material mat)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            ConfigureRenderer(go.AddComponent<MeshRenderer>(), mat);
-        }
-
-        private static void ConfigureRenderer(MeshRenderer mr, Material mat)
-        {
-            mr.sharedMaterial = mat;
-            mr.shadowCastingMode = ShadowCastingMode.On;
-            mr.receiveShadows = false;
-            mr.lightProbeUsage = LightProbeUsage.BlendProbes;
-        }
-
-        private static void DestroyCollider(Collider col)
-        {
-            if (Application.isPlaying) Object.Destroy(col);
-            else Object.DestroyImmediate(col);
+            AyniFaunaPrimitives.ConfigureRenderer(go.AddComponent<MeshRenderer>(), mat, receiveShadows: false);
         }
 
         // ------------------------------------------------------------------------------------------------
