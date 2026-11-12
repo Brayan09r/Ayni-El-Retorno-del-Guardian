@@ -18,6 +18,7 @@ namespace Ayni.Fauna
         private Quaternion originalRotation;
         private bool returning;
         private float gravity;
+        private bool despawning;
 
         private void Start()
         {
@@ -31,7 +32,18 @@ namespace Ayni.Fauna
 
         private void Update()
         {
-            if (enemy == null || enemy.IsDead || AyniGameState.CinematicPlaying) return;
+            if (enemy == null) return;
+            if (enemy.IsDead)
+            {
+                if (!despawning)
+                {
+                    despawning = true;
+                    foreach (Renderer body in GetComponentsInChildren<Renderer>()) body.enabled = false;
+                    Destroy(gameObject, 0.2f);
+                }
+                return;
+            }
+            if (AyniGameState.CinematicPlaying) return;
             Vector3 home = origin - transform.position; home.y = 0f;
             Vector3 toPlayer = player == null ? Vector3.one * 10000f : player.position - transform.position;
             toPlayer.y = 0f;
