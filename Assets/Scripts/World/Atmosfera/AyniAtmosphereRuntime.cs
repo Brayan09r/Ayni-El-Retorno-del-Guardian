@@ -33,6 +33,7 @@ namespace Ayni.World
             var host = new GameObject(HostName);
             host.transform.SetParent(env.transform, false);
             host.AddComponent<AyniClimateGrade>();
+            host.AddComponent<AyniLightMotes>();
         }
     }
 }
