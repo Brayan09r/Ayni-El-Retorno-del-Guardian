@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.SceneManagement;
 
 namespace Ayni.World
 {
@@ -18,7 +17,7 @@ namespace Ayni.World
     ///  - Ocaso de Venganza:  color apagado y ceniciento, mucho contraste y viñeta de sangre.
     /// Cada volumen parte de los valores del perfil existente y solo suma la diferencia, por lo que la Hora Dorada
     /// se ve exactamente igual que antes. No modifica ningún asset: los perfiles se crean en memoria.
-    /// Se instala solo en las escenas que tienen el objeto Ayni_Entorno.
+    /// Lo instala <see cref="AyniAtmosphereRuntime"/> en las escenas que tienen el objeto Ayni_Entorno.
     /// </summary>
     [DisallowMultipleComponent]
     public class AyniClimateGrade : MonoBehaviour
@@ -41,26 +40,6 @@ namespace Ayni.World
         private readonly List<VolumeProfile> runtimeProfiles = new List<VolumeProfile>();
         private readonly Volume[] volumes = new Volume[AyniClimateBlend.PresetCount];
         private Grade baseGrade;
-
-        // ------------------------------------------------------------------------------------------------
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void HookSceneLoads()
-        {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-            SceneManager.sceneLoaded += OnSceneLoaded;
-        }
-
-        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            if (instance != null) return;
-            GameObject env = GameObject.Find("Ayni_Entorno");
-            if (env == null) return; // menú principal u otras escenas sin el entorno andino
-            if (FindFirstObjectByType<AyniClimateGrade>() != null) return;
-
-            var host = new GameObject("Ayni_ClimateGrade_Runtime");
-            host.transform.SetParent(env.transform, false);
-            host.AddComponent<AyniClimateGrade>();
-        }
 
         // ------------------------------------------------------------------------------------------------
         private void Awake()
