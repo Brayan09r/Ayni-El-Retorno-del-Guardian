@@ -61,3 +61,42 @@ Durante la partida (y desde los menús de previsualización del Editor), el sist
 - `Ayni > Iluminación > 5. Previsualizar Clima: Ocaso de Cenizas (Venganza / Hucha)`
 - `Ayni > Iluminación > 6. Capturar Vistas de Iluminación (DebugCaptures)`
 - `Ayni > Iluminación > Quitar Iluminación Andina`
+- `Ayni > Iluminación > En Play > Clima: …` (solo en Play: transición completa de 3 s a cada clima, con los efectos atmosféricos)
+- `Ayni > Iluminación > En Play > Mostrar Pesos del Clima en Consola`
+
+---
+
+## 5. Atmósfera que acompaña al clima (`Assets/Scripts/World/Atmosfera/`)
+
+Segunda etapa del módulo. Hasta aquí cada clima cambiaba el sol, el cielo, la niebla y los fuegos, pero el posprocesado y el aire
+eran iguales en todos. Estos efectos se suman **sin modificar `AyniDynamicLighting` ni ningún asset**: se instalan solos en Play
+en las escenas que tienen `Ayni_Entorno` (el menú principal queda intacto).
+
+| Pieza | Archivo | Función |
+| :--- | :--- | :--- |
+| **Lector de clima** | `AyniClimateBlend.cs` | Observa la luz que aplica `AyniDynamicLighting` (niebla, sol, cielo, ambiente) y calcula el peso de cada uno de los cinco climas. Como las transiciones interpolan esos valores, los efectos cambian en sincronía y con suavidad. |
+| **Gradación de color** | `AyniClimateGrade.cs` | Un volumen global por clima, creado en memoria encima del perfil `Ayni_PostProcess_Profile`, que solo suma la diferencia de cada clima. |
+| **Motas de luz** | `AyniLightMotes.cs` | Polvo dorado y brasas flotantes alrededor de la cámara, en coordenadas del mundo para dar profundidad. |
+| **Sombras de nubes** | `AyniCloudShadows.cs` | Cookie de nubes en el sol, generada por código, que se repite sin costuras y se desplaza con el viento. |
+| **Instalador** | `AyniAtmosphereRuntime.cs` | Agrega los tres efectos al cargar la escena. `AyniAtmosphereRuntime.Enabled = false` los desactiva. |
+| **Menú en Play** | `Assets/Editor/AyniClimateLiveMenu.cs` | Recorre los climas con su transición mientras el juego corre. |
+
+### Qué cambia en cada clima
+
+| Clima | Gradación de color | Aire | Nubes |
+| :--- | :--- | :--- | :--- |
+| **Hora Dorada** | La del perfil actual (sin cambios). | Motas doradas de polvo y polen. | Pocas y sueltas, viento suave. |
+| **Combate en Kancha** | +6 de contraste, +4 de saturación, viñeta algo más cerrada. | Menos motas. | Como la Hora Dorada. |
+| **Fase 2 de Amaru** | Tono cobrizo (temperatura +16), más contraste, bloom de brasas naranja y viñeta rojiza. | Brasas que suben desde la plaza. | Humo y nubes bajas más densas. |
+| **Amanecer Ayni** (perdón, ODS 15) | Luz limpia y fresca (temperatura −8), verdes más vivos (+14 de saturación), viñeta abierta. | Pocas motas frías y brillantes tras la lluvia. | Nubes que se abren. |
+| **Ocaso de Venganza** (Hucha) | Color apagado y ceniciento (−30 de saturación), mucho contraste, viñeta de sangre. | Brasas sueltas (la ceniza ya la pone `AyniLevelOutcome`). | Cielo cargado, sombras grandes y oscuras, viento fuerte. |
+
+### Notas técnicas
+
+- **Prioridad de volúmenes:** los volúmenes de clima se colocan justo por encima del volumen global existente y empiezan con peso 0.
+  Si alguien cambia el perfil base (por ejemplo con `Ayni > 4. Mejorar Iluminación y Contraste`), los climas se recalculan a partir
+  del nuevo perfil en el siguiente Play.
+- **Cookies de luz:** el asset de URP del proyecto ya tiene `Light Cookies` activado. Si el sol tuviera una cookie propia, las nubes
+  no se instalan, para respetarla. Al salir de Play el sol vuelve a quedar sin cookie.
+- **Rendimiento:** la textura de nubes (256×256) solo se regenera cuando el clima cambia de verdad, como mucho dos veces por segundo.
+  Las motas tienen un máximo de 400 + 300 partículas sin sombras.
