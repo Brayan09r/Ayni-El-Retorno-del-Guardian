@@ -34,6 +34,7 @@ namespace Ayni.World
             host.transform.SetParent(env.transform, false);
             host.AddComponent<AyniClimateGrade>();
             host.AddComponent<AyniLightMotes>();
+            host.AddComponent<AyniCloudShadows>();
         }
     }
 }
