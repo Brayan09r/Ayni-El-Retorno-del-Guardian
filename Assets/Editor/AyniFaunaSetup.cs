@@ -109,6 +109,22 @@ namespace Ayni.Editor
             ("Atoq_Cerro_Sur",    590f, 430f, 30f),
         };
 
+        [MenuItem("Ayni/Fauna Andina/0. Soltar Toda la Fauna Andina", priority = 0)]
+        public static void SpawnAllFromMenu()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning("[Ayni Fauna] Sal del modo Play antes de agregar la fauna.");
+                return;
+            }
+
+            int condors = SpawnCondors();
+            int herds = SpawnHerds();
+            int small = SpawnSmallFauna();
+            MarkDirty();
+            Debug.Log($"[Ayni Fauna] Fauna andina completa: {condors} cóndores, {herds} camélidos y {small} vizcachas y zorros. Guarda la escena (Ctrl+S) para conservarla.");
+        }
+
         [MenuItem("Ayni/Fauna Andina/1. Soltar Cóndores sobre el Cañón y la Aldea")]
         public static void SpawnCondorsFromMenu()
         {
