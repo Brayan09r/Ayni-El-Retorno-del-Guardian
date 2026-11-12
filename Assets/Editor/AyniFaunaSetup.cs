@@ -10,11 +10,14 @@ namespace Ayni.Editor
     /// Herramienta de fauna andina ambiental del Nivel 1 (menú Ayni > Fauna Andina).
     /// Solo agrega objetos decorativos bajo Ayni_Entorno/Fauna_Andina: no modifica el terreno,
     /// la aldea, la iluminación ni el combate, y puede quitarse por completo con un clic.
+    ///  1. Cóndores planeando en térmicas sobre el cañón, el puente colgante y la aldea.
+    ///  2. Rebaños de llamas, alpacas y vicuñas pastando junto a los conjuntos incas.
     /// </summary>
     public static class AyniFaunaSetup
     {
         private const string FaunaRootName = "Fauna_Andina";
         private const string CondorGroupName = "Condores";
+        private const string HerdGroupName = "Rebanos";
 
         private struct CondorSpot
         {
@@ -49,6 +52,46 @@ namespace Ayni.Editor
             new CondorSpot("Kuntur_Aldea",      520f, 480f, 70f, 60f, 11f, false, 1.10f),
         };
 
+        private struct HerdSpot
+        {
+            public string name;
+            public Vector2 center;
+            public float radius;
+            public AyniCamelidSpecies[] members;
+            public float walkSpeed;
+            public float alertRadius;
+            public float runSpeed;
+
+            public HerdSpot(string name, float x, float z, float radius, float walkSpeed, float alertRadius, float runSpeed,
+                params AyniCamelidSpecies[] members)
+            {
+                this.name = name;
+                center = new Vector2(x, z);
+                this.radius = radius;
+                this.walkSpeed = walkSpeed;
+                this.alertRadius = alertRadius;
+                this.runSpeed = runSpeed;
+                this.members = members;
+            }
+        }
+
+        private const AyniCamelidSpecies L = AyniCamelidSpecies.Llama;
+        private const AyniCamelidSpecies A = AyniCamelidSpecies.Alpaca;
+        private const AyniCamelidSpecies V = AyniCamelidSpecies.Vicuna;
+
+        // Rebaños en los pastizales a un lado del camino, cada uno ligado a la historia del lugar:
+        //  - Junto al Puesto de Chasquis, un rebaño mixto recibe a Yari al iniciar el recorrido.
+        //  - Las alpacas pastan junto a la Kancha de los Tejedores (su fibra es la del tejido), con una llama guardiana.
+        //  - Una caravana de llamas de carga descansa junto al Tambo del Camino.
+        //  - Las vicuñas silvestres se mantienen lejos, cerca de la Portada del Cazador (memoria del chaccu).
+        private static readonly HerdSpot[] HerdSpots =
+        {
+            new HerdSpot("Rebano_Chasquis",   312f, 530f, 12f, 0.85f,  5.5f, 3.0f, L, L, L, A, A),
+            new HerdSpot("Alpacas_Tejedores", 360f, 364f, 12f, 0.75f,  7f,   3.2f, A, A, A, A, A, A, L),
+            new HerdSpot("Caravana_Tambo",    460f, 467f, 14f, 0.9f,   5f,   3.0f, L, L, L, L, L),
+            new HerdSpot("Vicunas_Cazador",   523f, 550f, 18f, 1.1f,  16f,   5.5f, V, V, V, V, V),
+        };
+
         [MenuItem("Ayni/Fauna Andina/1. Soltar Cóndores sobre el Cañón y la Aldea")]
         public static void SpawnCondorsFromMenu()
         {
@@ -61,6 +104,20 @@ namespace Ayni.Editor
             int count = SpawnCondors();
             MarkDirty();
             Debug.Log($"[Ayni Fauna] {count} cóndores planeando sobre el cañón y la aldea. Guarda la escena (Ctrl+S) para conservarlos.");
+        }
+
+        [MenuItem("Ayni/Fauna Andina/2. Soltar Rebaños (Llamas, Alpacas y Vicuñas)")]
+        public static void SpawnHerdsFromMenu()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning("[Ayni Fauna] Sal del modo Play antes de agregar la fauna.");
+                return;
+            }
+
+            int count = SpawnHerds();
+            MarkDirty();
+            Debug.Log($"[Ayni Fauna] {count} camélidos pastando cerca de la aldea. Guarda la escena (Ctrl+S) para conservarlos.");
         }
 
         [MenuItem("Ayni/Fauna Andina/Quitar Fauna Andina")]
@@ -106,6 +163,72 @@ namespace Ayni.Editor
 
             Undo.RegisterCreatedObjectUndo(group.gameObject, "Soltar Cóndores");
             return CondorSpots.Length;
+        }
+
+        public static int SpawnHerds()
+        {
+            Transform group = ResetGroup(HerdGroupName);
+            Physics.SyncTransforms();
+            int total = 0;
+
+            for (int h = 0; h < HerdSpots.Length; h++)
+            {
+                HerdSpot spot = HerdSpots[h];
+                var herd = new GameObject(spot.name).transform;
+                herd.SetParent(group, false);
+
+                var rng = new System.Random(1000 + h * 97);
+                var home = new Vector3(spot.center.x, 0f, spot.center.y);
+                int placed = 0;
+
+                for (int i = 0; i < spot.members.Length; i++)
+                {
+                    // Busca un lugar de pasto despejado cerca del centro del rebaño
+                    bool found = false;
+                    Vector3 pos = home;
+                    for (int attempt = 0; attempt < 20 && !found; attempt++)
+                    {
+                        float a = (float)(rng.NextDouble() * Mathf.PI * 2.0);
+                        float r = (float)Mathf.Sqrt((float)rng.NextDouble()) * spot.radius * 0.6f;
+                        pos = new Vector3(home.x + Mathf.Cos(a) * r, 0f, home.z + Mathf.Sin(a) * r);
+                        if (AyniGrazingAnimal.IsOpenGround(pos, 26f, out float groundY))
+                        {
+                            pos.y = groundY;
+                            found = true;
+                        }
+                    }
+                    if (!found) continue;
+
+                    AyniCamelidSpecies species = spot.members[i];
+                    string animalName = $"{SpeciesName(species)}_{i + 1}";
+                    AyniCamelidModel.Parts parts = AyniCamelidModel.Build(herd, animalName, species, 7000 + h * 31 + i);
+                    parts.root.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, (float)(rng.NextDouble() * 360.0), 0f));
+
+                    var grazing = parts.root.AddComponent<AyniGrazingAnimal>();
+                    grazing.Configure(home, spot.radius, spot.walkSpeed, parts);
+                    grazing.ConfigureAlert(spot.alertRadius, spot.runSpeed);
+                    placed++;
+                }
+
+                if (placed == 0)
+                {
+                    Debug.LogWarning($"[Ayni Fauna] No se encontró pasto despejado para {spot.name} cerca de ({spot.center.x}, {spot.center.y}). Ajusta su centro en AyniFaunaSetup.HerdSpots.");
+                }
+                total += placed;
+            }
+
+            Undo.RegisterCreatedObjectUndo(group.gameObject, "Soltar Rebaños");
+            return total;
+        }
+
+        private static string SpeciesName(AyniCamelidSpecies species)
+        {
+            switch (species)
+            {
+                case AyniCamelidSpecies.Alpaca: return "Alpaca";
+                case AyniCamelidSpecies.Vicuna: return "Vicuna";
+                default: return "Llama";
+            }
         }
 
         // ------------------------------------------------------------------------------------------------
