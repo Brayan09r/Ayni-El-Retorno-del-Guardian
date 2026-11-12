@@ -1,4 +1,5 @@
 using UnityEngine;
+using Ayni.Player;
 
 namespace Ayni.World.Fauna
 {
@@ -11,11 +12,13 @@ namespace Ayni.World.Fauna
     /// Los camélidos caminan en "paso de andadura": mueven a la vez las dos patas del mismo lado.
     /// El animal sigue la altura e inclinación del terreno y solo elige destinos sobre el terreno abierto
     /// (nunca dentro de casas, muros o rocas). Es decorativo: no tiene colisionadores.
+    /// Si Yari se acerca demasiado, el animal levanta la cabeza y se aleja trotando; la vicuña, que es silvestre,
+    /// se espanta desde más lejos que la llama, acostumbrada a convivir con los pastores.
     /// </summary>
     [DisallowMultipleComponent]
     public class AyniGrazingAnimal : MonoBehaviour
     {
-        protected enum State { Grazing, Looking, Walking }
+        protected enum State { Grazing, Looking, Walking, Fleeing }
 
         [Header("Zona de pastoreo")]
         [SerializeField] protected Vector3 home;
@@ -24,6 +27,12 @@ namespace Ayni.World.Fauna
         [SerializeField] protected float turnSpeed = 90f;
         [Tooltip("Inclinación máxima (grados) del terreno donde el animal acepta ir a pastar.")]
         [SerializeField] protected float maxSlope = 28f;
+
+        [Header("Reacción ante Yari")]
+        [Tooltip("Distancia a la que el animal se espanta. Llama ~5 m, alpaca ~7 m, vicuña ~16 m.")]
+        [SerializeField] protected float alertRadius = 6f;
+        [SerializeField] protected float fleeSpeed = 3.2f;
+        [SerializeField] protected float fleeDistance = 12f;
 
         [Header("Esqueleto simple (lo asigna AyniCamelidModel)")]
         [SerializeField] protected Transform body;
@@ -50,6 +59,10 @@ namespace Ayni.World.Fauna
         private float lookYawTarget;
         private float nextLookSwitch;
         private Vector3 bodyRestPos;
+        private float nextAlertCheck;
+
+        private static Transform cachedPlayer;
+        private static float nextPlayerSearch;
 
         public void Configure(Vector3 homePosition, float radius, float speed, AyniCamelidModel.Parts parts)
         {
@@ -60,6 +73,13 @@ namespace Ayni.World.Fauna
             neck = parts.neck;
             head = parts.head;
             legs = parts.legs;
+        }
+
+        /// <summary>Ajusta qué tan asustadizo es el animal ante Yari.</summary>
+        public void ConfigureAlert(float radius, float runSpeed)
+        {
+            alertRadius = radius;
+            fleeSpeed = runSpeed;
         }
 
         protected virtual void Start()
@@ -83,6 +103,12 @@ namespace Ayni.World.Fauna
             stateTimer -= dt;
             float targetSpeed = 0f;
 
+            if (state != State.Fleeing && Time.time >= nextAlertCheck)
+            {
+                nextAlertCheck = Time.time + 0.25f;
+                CheckForYari();
+            }
+
             switch (state)
             {
                 case State.Grazing:
@@ -96,6 +122,12 @@ namespace Ayni.World.Fauna
                 case State.Walking:
                     targetSpeed = walkSpeed;
                     if (SteerTowards(target, dt) || stateTimer <= 0f) EnterState(State.Grazing);
+                    break;
+
+                case State.Fleeing:
+                    targetSpeed = fleeSpeed;
+                    // Al terminar de huir se queda mirando, todavía atento
+                    if (SteerTowards(target, dt) || stateTimer <= 0f) EnterState(State.Looking);
                     break;
             }
 
@@ -126,7 +158,57 @@ namespace Ayni.World.Fauna
                     }
                     stateTimer = 20f; // límite de seguridad por si algo bloquea el camino
                     break;
+                case State.Fleeing:
+                    stateTimer = 6f;
+                    break;
             }
+        }
+
+        // ------------------------------------------------------------------------------------------------
+        private void CheckForYari()
+        {
+            Transform player = FindPlayer();
+            if (player == null) return;
+
+            Vector3 away = transform.position - player.position;
+            away.y = 0f;
+            if (away.sqrMagnitude > alertRadius * alertRadius) return;
+
+            if (away.sqrMagnitude < 0.01f) away = transform.forward;
+            away.Normalize();
+
+            // Huir en sentido contrario a Yari, con algo de variación, sin alejarse demasiado de su zona
+            for (int attempt = 0; attempt < 6; attempt++)
+            {
+                Vector3 dir = Quaternion.Euler(0f, Random.Range(-35f, 35f) * (attempt + 1) * 0.5f, 0f) * away;
+                Vector3 candidate = transform.position + dir * fleeDistance;
+                Vector3 fromHome = candidate - home;
+                fromHome.y = 0f;
+                float maxRange = wanderRadius * 1.8f;
+                if (fromHome.magnitude > maxRange) candidate = home + fromHome.normalized * maxRange;
+
+                if (IsOpenGround(candidate, maxSlope, out float groundY))
+                {
+                    candidate.y = groundY;
+                    target = candidate;
+                    EnterState(State.Fleeing);
+                    return;
+                }
+            }
+
+            // Sin salida despejada: al menos levanta la cabeza y vigila
+            if (state == State.Grazing) EnterState(State.Looking);
+        }
+
+        private static Transform FindPlayer()
+        {
+            if (cachedPlayer == null && Time.time >= nextPlayerSearch)
+            {
+                nextPlayerSearch = Time.time + 2f;
+                var yari = FindFirstObjectByType<YariCombatController>();
+                cachedPlayer = yari != null ? yari.transform : null;
+            }
+            return cachedPlayer;
         }
 
         /// <summary>Gira hacia el destino y devuelve true al llegar.</summary>
@@ -185,7 +267,8 @@ namespace Ayni.World.Fauna
             if (head != null) head.localRotation = Quaternion.Euler(-neckAngle + headPitch, headYaw, 0f);
 
             // Patas en paso de andadura: izquierdas (0 y 2) juntas, derechas (1 y 3) en oposición
-            float swing = Mathf.Clamp01(currentSpeed / Mathf.Max(0.1f, walkSpeed)) * legSwing;
+            // Al trotar (huida) las patas se abren más que al caminar
+            float swing = Mathf.Clamp(currentSpeed / Mathf.Max(0.1f, walkSpeed), 0f, 1.6f) * legSwing;
             float s = Mathf.Sin(gaitPhase) * swing;
             if (legs != null && legs.Length == 4)
             {
