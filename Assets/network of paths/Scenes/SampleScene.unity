@@ -10830,12 +10830,24 @@ PrefabInstance:
       value: Puma Andino - Fauna
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.4667
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.4667
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.4667
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.x
       value: 532.3326
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.7317
+      value: 2.874
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.z
@@ -19671,16 +19683,28 @@ PrefabInstance:
       value: Puma Andino - Fauna
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.4667
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.4667
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.4667
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 494.95154
+      value: 494.87
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3.264
+      value: 3.456
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 397.27786
+      value: 397.78
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalRotation.w
@@ -20062,12 +20086,24 @@ PrefabInstance:
       value: Puma Andino - Fauna
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.4738
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.4738
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.4738
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.x
       value: 530.22034
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.7317
+      value: 2.92
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.z
@@ -20800,12 +20836,24 @@ PrefabInstance:
       value: Puma Andino - Fauna
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.4384
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.4384
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.4384
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.x
       value: 495.55
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3.25
+      value: 3.454
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.z
@@ -26295,12 +26343,24 @@ PrefabInstance:
       value: Puma Andino - Fauna
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.3748
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.3748
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.3748
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.x
       value: 534.62585
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.7317
+      value: 2.921
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.z
@@ -30776,16 +30836,28 @@ PrefabInstance:
       value: Puma Andino - Fauna
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.4525
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.4525
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.4525
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 495.5863
+      value: 492.9
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3.25
+      value: 3.43
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 401.5094
+      value: 402.69
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalRotation.w
@@ -38227,12 +38299,24 @@ PrefabInstance:
       value: Puma Andino - Fauna
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.2263
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.2263
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.2263
+      objectReference: {fileID: 0}
+    - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.x
       value: 491.98807
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3.25
+      value: 3.47
       objectReference: {fileID: 0}
     - target: {fileID: 7357095019405397503, guid: e28db4d5514d52c448d6c644322ec679, type: 3}
       propertyPath: m_LocalPosition.z
