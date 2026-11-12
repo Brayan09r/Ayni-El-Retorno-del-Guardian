@@ -10,6 +10,29 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## Sin publicar — Fauna andina en el Nivel 1 (rama `feat/fauna-andina`)
+
+Propuesta como versión **MENOR** (nuevo sistema ambiental). El número se fija al unir a `main`. Detalle en `FAUNA_ANDINA.md`.
+
+**Cóndores sobre el cañón** (`AyniCondorFlight`, `AyniCondorModel`)
+- Cinco Kuntur planean en térmicas sobre la garganta del puente, el cañón norte, la aldea y muy alto sobre la plaza de Amaru.
+  Collar blanco, alas de ~3 m con plumas primarias abiertas y aleteos ocasionales.
+
+**Rebaños de camélidos** (`AyniCamelidModel`, `AyniGrazingAnimal`)
+- Llamas con borlas de lana de colores, alpacas lanudas y vicuñas silvestres pastan, miran y caminan en paso de andadura.
+- Alpacas con llama guardiana junto a la Kancha de los Tejedores, caravana de llamas en el Tambo del Camino, rebaño mixto en el
+  Puesto de Chasquis y vicuñas lejanas cerca de la Portada del Cazador. Se apartan cuando Yari se acerca (la vicuña desde más lejos).
+
+**Vizcachas y zorros andinos** (`AyniVizcacha`, `AyniCritterModel`)
+- Colonias de vizcachas toman sol en rocas y muros de piedra, vigilan a Yari y huyen a saltos.
+- Dos zorros (Atoq) rondan los bordes con trote diagonal y olfatean el suelo.
+
+**Herramientas**
+- Menú `Ayni > Fauna Andina` para soltar toda la fauna o cada grupo, y para quitarla por completo.
+- Todo es decorativo, sin colisionadores y de autoría propia (sin mallas externas). No cambia ningún sistema existente.
+
+---
+
 ## v0.9.0 — Inicio cinematográfico, cuenta de la Illa, Amaru en el puente y HUD inca · 1 de noviembre de 2026
 
 **Prólogo "La Noche de las Cenizas"** (PR #8)
