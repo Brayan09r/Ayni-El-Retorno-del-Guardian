@@ -148,9 +148,11 @@ namespace Ayni.World.Fauna
                 flap = Mathf.Sin(flapTime / flapDuration * Mathf.PI * 2f) * flapAmplitude * envelope;
             }
 
+            // Un giro positivo en Z sube la punta que apunta a +X (ala derecha) y baja la que apunta a -X
+            // (ala izquierda, reflejada con escala X negativa). Por eso el ala izquierda usa el signo contrario.
             float wingAngle = glideDihedral + flap;
-            if (leftWing != null) leftWing.localRotation = leftWingRest * Quaternion.AngleAxis(wingAngle, Vector3.forward);
-            if (rightWing != null) rightWing.localRotation = rightWingRest * Quaternion.AngleAxis(-wingAngle, Vector3.forward);
+            if (leftWing != null) leftWing.localRotation = leftWingRest * Quaternion.AngleAxis(-wingAngle, Vector3.forward);
+            if (rightWing != null) rightWing.localRotation = rightWingRest * Quaternion.AngleAxis(wingAngle, Vector3.forward);
         }
 
         private void ScheduleNextFlap()
