@@ -270,6 +270,52 @@ namespace Ayni.Editor
             Debug.Log($"[Ayni Prueba] Vista cenital {name}: centro ({cx}, {cz}), {size} m de lado");
         }
 
+        /// <summary>Anota dónde está Yari (para comprobar límites del mapa y desplazamientos).</summary>
+        public static string WhereIsYari()
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            string text = player != null ? $"Yari en {player.transform.position:F1}" : "sin Yari";
+            Debug.Log("[Ayni Prueba] " + text);
+            return text;
+        }
+
+        /// <summary>Golpea al rival más cercano a Yari (vida y postura) como si fuera un golpe pesado suyo.</summary>
+        public static void HitNearest(float health, float structure)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null) return;
+            EnemyController nearest = null;
+            float best = float.MaxValue;
+            foreach (var e in EnemyController.All)
+            {
+                if (e == null || e.IsDead) continue;
+                float d = (e.transform.position - player.transform.position).sqrMagnitude;
+                if (d < best) { best = d; nearest = e; }
+            }
+            if (nearest == null) return;
+            nearest.TakeHit(health, structure, player.transform.position, true, Ayni.Combat.HitReaction.Heavy, 0.3f);
+            Debug.Log($"[Ayni Prueba] Golpe a {nearest.name}: vida {nearest.CurrentHealth:F0}, muerto={nearest.IsDead}");
+        }
+
+        /// <summary>Lista los rivales a menos de <paramref name="radius"/> m de Yari: posición, estado, vida y si están en su rutina.</summary>
+        public static void ListRivals(float radius)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            Vector3 p = player != null ? player.transform.position : Vector3.zero;
+            var sb = new System.Text.StringBuilder();
+            foreach (var e in EnemyController.All)
+            {
+                if (e == null || (e.transform.position - p).magnitude > radius) continue;
+                var routine = e.GetComponent<Ayni.Enemy.AyniRivalAmbient>();
+                var anim = e.Animator;
+                string clip = anim != null && anim.GetCurrentAnimatorClipInfoCount(0) > 0 ? anim.GetCurrentAnimatorClipInfo(0)[0].clip.name : "-";
+                sb.Append($"\n   {e.name} ({e.CharacterName}) en {e.transform.position:F1} a {(e.transform.position - p).magnitude:F1} m: " +
+                          $"estado={e.State} externo={e.ExternalControl} vida={e.CurrentHealth:F0} muerto={e.IsDead} " +
+                          $"rutina={(routine == null ? "-" : routine.enabled ? (routine.IsAwake ? "despierto" : "en lo suyo") : "terminada")} clip={clip}");
+            }
+            Debug.Log("[Ayni Prueba] Rivales:" + sb);
+        }
+
         /// <summary>Cierra el tutorial si está abierto (devuelve el tiempo y los controles), como si el jugador lo saltara.</summary>
         public static void CloseTutorial()
         {
