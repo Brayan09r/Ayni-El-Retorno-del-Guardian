@@ -215,6 +215,39 @@ namespace Ayni.Editor
             Debug.Log($"[Ayni Prueba] Rivales {(on != 0 ? "congelados" : "liberados")}");
         }
 
+        /// <summary>Cierra el tutorial si está abierto (devuelve el tiempo y los controles), como si el jugador lo saltara.</summary>
+        public static void CloseTutorial()
+        {
+            var tutorial = Object.FindFirstObjectByType<Ayni.UI.AyniTutorial>();
+            var close = typeof(Ayni.UI.AyniTutorial).GetMethod("Close", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (tutorial == null || close == null) return;
+            close.Invoke(tutorial, null);
+            Debug.Log("[Ayni Prueba] Tutorial cerrado");
+        }
+
+        /// <summary>
+        /// Suelta la cámara de juego y la deja quieta en (x, y, z) mirando a (lx, ly, lz), para fotos del escenario.
+        /// FollowCamera(1) la devuelve detrás de Yari.
+        /// </summary>
+        public static void PlaceCamera(float x, float y, float z, float lx, float ly, float lz)
+        {
+            Camera cam = Camera.main;
+            if (cam == null) return;
+            var follow = cam.GetComponent<Ayni.Player.ThirdPersonSifuCamera>();
+            if (follow != null) follow.enabled = false;
+            var pos = new Vector3(x, y, z);
+            cam.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(new Vector3(lx, ly, lz) - pos));
+            Debug.Log($"[Ayni Prueba] Cámara fija en {pos}");
+        }
+
+        public static void FollowCamera(int snap)
+        {
+            var follow = Camera.main != null ? Camera.main.GetComponent<Ayni.Player.ThirdPersonSifuCamera>() : null;
+            if (follow == null) return;
+            follow.enabled = true;
+            if (snap != 0) follow.SnapBehindTarget();
+        }
+
         /// <summary>Pone a Yari en un estado del Animator en el punto indicado (speed 0 = congelado) y mide sus huesos.</summary>
         public static void PlayYariState(string state, float normalizedTime, float speed)
         {
