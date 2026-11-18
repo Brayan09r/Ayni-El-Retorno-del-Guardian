@@ -44,6 +44,8 @@ namespace Ayni.UI
             if (GetComponent<AyniLevelOutcome>() == null) gameObject.AddComponent<AyniLevelOutcome>();
             // Viento de la cordillera y tambores al entrar en los patios con rivales
             if (GetComponent<AyniLevelAmbience>() == null) gameObject.AddComponent<AyniLevelAmbience>();
+            // Música del camino, de las peleas y del jefe (las pistas de Suno en Resources/AyniAudio)
+            if (GetComponent<AyniLevelMusic>() == null) gameObject.AddComponent<AyniLevelMusic>();
             // Presentación del jefe: Amaru espera en la cabeza del puente y se interpone en el camino
             if (GetComponent<AyniBossIntro>() == null) gameObject.AddComponent<AyniBossIntro>();
             // Cambio de fase de los jefes (caída, grito y segunda fase)
