@@ -394,7 +394,7 @@ namespace Ayni.UI
             for (int i = 0; i < enemies.Count; i++)
             {
                 EnemyController e = enemies[i];
-                if (e == null || e.IsDead) continue;
+                if (e == null || e.IsDead || e.Dormant) continue;
                 float dist = Vector3.Distance(yari.transform.position, e.transform.position);
                 if (dist < best)
                 {

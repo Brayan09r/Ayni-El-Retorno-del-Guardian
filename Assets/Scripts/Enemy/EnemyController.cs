@@ -183,6 +183,9 @@ namespace Ayni.Enemy
         /// los golpes le hacen daño pero no lo interrumpen.
         /// </summary>
         public bool ExternalControl { get; set; }
+
+        /// <summary>Está en su rutina antes de la pelea (AyniRivalAmbient): aún no ha visto a Yari.</summary>
+        public bool Dormant { get; set; }
         public Animator Animator => animator;
         public CharacterController Mover => mover;
 

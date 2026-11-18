@@ -10,9 +10,11 @@ namespace Ayni.World
     /// La herramienta "Ayni > Entorno > Construir Aldea Inca" crea uno por conjunto, con sus puntos de aparición
     /// (delante de cada puerta y junto a la salida).
     ///
-    /// Para poblarlo: coloca cada rival en uno de los "PuntoRival" y arrástralo a la lista Rivales. Quedan ocultos
-    /// hasta que Yari cruza la portada; entonces aparecen y se lanza <see cref="OnPlayerEntered"/>. Cuando todos
-    /// han sido derrotados (muertos o perdonados) se lanza <see cref="OnCleared"/>.
+    /// Para poblarlo: coloca cada rival en uno de los "PuntoRival" y arrástralo a la lista Rivales. Como en Sifu,
+    /// los rivales ya están en el patio haciendo lo suyo (<see cref="AyniRivalAmbient"/>: patrullar, hacer guardia o
+    /// descansar) y pelean cuando descubren a Yari o él cruza la portada; entonces se lanza
+    /// <see cref="OnPlayerEntered"/>. Cuando todos han sido derrotados (muertos o perdonados) se lanza
+    /// <see cref="OnCleared"/>.
     /// </summary>
     public class AyniEncounterSite : MonoBehaviour
     {
@@ -39,8 +41,12 @@ namespace Ayni.World
         [Header("Rivales")]
         [Tooltip("Rivales de este conjunto (objetos de la escena con EnemyController).")]
         [SerializeField] private List<GameObject> rivals = new List<GameObject>();
-        [Tooltip("Los rivales permanecen ocultos hasta que Yari entra en el patio.")]
+        [Tooltip("Los rivales permanecen ocultos hasta que Yari entra en el patio (si no están en su rutina).")]
         [SerializeField] private bool hideRivalsUntilEntered = true;
+        [Tooltip("Los rivales esperan a la vista haciendo lo suyo (patrullar, guardia, descansar) en vez de ocultos.")]
+        [SerializeField] private bool ambientBeforeFight = true;
+
+        private readonly List<AyniRivalAmbient> ambient = new List<AyniRivalAmbient>();
 
         private Transform player;
         private float nextPlayerSearch;
@@ -122,9 +128,37 @@ namespace Ayni.World
         private void Start()
         {
             if (!hideRivalsUntilEntered) return;
+            if (ambientBeforeFight)
+            {
+                StartAmbient();
+                return;
+            }
             for (int i = 0; i < rivals.Count; i++)
             {
                 if (rivals[i] != null) rivals[i].SetActive(false);
+            }
+        }
+
+        /// <summary>Reparte las rutinas: uno hace guardia, otro patrulla hacia el centro del patio y otro descansa.</summary>
+        private void StartAmbient()
+        {
+            for (int i = 0; i < rivals.Count; i++)
+            {
+                GameObject rival = rivals[i];
+                if (rival == null || rival.GetComponent<EnemyController>() == null) continue;
+                rival.SetActive(true); // en la escena se guardan ocultos
+                var routine = rival.GetComponent<AyniRivalAmbient>();
+                if (routine == null) routine = rival.AddComponent<AyniRivalAmbient>();
+                ambient.Add(routine);
+            }
+            for (int i = 0; i < ambient.Count; i++)
+            {
+                Vector3 from = ambient[i].transform.position;
+                Vector3 toCentre = transform.position - from;
+                toCentre.y = 0f;
+                Vector3 patrolTo = from + Vector3.ClampMagnitude(toCentre * 0.6f, 6f);
+                var activity = (AyniRivalAmbient.Activity)(i % 3);
+                ambient[i].Begin(activity, patrolTo, ambient);
             }
         }
 
@@ -142,9 +176,13 @@ namespace Ayni.World
                     if (found == null) return;
                     player = found.transform;
                 }
-                if (!Contains(player.position)) return;
+                bool discovered = false;
+                foreach (AyniRivalAmbient routine in ambient) if (routine != null && routine.IsAwake) discovered = true;
+                if (!discovered && !Contains(player.position)) return;
 
                 PlayerEntered = true;
+                // Al cruzar la portada todos se enteran (si nadie lo había visto aún, el primero da la voz)
+                if (!discovered && ambient.Count > 0 && ambient[0] != null) ambient[0].Notice(0f, true);
                 for (int i = 0; i < rivals.Count; i++)
                 {
                     if (rivals[i] != null) rivals[i].SetActive(true);
