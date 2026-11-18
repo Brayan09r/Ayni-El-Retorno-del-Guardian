@@ -10,7 +10,7 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
-## v0.10.0 — Rivales vivos, pumas guardianes, Amaru que habla, límites del mapa y música · 17 de noviembre de 2026
+## v0.10.0 — Rivales vivos, oleadas, pumas guardianes, Amaru que habla, límites del mapa y música · 17 de noviembre de 2026
 
 Versión para la Feria Interna de Proyectos ISI 2026. Integra lo que el equipo subió del 6 al 12 de noviembre.
 
@@ -19,6 +19,15 @@ Versión para la Feria Interna de Proyectos ISI 2026. Integra lo que el equipo s
   patrulla caminando (nuevo estado `Ambient_Walk` con `Walk_Forward_InPlace`) y otro descansa arrodillado.
 - Pelean cuando ven a Yari (delante y sin muros en medio, ~11 m), lo oyen (más lejos si corre), él cruza la portada o lo golpean. El que lo
   descubre se gira y avisa; el resto se suma con unas décimas de diferencia. La barra del rival sale solo cuando ya pelea.
+
+**Peleas más duras y con más gente, como en Sifu** (`EnemyController`, `AyniEncounterSite`, `AyniRoadPatrols`)
+- Turnos de ataque: solo dos rivales atacan a la vez; el resto rodea a Yari en guardia a unos metros, sin amontonarse, y espera su turno.
+- Oleadas: cuando cae la mitad de una kancha llegan refuerzos corriendo desde la portada (1, 2, 2 y 3 según la kancha).
+- Segundo aliento: el rival más duro de cada kancha no se queda en el suelo; cae, brilla en rojo y se levanta furioso con más vida, más
+  aguante y golpes más fuertes y seguidos (el HUD lo marca como "FURIOSO").
+- Patrullas del camino: entre kancha y kancha una pareja de guardias va y viene por el Qhapaq Ñan y embosca a Yari; el camino ya no
+  está vacío.
+- Amaru llama a dos cazadores al pasar a su segunda fase, que llegan por la espalda de Yari.
 
 **Pumas guardianes del Kay Pacha** (`PumaTerritory`, `AyniPumaPack`)
 - Los pumas ya no mueren ni desaparecen: al "derrotarlos" huyen heridos a su guarida y se recuperan.
@@ -36,7 +45,8 @@ Versión para la Feria Interna de Proyectos ISI 2026. Integra lo que el equipo s
 **Música del nivel** (`AyniLevelMusic`, pistas de Suno)
 - Tres pistas propias hechas con Suno (camino, combate y Amaru), importadas en streaming. Calla en el prólogo y en el Juicio.
 - Como van a tempos distintos, no se mezclan: cuando un rival da la voz el combate entra directo en su primer golpe fuerte; al acabar
-  la pelea hay un respiro con viento y vuelve el camino desde su inicio; el golpe fuerte de la pista de Amaru cae sobre su título.
+  la pelea hay un respiro con viento y el camino sigue por donde se había quedado (se oye la pista entera, no siempre su comienzo); el
+  combate también retoma donde iba. El golpe fuerte de la pista de Amaru cae sobre su título.
 
 **Amaru en el puente** (`AyniBossIntro`, `AyniBossBarks`)
 - Mientras espera camina de un lado a otro del estribo y mira el camino; al ver llegar a Yari ruge, lo sigue con la mirada y le habla.
