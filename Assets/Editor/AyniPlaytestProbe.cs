@@ -270,6 +270,27 @@ namespace Ayni.Editor
             Debug.Log($"[Ayni Prueba] Vista cenital {name}: centro ({cx}, {cz}), {size} m de lado");
         }
 
+        /// <summary>
+        /// Lista la fauna: animales con comportamiento (AyniGrazingAnimal, vizcachas) y mallas sueltas de llama sin
+        /// animación. Llamar dos veces con unos segundos de diferencia muestra cuáles se mueven.
+        /// </summary>
+        public static void ListFauna()
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var mb in Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+            {
+                string type = mb.GetType().Name;
+                if (type != "AyniGrazingAnimal" && type != "AyniVizcacha" && type != "AyniCondorFlight") continue;
+                sb.Append($"\n   {type} {mb.name} en {mb.transform.position:F1} activo={mb.isActiveAndEnabled}");
+            }
+            foreach (var mf in Object.FindObjectsByType<MeshFilter>(FindObjectsSortMode.None))
+            {
+                if (mf.sharedMesh == null || !mf.sharedMesh.name.ToLower().Contains("llama")) continue;
+                sb.Append($"\n   malla {mf.name} ({mf.sharedMesh.name}) en {mf.transform.position:F1} padre={(mf.transform.parent ? mf.transform.parent.name : "-")}");
+            }
+            Debug.Log("[Ayni Prueba] Fauna:" + sb);
+        }
+
         /// <summary>Anota dónde está Yari (para comprobar límites del mapa y desplazamientos).</summary>
         public static string WhereIsYari()
         {
