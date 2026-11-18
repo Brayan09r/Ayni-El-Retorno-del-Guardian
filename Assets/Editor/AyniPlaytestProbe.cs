@@ -507,6 +507,45 @@ namespace Ayni.Editor
             recCamScript = null;
         }
 
+        public static string TestAgingSwap()
+        {
+            var player = GameObject.Find("Yari_Hero");
+            if (player == null) return "No Yari_Hero";
+            var aging = player.GetComponent<AyniAgingSystem>();
+            if (aging == null) return "No AyniAgingSystem";
+
+            var young = player.transform.Find("Visual_Yari_3D");
+            var aged = player.transform.Find("Visual_Yari_Aged_3D");
+
+            aging.ForceSetAged(true);
+            bool agedActive = aged != null && aged.gameObject.activeSelf && young != null && !young.gameObject.activeSelf;
+            
+            var anim = player.GetComponentInChildren<Animator>();
+            bool animValid = anim != null && (aged != null && anim.gameObject == aged.gameObject);
+
+            aging.ForceSetAged(false);
+            bool youngActive = young != null && young.gameObject.activeSelf && aged != null && !aged.gameObject.activeSelf;
+
+            string result = $"AgedActive={agedActive}, AnimPointsToAged={animValid}, YoungRestored={youngActive}";
+            Debug.Log("[Ayni Prueba Aging] " + result);
+            return result;
+        }
+
+        public static void FrameYariAged(int aged)
+        {
+            var player = GameObject.Find("Yari_Hero");
+            if (player == null) return;
+            var aging = player.GetComponent<AyniAgingSystem>();
+            if (aging != null) aging.ForceSetAged(aged != 0);
+
+            Vector3 pos = player.transform.position;
+            Vector3 fwd = player.transform.forward;
+            Vector3 camPos = pos + fwd * 2.6f + Vector3.up * 1.25f;
+            Vector3 lookAt = pos + Vector3.up * 1.05f;
+
+            PlaceCamera(camPos.x, camPos.y, camPos.z, lookAt.x, lookAt.y, lookAt.z);
+        }
+
         private static string StateName(Animator animator)
         {
             if (animator == null) return "-";

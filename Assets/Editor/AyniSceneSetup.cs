@@ -1215,6 +1215,12 @@ namespace Ayni.Editor
                 visualObj.AddComponent<AndeanCombatStanceModifier>();
             }
 
+            // Si existe el modelo de Yari Maduro (+10 años), integrar también el sistema de envejecimiento
+            if (File.Exists("Assets/Art/Characters/Yari_Aged_Rigged.fbx"))
+            {
+                AyniYariAgedSetup.IntegrateIntoScene();
+            }
+
             EditorUtility.SetDirty(yariMat);
             EditorUtility.SetDirty(player);
             AssetDatabase.SaveAssets();

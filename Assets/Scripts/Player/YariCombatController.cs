@@ -537,10 +537,12 @@ namespace Ayni.Player
 
         private void Update()
         {
-            // El componente Animator puede residir en el hijo Visual_Yari_3D
-            if (animator == null)
+            // El componente Animator puede residir en el hijo Visual_Yari_3D o Visual_Yari_Aged_3D
+            if (animator == null || !animator.gameObject.activeInHierarchy)
             {
                 animator = GetComponentInChildren<Animator>();
+                rootMotionHookedFor = null;
+                andeanStance = animator != null ? animator.GetComponent<AndeanCombatStanceModifier>() : null;
             }
             HookRootMotion();
 
@@ -1898,6 +1900,15 @@ namespace Ayni.Player
             }
 
             characterController.Move(delta);
+        }
+
+        /// <summary>Sincroniza la referencia al Animator activo (ej. tras cambio de edad o modelo visual).</summary>
+        public void RefreshAnimator()
+        {
+            animator = GetComponentInChildren<Animator>();
+            rootMotionHookedFor = null;
+            andeanStance = animator != null ? animator.GetComponent<AndeanCombatStanceModifier>() : null;
+            HookRootMotion();
         }
 
         /// <summary>Conecta el desplazamiento de las animaciones (el Animator vive en el modelo hijo).</summary>
