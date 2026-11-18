@@ -1,13 +1,15 @@
 using UnityEngine;
 using Ayni.Enemy;
 using Ayni.UI;
+using Ayni.World;
 
 namespace Ayni.Story
 {
     /// <summary>
     /// Amaru habla durante el duelo (subtítulos con su nombre, ver <see cref="AyniBossIntro.Say"/>): provoca a Yari de
-    /// vez en cuando mientras pelean de cerca, grita al pasar a su segunda fase, se burla cuando Yari cae y la Illa le
-    /// cobra años, y flaquea cuando le queda poca vida. Cada frase espera su turno para no pisarse con otra.
+    /// vez en cuando mientras pelean de cerca, grita al pasar a su segunda fase y llama a dos cazadores que llegan por
+    /// la espalda de Yari, se burla cuando Yari cae y la Illa le cobra años, y flaquea cuando le queda poca vida. Cada
+    /// frase espera su turno para no pisarse con otra.
     /// SifuCombatHUD lo añade solo.
     /// </summary>
     public class AyniBossBarks : MonoBehaviour
@@ -47,7 +49,31 @@ namespace Ayni.Story
         private void HandlePhase(EnemyController who)
         {
             if (who != boss) return;
-            Say("¡Me has herido, guardián! Ahora conocerás al Cazador.", 3.2f, true);
+            Say("¡Cazadores, a mí! Que el guardián no salga vivo de esta plaza.", 3.2f, true);
+            CallHunters();
+        }
+
+        /// <summary>Dos cazadores (como los de la Portada del Cazador) llegan corriendo por la espalda de Yari.</summary>
+        private void CallHunters()
+        {
+            AyniEncounterSite kennel = null;
+            foreach (AyniEncounterSite site in AyniEncounterSite.All)
+            {
+                if (site != null && (kennel == null || site.Order > kennel.Order)) kennel = site;
+            }
+            if (kennel == null || yari == null) return;
+            Vector3 back = yari.position - boss.transform.position;
+            back.y = 0f;
+            back = back.sqrMagnitude > 0.01f ? back.normalized : -boss.transform.forward;
+            Vector3 side = Vector3.Cross(Vector3.up, back);
+            for (int i = 0; i < 2; i++)
+            {
+                Vector3 spot = yari.position + back * 9f + side * (i == 0 ? 3.5f : -3.5f);
+                if (!Physics.Raycast(spot + Vector3.up * 10f, Vector3.down, out RaycastHit hit, 30f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) continue;
+                if (Mathf.Abs(hit.point.y - yari.position.y) > 3f) continue; // ni en la quebrada ni sobre un muro
+                EnemyController hunter = kennel.CreateRival(hit.point + Vector3.up * 0.05f, Quaternion.LookRotation(-back), $"Cazador_de_Amaru_{i + 1}");
+                if (hunter != null) hunter.HuntRange = 60f;
+            }
         }
 
         private void Update()
