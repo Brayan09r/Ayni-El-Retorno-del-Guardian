@@ -242,7 +242,8 @@ namespace Ayni.UI
             float x = Screen.width / 2f - width / 2f;
             const float top = 22f;
 
-            string name = AyniInkaUI.Spaced(enemy.CharacterName);
+            // El que se levantó con su segundo aliento lo dice junto al nombre
+            string name = AyniInkaUI.Spaced(enemy.CharacterName) + (enemy.Enraged ? "  ·  FURIOSO" : "");
             AyniInkaUI.Label(new Rect(x, top, width, 18f), name, AyniInkaUI.Style(14, FontStyle.Bold, TextAnchor.MiddleCenter), AyniInkaUI.Bone);
 
             // Fases del jefe: un rombo por fase, lleno el de la fase en curso y las ya pasadas

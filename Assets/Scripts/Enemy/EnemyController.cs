@@ -151,6 +151,7 @@ namespace Ayni.Enemy
         private static readonly Color LowAttackTint = new Color(1f, 0.85f, 0.1f);
         private static readonly Color StunnedTint = new Color(0.3f, 0.9f, 1f);
         private static readonly Color DeadTint = new Color(0.25f, 0.25f, 0.25f);
+        private static readonly Color EnragedTint = new Color(1f, 0.3f, 0.1f);
 
         public string CharacterName => characterName;
         public bool IsBoss => isBoss;
@@ -191,6 +192,29 @@ namespace Ayni.Enemy
         public bool Unkillable { get; set; }
         /// <summary>Está en su rutina antes de la pelea (AyniRivalAmbient): aún no ha visto a Yari.</summary>
         public bool Dormant { get; set; }
+
+        /// <summary>
+        /// Veces que puede levantarse al caer derrotado (segundo aliento). Cae, se queda en el suelo y se levanta furioso
+        /// con más vida, más aguante y golpes más fuertes. Lo reparte AyniEncounterSite.
+        /// </summary>
+        public int SecondWinds { get; set; }
+        /// <summary>
+        /// Distancia desde la que va a buscar a Yari aunque esté más lejos que su alcance normal (los refuerzos de una
+        /// kancha y los cazadores de Amaru llegan desde lejos sabiendo dónde está).
+        /// </summary>
+        public float HuntRange { get; set; }
+        /// <summary>Se levantó con su segundo aliento: más vida, aguante, daño y velocidad (el HUD lo marca).</summary>
+        public bool Enraged { get; private set; }
+        /// <summary>Un rival acaba de levantarse furioso.</summary>
+        public static event System.Action<EnemyController> OnSecondWind;
+        private bool risingEnraged;
+
+        /// <summary>
+        /// Como en Sifu, solo unos pocos rivales atacan a la vez; el resto rodea a Yari en guardia a unos metros y espera
+        /// su turno. Los jefes no esperan turno.
+        /// </summary>
+        public const int MaxSimultaneousAttackers = 2;
+        private const float WaitRing = 3.6f;
         /// <summary>Recibió un golpe de Yari (con el daño ya aplicado).</summary>
         public event System.Action<EnemyController> OnDamaged;
         /// <summary>Un rival que no puede morir ha llegado al final de su vida o lo han intentado rematar.</summary>
@@ -377,28 +401,33 @@ namespace Ayni.Enemy
             {
                 case EnemyState.Idle:
                     SetAnimSpeed(0f);
-                    if (playerAvailable && dist <= aggroRange) state = EnemyState.Chase;
+                    if (playerAvailable && dist <= Mathf.Max(aggroRange, HuntRange)) state = EnemyState.Chase;
                     break;
 
                 case EnemyState.Chase:
-                    if (!playerAvailable || dist > aggroRange * 1.3f)
+                    if (!playerAvailable || dist > Mathf.Max(aggroRange, HuntRange) * 1.3f)
                     {
                         state = EnemyState.Idle;
                         break;
                     }
 
                     FacePlayer(turnSpeed);
-                    if (dist > attackRange * 0.85f)
+                    // Sin turno de ataque se queda en el anillo de espera, en guardia, sin amontonarse sobre Yari
+                    bool myTurn = isBoss || AttackersNow() < MaxSimultaneousAttackers;
+                    float stopAt = myTurn ? attackRange * 0.85f : WaitRing;
+                    if (dist > stopAt)
                     {
                         Vector3 dir = playerTarget.position - transform.position;
                         dir.y = 0f;
-                        mover.Move(dir.normalized * (moveSpeed * Time.deltaTime));
+                        mover.Move((dir.normalized + Separation()) * (moveSpeed * Time.deltaTime));
                         SetAnimSpeed(1f);
                     }
                     else
                     {
                         SetAnimSpeed(0f);
-                        if (Time.time >= nextAttackTime) BeginWindup();
+                        Vector3 apart = Separation();
+                        if (apart.sqrMagnitude > 0.01f) mover.Move(apart * (1.2f * Time.deltaTime));
+                        if (myTurn && Time.time >= nextAttackTime) BeginWindup();
                     }
                     break;
 
@@ -422,6 +451,56 @@ namespace Ayni.Enemy
                     }
                     break;
             }
+        }
+
+        /// <summary>Rivales (no jefes) que están preparando o soltando un golpe ahora mismo.</summary>
+        private static int AttackersNow()
+        {
+            int count = 0;
+            for (int i = 0; i < All.Count; i++)
+            {
+                EnemyController e = All[i];
+                if (e == null || e.isDead || e.isBoss) continue;
+                if (e.state == EnemyState.Windup || e.state == EnemyState.Recover) count++;
+            }
+            return count;
+        }
+
+        /// <summary>Empuje suave para separarse de los rivales que tiene pegados (que no se encimen unos en otros).</summary>
+        private Vector3 Separation()
+        {
+            Vector3 push = Vector3.zero;
+            for (int i = 0; i < All.Count; i++)
+            {
+                EnemyController e = All[i];
+                if (e == null || e == this || e.isDead) continue;
+                Vector3 away = transform.position - e.transform.position;
+                away.y = 0f;
+                float d = away.magnitude;
+                if (d < 1.6f && d > 0.001f) push += away / d * (1.6f - d);
+            }
+            return Vector3.ClampMagnitude(push, 1f);
+        }
+
+        /// <summary>Se levanta furioso: más vida, más aguante y golpes más fuertes y seguidos.</summary>
+        private void RiseEnraged()
+        {
+            risingEnraged = false;
+            Enraged = true;
+            maxHealth *= 1.25f;
+            currentHealth = maxHealth * 0.75f;
+            if (structure != null)
+            {
+                structure.SetMaxStructure(structure.MaxStructure * 1.3f);
+                structure.ResetStructure();
+            }
+            attackDamage *= 1.2f;
+            attackCooldown *= 0.8f;
+            moveSpeed *= 1.1f;
+            AyniAudio.Play("postura_rota", transform.position, 0.9f, 0.05f, 0.7f);
+            CombatFeedback.Flash(transform.position + Vector3.up * 1.2f, new Color(1f, 0.35f, 0.15f, 0.9f), 2.2f, 0.35f);
+            CombatFeedback.Shake(0.05f, 0.2f);
+            OnSecondWind?.Invoke(this);
         }
 
         private void BeginWindup()
@@ -549,6 +628,7 @@ namespace Ayni.Enemy
                             HitReaction reaction = HitReaction.Head, float knockback = 0.2f)
         {
             if (isDead || InPhaseTransition) return;
+            if (risingEnraged) return; // en el suelo reuniendo fuerzas: no se le puede rematar
 
             // Con la postura rota (y fuera del Juicio) cada golpe duele más: es el momento de castigarlo
             if (structure.IsBroken && !CanBeJudged) healthDmg *= brokenDamageMultiplier;
@@ -572,6 +652,24 @@ namespace Ayni.Enemy
                 return;
             }
             structure.AddStructureDamage(structDmg);
+
+            if (currentHealth <= 0f && SecondWinds > 0 && !isBoss && !ExternalControl && HasAnimState("Knockdown") && HasAnimState("GetUp"))
+            {
+                // Segundo aliento: cae como derrotado, pero se levantará furioso
+                SecondWinds--;
+                risingEnraged = true;
+                currentHealth = 1f;
+                if (structure != null) structure.HoldBroken = false;
+                attackAnimPending = false;
+                attackAnimPlaying = false;
+                state = EnemyState.Downed;
+                downPhase = 0;
+                downTimer = 0f;
+                SetAnimSpeed(0f);
+                SetAnimBool("IsStunned", false);
+                animator.CrossFadeInFixedTime("Knockdown", 0.06f, 0, 0f);
+                return;
+            }
 
             if (currentHealth <= 0f)
             {
@@ -668,7 +766,7 @@ namespace Ayni.Enemy
                     break;
 
                 case 1:
-                    if (downTimer >= downedTime)
+                    if (downTimer >= (risingEnraged ? downedTime + 1.4f : downedTime))
                     {
                         downPhase = 2;
                         downTimer = 0f;
@@ -682,6 +780,7 @@ namespace Ayni.Enemy
                         if (HasAnimState("Idle")) animator.CrossFadeInFixedTime("Idle", 0.2f);
                         state = EnemyState.Chase;
                         nextAttackTime = Mathf.Max(nextAttackTime, Time.time + 0.5f);
+                        if (risingEnraged) RiseEnraged();
                     }
                     break;
             }
@@ -848,6 +947,7 @@ namespace Ayni.Enemy
             else if (Time.time < telegraphUntil) ApplyTint(telegraphColor, 0.75f);
             else if (state == EnemyState.Windup) ApplyTint(pendingHeight == AttackHeight.High ? HighAttackTint : LowAttackTint, 0.75f);
             else if (state == EnemyState.Stunned) ApplyTint(StunnedTint, 0.6f);
+            else if (risingEnraged || Enraged) ApplyTint(EnragedTint, risingEnraged ? 0.25f + 0.2f * Mathf.Sin(Time.time * 9f) : 0.22f);
             else ApplyTint(Color.clear, 0f);
         }
 
