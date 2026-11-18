@@ -52,6 +52,8 @@ namespace Ayni.UI
             if (GetComponent<Ayni.World.Fauna.AyniStaticLlamaSwap>() == null) gameObject.AddComponent<Ayni.World.Fauna.AyniStaticLlamaSwap>();
             // Presentación del jefe: Amaru espera en la cabeza del puente y se interpone en el camino
             if (GetComponent<AyniBossIntro>() == null) gameObject.AddComponent<AyniBossIntro>();
+            // Amaru habla durante el duelo (provocaciones, segunda fase, cuando Yari cae)
+            if (GetComponent<AyniBossBarks>() == null) gameObject.AddComponent<AyniBossBarks>();
             // Cambio de fase de los jefes (caída, grito y segunda fase)
             if (GetComponent<AyniBossPhaseDirector>() == null) gameObject.AddComponent<AyniBossPhaseDirector>();
             // Pausa con las opciones de sonido (Esc / Menu)
