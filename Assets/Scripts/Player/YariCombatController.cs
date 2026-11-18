@@ -29,6 +29,10 @@ namespace Ayni.Player
         [SerializeField] private float moveAcceleration = 20f;
         [Tooltip("Frenado al soltar el stick, al bajar el ritmo o al cambiar de sentido (m/s²).")]
         [SerializeField] private float moveDeceleration = 26f;
+        [Tooltip("Al girar en marcha la velocidad rota hacia la nueva dirección a este ritmo (grados/s) sin perder rapidez.")]
+        [SerializeField] private float moveTurnRate = 600f;
+        [Tooltip("A partir de este ángulo entre la marcha y lo pedido se considera media vuelta: frena y luego arranca.")]
+        [Range(90f, 180f)] [SerializeField] private float reverseAngle = 135f;
 
         [Header("Caminar con el stick")]
         [Tooltip("Por debajo de esta inclinación del stick Yari camina; por encima, corre como con el teclado.")]
@@ -315,6 +319,7 @@ namespace Ayni.Player
         private float strafeRightStride = 2.3f;
         private float backStride = 1.66f;
         private float runBlend = 1f;      // 0 = caminando, 1 = corriendo (suavizado)
+        private float lastMoveInputAt = -10f;
         private float lastGroundedAt = -10f;
         private float jumpPressedAt = -10f;
         // Salto en carrera: en el aire Yari conserva la dirección y la velocidad con las que despegó
@@ -849,6 +854,7 @@ namespace Ayni.Player
 
             if (hasMoveInput)
             {
+                lastMoveInputAt = Time.time;
                 // Mover relativo a la cámara estilo Sifu
                 Vector3 camForward = cameraTransform.forward;
                 Vector3 camRight = cameraTransform.right;
@@ -956,9 +962,10 @@ namespace Ayni.Player
             }
             else
             {
-                currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 10f * Time.deltaTime);
-                // Desde parado siempre se arranca caminando y, si toca correr, se acelera
-                runBlend = 0f;
+                if (Time.time - lastMoveInputAt > 0.12f) currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, 10f * Time.deltaTime);
+                // Desde parado siempre se arranca caminando y, si toca correr, se acelera. Un hueco de unas décimas
+                // (soltar W y pulsar A al girar con el teclado) no cuenta como pararse: la carrera sigue sin tirón
+                if (Time.time - lastMoveInputAt > 0.2f) runBlend = 0f;
                 // Al soltar el stick frena en unas décimas en vez de clavarse en seco
                 planarVelocity = AccelerateTowards(planarVelocity, Vector3.zero);
                 if (planarVelocity.sqrMagnitude > 0.0001f) characterController.Move(planarVelocity * Time.deltaTime);
@@ -982,10 +989,20 @@ namespace Ayni.Player
 
         /// <summary>
         /// Lleva la velocidad horizontal hacia la pedida: acelera al pedir más y frena (con más fuerza) al pedir
-        /// menos o al cambiar de dirección.
+        /// menos o al dar media vuelta. Al girar en marcha la velocidad rota sin perder rapidez: si se acortara en
+        /// línea recta hacia la nueva dirección, Yari perdería hasta un 40 % en cada curva y los pasos irían a
+        /// cámara lenta (el tirón que se notaba al correr).
         /// </summary>
         private Vector3 AccelerateTowards(Vector3 current, Vector3 desired)
         {
+            float speed = current.magnitude, wanted = desired.magnitude;
+            if (speed > 0.5f && wanted > 0.01f && Vector3.Angle(current, desired) < reverseAngle)
+            {
+                Vector3 dir = Vector3.RotateTowards(current / speed, desired / wanted, moveTurnRate * Mathf.Deg2Rad * Time.deltaTime, 0f);
+                float change = wanted >= speed ? moveAcceleration : moveDeceleration;
+                return dir * Mathf.MoveTowards(speed, wanted, change * Time.deltaTime);
+            }
+
             bool speedingUp = desired.sqrMagnitude >= current.sqrMagnitude && Vector3.Dot(desired, current) >= 0f;
             float rate = speedingUp ? moveAcceleration : moveDeceleration;
             return Vector3.MoveTowards(current, desired, rate * Time.deltaTime);
