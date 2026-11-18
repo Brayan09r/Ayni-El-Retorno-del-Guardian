@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using Ayni.Enemy;
 using Ayni.UI;
@@ -50,18 +51,22 @@ namespace Ayni.Story
         {
             if (who != boss) return;
             Say("¡Cazadores, a mí! Que el guardián no salga vivo de esta plaza.", 3.2f, true);
-            CallHunters();
+            StartCoroutine(CallHunters());
         }
 
-        /// <summary>Dos cazadores (como los de la Portada del Cazador) llegan corriendo por la espalda de Yari.</summary>
-        private void CallHunters()
+        /// <summary>
+        /// Dos cazadores (como los de la Portada del Cazador) llegan corriendo por la espalda de Yari, un segundo después
+        /// del grito (y fuera del golpe que lo provocó: crear rivales mientras se recorre la lista de enemigos la rompe).
+        /// </summary>
+        private IEnumerator CallHunters()
         {
+            yield return new WaitForSeconds(1.2f);
             AyniEncounterSite kennel = null;
             foreach (AyniEncounterSite site in AyniEncounterSite.All)
             {
                 if (site != null && (kennel == null || site.Order > kennel.Order)) kennel = site;
             }
-            if (kennel == null || yari == null) return;
+            if (kennel == null || yari == null) yield break;
             Vector3 back = yari.position - boss.transform.position;
             back.y = 0f;
             back = back.sqrMagnitude > 0.01f ? back.normalized : -boss.transform.forward;
