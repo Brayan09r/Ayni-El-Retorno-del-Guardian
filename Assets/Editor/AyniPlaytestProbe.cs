@@ -331,7 +331,7 @@ namespace Ayni.Editor
                 var anim = e.Animator;
                 string clip = anim != null && anim.GetCurrentAnimatorClipInfoCount(0) > 0 ? anim.GetCurrentAnimatorClipInfo(0)[0].clip.name : "-";
                 sb.Append($"\n   {e.name} ({e.CharacterName}) en {e.transform.position:F1} a {(e.transform.position - p).magnitude:F1} m: " +
-                          $"estado={e.State} externo={e.ExternalControl} vida={e.CurrentHealth:F0} muerto={e.IsDead} " +
+                          $"estado={e.State} externo={e.ExternalControl} vida={e.CurrentHealth:F0} muerto={e.IsDead} aliento={e.SecondWinds} furioso={e.Enraged} " +
                           $"rutina={(routine == null ? "-" : routine.enabled ? (routine.IsAwake ? "despierto" : "en lo suyo") : "terminada")} clip={clip}");
             }
             Debug.Log("[Ayni Prueba] Rivales:" + sb);
