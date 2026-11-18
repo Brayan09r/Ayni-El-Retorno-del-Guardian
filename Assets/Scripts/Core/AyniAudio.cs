@@ -132,12 +132,15 @@ namespace Ayni.Core
             return Get().StartLoop(clip, volume, fadeSeconds, false);
         }
 
-        /// <summary>Música en bucle desde el principio (no desde un punto al azar como el ambiente). −1 si no existe.</summary>
-        public static int PlayMusicLoop(string name, float volume = 1f, float fadeSeconds = 1.5f)
+        /// <summary>
+        /// Música en bucle desde <paramref name="startAt"/> segundos (no desde un punto al azar como el ambiente).
+        /// −1 si no existe.
+        /// </summary>
+        public static int PlayMusicLoop(string name, float volume = 1f, float fadeSeconds = 1.5f, float startAt = 0f)
         {
             AudioClip clip = Clip(name);
             if (clip == null) return -1;
-            return Get().StartLoop(clip, volume, fadeSeconds, true, randomStart: false);
+            return Get().StartLoop(clip, volume, fadeSeconds, true, randomStart: false, startAt: startAt);
         }
 
         public static void StopLoop(int handle, float fadeSeconds = 1.5f)
@@ -218,7 +221,7 @@ namespace Ayni.Core
             source.Play();
         }
 
-        public int StartLoop(AudioClip clip, float volume, float fadeSeconds, bool repeat, bool randomStart = true)
+        public int StartLoop(AudioClip clip, float volume, float fadeSeconds, bool repeat, bool randomStart = true, float startAt = 0f)
         {
             var go = new GameObject("Bucle_" + clip.name);
             go.transform.SetParent(transform, false);
@@ -230,6 +233,7 @@ namespace Ayni.Core
             source.volume = 0f;
             // Los bucles de ambiente empiezan en un punto al azar para que no suenen siempre igual al entrar
             if (repeat && randomStart) source.time = Random.Range(0f, clip.length * 0.9f);
+            else if (startAt > 0f && startAt < clip.length) source.time = startAt;
             source.Play();
 
             int handle = nextHandle++;

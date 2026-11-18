@@ -16,6 +16,12 @@ namespace Ayni.Enemy
     {
         public enum Activity { Guard, Patrol, Rest }
 
+        /// <summary>Un rival acaba de descubrir a Yari y da la voz (la música entra en combate en ese instante).</summary>
+        public static event System.Action<AyniRivalAmbient> OnAlert;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => OnAlert = null;
+
         [Tooltip("Distancia a la que ve a Yari si lo tiene delante (y sin muros en medio).")]
         [SerializeField] private float sightRange = 11f;
         [Tooltip("Distancia a la que lo oye aunque esté de espaldas (más si Yari corre).")]
@@ -135,7 +141,7 @@ namespace Ayni.Enemy
             }
             if (alertGroup)
             {
-                AyniAudio.Play("titulo_golpe", transform.position, 0.45f, 0.05f, 0.75f);
+                OnAlert?.Invoke(this);
                 if (group != null)
                 {
                     float stagger = 0.15f;
