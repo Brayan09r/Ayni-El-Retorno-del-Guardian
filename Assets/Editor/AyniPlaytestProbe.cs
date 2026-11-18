@@ -215,6 +215,61 @@ namespace Ayni.Editor
             Debug.Log($"[Ayni Prueba] Rivales {(on != 0 ? "congelados" : "liberados")}");
         }
 
+        /// <summary>
+        /// Recorre una línea desde (x, z) en el rumbo <paramref name="yaw"/> cada metro y anota la altura del suelo (o
+        /// "vacío" si no hay nada debajo). Lista también los terrenos de la escena. Sirve para ver dónde se acaba el mapa.
+        /// </summary>
+        public static void ScanGround(float x, float z, float yaw, float meters)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var t in Terrain.activeTerrains)
+            {
+                sb.Append($"\n   terreno {t.name}: desde {t.transform.position} tamaño {t.terrainData.size}");
+            }
+            Vector3 dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
+            string last = null;
+            for (int i = 0; i <= meters; i++)
+            {
+                Vector3 p = new Vector3(x, 0f, z) + dir * i;
+                string here = Physics.Raycast(p + Vector3.up * 80f, Vector3.down, out RaycastHit hit, 200f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                    ? $"y={hit.point.y:F1} ({hit.collider.name})" : "vacío";
+                if (here != last || i == meters) sb.Append($"\n   {i,3} m ({p.x:F0}, {p.z:F0}): {here}");
+                last = here;
+            }
+            Debug.Log("[Ayni Prueba] Suelo:" + sb);
+        }
+
+        /// <summary>
+        /// Foto cenital ortográfica centrada en (cx, cz) que abarca <paramref name="size"/> metros de lado, con +z hacia
+        /// arriba y +x a la derecha (cada píxel = size/1024 m). Para ubicar cosas del mapa con coordenadas exactas.
+        /// </summary>
+        public static void TopDown(float cx, float cz, float size, string name)
+        {
+            var go = new GameObject("Ayni_CamaraCenital");
+            var cam = go.AddComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = size * 0.5f;
+            cam.nearClipPlane = 1f;
+            cam.farClipPlane = 1000f;
+            go.transform.SetPositionAndRotation(new Vector3(cx, 400f, cz), Quaternion.Euler(90f, 0f, 0f));
+            const int px = 1024;
+            var rt = new RenderTexture(px, px, 24);
+            cam.targetTexture = rt;
+            cam.Render();
+            RenderTexture.active = rt;
+            var tex = new Texture2D(px, px, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, px, px), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            cam.targetTexture = null;
+            Object.DestroyImmediate(rt);
+            Object.DestroyImmediate(go);
+            string dir = System.IO.Path.Combine(System.IO.Directory.GetParent(Application.dataPath).FullName, "DebugCaptures");
+            System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+            Debug.Log($"[Ayni Prueba] Vista cenital {name}: centro ({cx}, {cz}), {size} m de lado");
+        }
+
         /// <summary>Cierra el tutorial si está abierto (devuelve el tiempo y los controles), como si el jugador lo saltara.</summary>
         public static void CloseTutorial()
         {

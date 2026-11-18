@@ -337,6 +337,64 @@ namespace Ayni.Editor
             Debug.Log("[Ayni Traza] estados del Animator:" + trace);
         }
 
+        // ───────────────────────── Carrera ─────────────────────────
+
+        private static CharacterController runMover;
+        private static float runEnd, runStart;
+        private static string runLast;
+        private static int runFrames, runAirFrames, runOddFrames;
+        private static StringBuilder runTrace;
+
+        /// <summary>
+        /// Graba cada fotograma de una carrera: estado del Animator (y si está en transición), suelo, parámetro Speed,
+        /// velocidad del Animator y altura. Solo escribe cuando algo cambia, para cazar tirones al correr.
+        /// </summary>
+        public static void TraceRun(float seconds)
+        {
+            if (!Application.isPlaying) return;
+            var player = GameObject.FindGameObjectWithTag("Player");
+            traceAnimator = player != null ? player.GetComponentInChildren<Animator>() : null;
+            runMover = player != null ? player.GetComponent<CharacterController>() : null;
+            if (traceAnimator == null || runMover == null) return;
+            runStart = Time.time;
+            runEnd = Time.time + seconds;
+            runLast = null;
+            runFrames = runAirFrames = runOddFrames = 0;
+            runTrace = new StringBuilder();
+            EditorApplication.update -= RunTick;
+            EditorApplication.update += RunTick;
+        }
+
+        private static string StateName(AnimatorStateInfo info)
+        {
+            foreach (string s in KnownStates) if (info.IsName(s)) return s;
+            return "?";
+        }
+
+        private static void RunTick()
+        {
+            if (!Application.isPlaying || traceAnimator == null)
+            {
+                EditorApplication.update -= RunTick;
+                return;
+            }
+            runFrames++;
+            string state = StateName(traceAnimator.GetCurrentAnimatorStateInfo(0));
+            if (traceAnimator.IsInTransition(0)) state += "→" + StateName(traceAnimator.GetNextAnimatorStateInfo(0));
+            bool grounded = runMover.isGrounded;
+            if (!grounded) runAirFrames++;
+            if (state.Contains("→") || state.Contains("Fall") || state.Contains("Land")) runOddFrames++;
+            string line = $"{state} suelo={(grounded ? 1 : 0)} Speed={traceAnimator.GetFloat("Speed"):F1} anim×{traceAnimator.speed:F2}";
+            if (line != runLast)
+            {
+                runTrace.Append($"\n   {Time.time - runStart:F2} s  {line}  y={runMover.transform.position.y:F2}");
+                runLast = line;
+            }
+            if (Time.time < runEnd) return;
+            EditorApplication.update -= RunTick;
+            Debug.Log($"[Ayni Carrera] {runFrames} fotogramas, {runAirFrames} sin suelo, {runOddFrames} en transición/caída:" + runTrace);
+        }
+
         // ───────────────────────── Velocidad ─────────────────────────
 
         private static Transform speedRoot;
