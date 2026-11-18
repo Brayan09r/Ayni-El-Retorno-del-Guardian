@@ -48,6 +48,8 @@ namespace Ayni.UI
             if (GetComponent<AyniLevelMusic>() == null) gameObject.AddComponent<AyniLevelMusic>();
             // Pasillo alrededor del camino: ya no se puede salir del mapa ni caer al vacío detrás del inicio
             if (GetComponent<Ayni.World.AyniLevelBounds>() == null) gameObject.AddComponent<Ayni.World.AyniLevelBounds>();
+            // Las llamas de Llama.obj eran estatuas: se cambian por llamas animadas de la fauna procedural
+            if (GetComponent<Ayni.World.Fauna.AyniStaticLlamaSwap>() == null) gameObject.AddComponent<Ayni.World.Fauna.AyniStaticLlamaSwap>();
             // Presentación del jefe: Amaru espera en la cabeza del puente y se interpone en el camino
             if (GetComponent<AyniBossIntro>() == null) gameObject.AddComponent<AyniBossIntro>();
             // Cambio de fase de los jefes (caída, grito y segunda fase)
