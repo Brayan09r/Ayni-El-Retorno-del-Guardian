@@ -34,6 +34,12 @@ namespace Ayni.Player
         [Tooltip("A partir de este ángulo entre la marcha y lo pedido se considera media vuelta: frena y luego arranca.")]
         [Range(90f, 180f)] [SerializeField] private float reverseAngle = 135f;
 
+        [Header("Parkour")]
+        [Tooltip("Corriendo contra un obstáculo bajo, Yari lo salta solo (trepar sigue necesitando la pulsación).")]
+        [SerializeField] private bool autoVaultWhenRunning = true;
+        [Tooltip("Ritmo mínimo (1 = correr) para el salto automático.")]
+        [SerializeField] private float autoVaultPace = 0.85f;
+
         [Header("Caminar con el stick")]
         [Tooltip("Por debajo de esta inclinación del stick Yari camina; por encima, corre como con el teclado.")]
         [Range(0.3f, 0.95f)] [SerializeField] private float runStickThreshold = 0.75f;
@@ -1098,6 +1104,16 @@ namespace Ayni.Player
             if (AyniInput.Down(AyniInput.Action.Jump)) jumpPressedAt = Time.time;
             bool onGround = characterController.isGrounded || Time.time - lastGroundedAt < 0.12f;
             if (!onGround || jumpInAir || velocity.y > 0.5f) return;
+
+            // Corriendo de frente contra un tronco o un muro bajo, lo salta sin parar ni pulsar nada (como el parkour
+            // de Sifu al ir lanzado): el recorrido fluye y se puede mirar el paisaje y los animales mientras tanto.
+            // Trepar a una cornisa sigue pidiendo la pulsación, porque es una decisión.
+            if (autoVaultWhenRunning && lockTarget == null && !inCombatStance && !isGuarding && !isAttacking &&
+                Time.frameCount == paceFrame && paceRatio >= autoVaultPace && traversal != null &&
+                traversal.Probe(TraversalDirection(), planarVelocity.magnitude) == YariTraversal.Kind.Vault)
+            {
+                jumpPressedAt = Time.time;
+            }
 
             // Con un rival para el Juicio Ayni, A del mando es "perdonar". En guardia, A es la esquiva de saltito.
             if (Time.time - jumpPressedAt >= traversalPressBuffer || isGuarding || isAttacking ||
