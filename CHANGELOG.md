@@ -10,7 +10,7 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
-## v0.10.0 — Rivales vivos, pumas guardianes, límites del mapa, carrera sin tirones y música · 17 de noviembre de 2026
+## v0.10.0 — Rivales vivos, pumas guardianes, Amaru que habla, límites del mapa y música · 17 de noviembre de 2026
 
 Versión para la Feria Interna de Proyectos ISI 2026. Integra lo que el equipo subió del 6 al 12 de noviembre.
 
@@ -33,9 +33,19 @@ Versión para la Feria Interna de Proyectos ISI 2026. Integra lo que el equipo s
 - Al girar corriendo la velocidad rota sin perder rapidez (antes perdía ~40 % en cada curva y los pasos iban a cámara lenta); solo la media
   vuelta frena. Con teclado, cambiar de tecla ya no reinicia la carrera desde caminar.
 
-**Música del nivel** (`AyniLevelMusic`)
-- Pistas de camino, combate y jefe con fundidos según lo que pasa; calla en el prólogo y en el Juicio. Lee `musica_nivel1_exploracion`,
-  `musica_nivel1_combate` y `musica_amaru` de `Resources/AyniAudio` (generadas con Suno); sin los archivos no suena nada y no hay error.
+**Música del nivel** (`AyniLevelMusic`, pistas de Suno)
+- Tres pistas propias hechas con Suno (camino, combate y Amaru), importadas en streaming. Calla en el prólogo y en el Juicio.
+- Como van a tempos distintos, no se mezclan: cuando un rival da la voz el combate entra directo en su primer golpe fuerte; al acabar
+  la pelea hay un respiro con viento y vuelve el camino desde su inicio; el golpe fuerte de la pista de Amaru cae sobre su título.
+
+**Amaru en el puente** (`AyniBossIntro`, `AyniBossBarks`)
+- Mientras espera camina de un lado a otro del estribo y mira el camino; al ver llegar a Yari ruge, lo sigue con la mirada y le habla.
+- Cada plano de la presentación lleva su frase y baja caminando del estribo. En el duelo provoca a Yari, grita en la segunda fase, se
+  burla cuando la Illa le cobra años y flaquea con poca vida (subtítulos con su nombre).
+
+**Recorrido con vida**
+- Corriendo contra un tronco o un muro bajo, Yari lo salta solo, sin frenar (trepar sigue pidiendo el botón).
+- Las 10 llamas de `Llama.obj` que estaban quietas como estatuas se cambian al empezar por llamas animadas de la fauna de Jhosue.
 
 **Del equipo**
 - Junior: menú principal con opciones (audio por canales, pantalla completa, resolución, restablecer), créditos animados y respuesta de los
