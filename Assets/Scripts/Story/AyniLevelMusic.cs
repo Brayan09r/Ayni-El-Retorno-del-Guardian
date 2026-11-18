@@ -13,8 +13,9 @@ namespace Ayni.Story
     /// cruzado, que sonaría a dos canciones a la vez. En cambio:
     ///  - Entrar en combate: en el instante en que un rival da la voz (con el tambor del patio) el camino se corta en
     ///    medio segundo y el combate arranca directamente en su primer golpe fuerte (no en su introducción suave).
-    ///  - Acabar la pelea: el combate se apaga despacio, queda un respiro solo con el viento y el camino vuelve
-    ///    desde su comienzo, que es tranquilo.
+    ///  - Acabar la pelea: el combate se apaga despacio, queda un respiro solo con el viento y el camino vuelve por
+    ///    donde se había quedado (con un fundido suave), así se oye la pista entera a lo largo del nivel en vez de
+    ///    repetir siempre su comienzo. El combate también retoma donde iba en la pelea anterior.
     ///  - Amaru: su pista arranca en la presentación de modo que su primer golpe fuerte coincida con su título.
     /// Los segundos de cada pista se midieron con Herramientas/Audio (analizar_musica.py); si se cambia una pista,
     /// basta con ajustar los campos de "Entradas".
@@ -54,6 +55,8 @@ namespace Ayni.Story
         private float lastThreatAt = -100f, silentUntil;
         private Transform yari;
         private bool bossIntroSeen;
+        // Por dónde iba cada pista al cortarla, para retomarla ahí la próxima vez
+        private readonly System.Collections.Generic.Dictionary<string, float> resumeAt = new System.Collections.Generic.Dictionary<string, float>();
 
         private void OnEnable()
         {
@@ -78,7 +81,8 @@ namespace Ayni.Story
         {
             lastThreatAt = Time.time;
             if (current == Combat || current == Boss || AyniGameState.CinematicPlaying) return;
-            Switch(Combat, 0.5f, 0.12f, combatEntry);
+            // La primera pelea entra en el golpe fuerte; las siguientes siguen por donde iba el combate
+            Switch(Combat, 0.5f, resumeAt.ContainsKey(Combat) ? 0.4f : 0.12f, Resume(Combat, combatEntry));
         }
 
         private void Update()
@@ -140,16 +144,20 @@ namespace Ayni.Story
                 silentUntil = Time.time + breath;
                 return;
             }
-            if (current == null && Time.time >= silentUntil) Switch(Exploration, 0f, 4f, 0f);
+            if (current == null && Time.time >= silentUntil) Switch(Exploration, 0f, 4f, Resume(Exploration, 0f));
         }
 
         private void Switch(string wanted, float fadeOut, float fadeIn, float startAt)
         {
             if (wanted == current) return;
+            if (current != null) resumeAt[current] = AyniAudio.LoopTime(handle);
             AyniAudio.StopLoop(handle, fadeOut);
             current = wanted;
             handle = wanted == null ? -1 : AyniAudio.PlayMusicLoop(wanted, VolumeOf(wanted), fadeIn, startAt);
         }
+
+        /// <summary>Dónde retomar una pista: donde se cortó la última vez, o <paramref name="first"/> si aún no sonó.</summary>
+        private float Resume(string track, float first) => resumeAt.TryGetValue(track, out float t) ? t : first;
 
         private float VolumeOf(string track) =>
             track == Boss ? bossVolume : track == Combat ? combatVolume : explorationVolume;

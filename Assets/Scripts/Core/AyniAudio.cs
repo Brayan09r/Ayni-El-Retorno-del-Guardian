@@ -143,6 +143,13 @@ namespace Ayni.Core
             return Get().StartLoop(clip, volume, fadeSeconds, true, randomStart: false, startAt: startAt);
         }
 
+        /// <summary>Por dónde va un bucle o una pista (segundos), para retomarla luego en ese punto. 0 si ya no existe.</summary>
+        public static float LoopTime(int handle)
+        {
+            if (handle < 0 || player == null) return 0f;
+            return player.LoopTime(handle);
+        }
+
         public static void StopLoop(int handle, float fadeSeconds = 1.5f)
         {
             if (handle < 0 || player == null) return;
@@ -244,6 +251,11 @@ namespace Ayni.Core
                 speed = fadeSeconds > 0.01f ? 1f / fadeSeconds : 100f
             };
             return handle;
+        }
+
+        public float LoopTime(int handle)
+        {
+            return loops.TryGetValue(handle, out Loop loop) && loop.source != null ? loop.source.time : 0f;
         }
 
         public void StopLoop(int handle, float fadeSeconds)
