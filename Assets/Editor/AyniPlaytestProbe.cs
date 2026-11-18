@@ -215,6 +215,161 @@ namespace Ayni.Editor
             Debug.Log($"[Ayni Prueba] Rivales {(on != 0 ? "congelados" : "liberados")}");
         }
 
+        /// <summary>
+        /// Recorre una línea desde (x, z) en el rumbo <paramref name="yaw"/> cada metro y anota la altura del suelo (o
+        /// "vacío" si no hay nada debajo). Lista también los terrenos de la escena. Sirve para ver dónde se acaba el mapa.
+        /// </summary>
+        public static void ScanGround(float x, float z, float yaw, float meters)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var t in Terrain.activeTerrains)
+            {
+                sb.Append($"\n   terreno {t.name}: desde {t.transform.position} tamaño {t.terrainData.size}");
+            }
+            Vector3 dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
+            string last = null;
+            for (int i = 0; i <= meters; i++)
+            {
+                Vector3 p = new Vector3(x, 0f, z) + dir * i;
+                string here = Physics.Raycast(p + Vector3.up * 80f, Vector3.down, out RaycastHit hit, 200f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                    ? $"y={hit.point.y:F1} ({hit.collider.name})" : "vacío";
+                if (here != last || i == meters) sb.Append($"\n   {i,3} m ({p.x:F0}, {p.z:F0}): {here}");
+                last = here;
+            }
+            Debug.Log("[Ayni Prueba] Suelo:" + sb);
+        }
+
+        /// <summary>
+        /// Foto cenital ortográfica centrada en (cx, cz) que abarca <paramref name="size"/> metros de lado, con +z hacia
+        /// arriba y +x a la derecha (cada píxel = size/1024 m). Para ubicar cosas del mapa con coordenadas exactas.
+        /// </summary>
+        public static void TopDown(float cx, float cz, float size, string name)
+        {
+            var go = new GameObject("Ayni_CamaraCenital");
+            var cam = go.AddComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = size * 0.5f;
+            cam.nearClipPlane = 1f;
+            cam.farClipPlane = 1000f;
+            go.transform.SetPositionAndRotation(new Vector3(cx, 400f, cz), Quaternion.Euler(90f, 0f, 0f));
+            const int px = 1024;
+            var rt = new RenderTexture(px, px, 24);
+            cam.targetTexture = rt;
+            cam.Render();
+            RenderTexture.active = rt;
+            var tex = new Texture2D(px, px, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, px, px), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            cam.targetTexture = null;
+            Object.DestroyImmediate(rt);
+            Object.DestroyImmediate(go);
+            string dir = System.IO.Path.Combine(System.IO.Directory.GetParent(Application.dataPath).FullName, "DebugCaptures");
+            System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, name + ".png"), tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+            Debug.Log($"[Ayni Prueba] Vista cenital {name}: centro ({cx}, {cz}), {size} m de lado");
+        }
+
+        /// <summary>
+        /// Lista la fauna: animales con comportamiento (AyniGrazingAnimal, vizcachas) y mallas sueltas de llama sin
+        /// animación. Llamar dos veces con unos segundos de diferencia muestra cuáles se mueven.
+        /// </summary>
+        public static void ListFauna()
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var mb in Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+            {
+                string type = mb.GetType().Name;
+                if (type != "AyniGrazingAnimal" && type != "AyniVizcacha" && type != "AyniCondorFlight") continue;
+                sb.Append($"\n   {type} {mb.name} en {mb.transform.position:F1} activo={mb.isActiveAndEnabled}");
+            }
+            foreach (var mf in Object.FindObjectsByType<MeshFilter>(FindObjectsSortMode.None))
+            {
+                if (mf.sharedMesh == null || !mf.sharedMesh.name.ToLower().Contains("llama")) continue;
+                sb.Append($"\n   malla {mf.name} ({mf.sharedMesh.name}) en {mf.transform.position:F1} padre={(mf.transform.parent ? mf.transform.parent.name : "-")}");
+            }
+            Debug.Log("[Ayni Prueba] Fauna:" + sb);
+        }
+
+        /// <summary>Anota dónde está Yari (para comprobar límites del mapa y desplazamientos).</summary>
+        public static string WhereIsYari()
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            string text = player != null ? $"Yari en {player.transform.position:F1}" : "sin Yari";
+            Debug.Log("[Ayni Prueba] " + text);
+            return text;
+        }
+
+        /// <summary>Golpea al rival más cercano a Yari (vida y postura) como si fuera un golpe pesado suyo.</summary>
+        public static void HitNearest(float health, float structure)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null) return;
+            EnemyController nearest = null;
+            float best = float.MaxValue;
+            foreach (var e in EnemyController.All)
+            {
+                if (e == null || e.IsDead) continue;
+                float d = (e.transform.position - player.transform.position).sqrMagnitude;
+                if (d < best) { best = d; nearest = e; }
+            }
+            if (nearest == null) return;
+            nearest.TakeHit(health, structure, player.transform.position, true, Ayni.Combat.HitReaction.Heavy, 0.3f);
+            Debug.Log($"[Ayni Prueba] Golpe a {nearest.name}: vida {nearest.CurrentHealth:F0}, muerto={nearest.IsDead}");
+        }
+
+        /// <summary>Lista los rivales a menos de <paramref name="radius"/> m de Yari: posición, estado, vida y si están en su rutina.</summary>
+        public static void ListRivals(float radius)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            Vector3 p = player != null ? player.transform.position : Vector3.zero;
+            var sb = new System.Text.StringBuilder();
+            foreach (var e in EnemyController.All)
+            {
+                if (e == null || (e.transform.position - p).magnitude > radius) continue;
+                var routine = e.GetComponent<Ayni.Enemy.AyniRivalAmbient>();
+                var anim = e.Animator;
+                string clip = anim != null && anim.GetCurrentAnimatorClipInfoCount(0) > 0 ? anim.GetCurrentAnimatorClipInfo(0)[0].clip.name : "-";
+                sb.Append($"\n   {e.name} ({e.CharacterName}) en {e.transform.position:F1} a {(e.transform.position - p).magnitude:F1} m: " +
+                          $"estado={e.State} externo={e.ExternalControl} vida={e.CurrentHealth:F0} muerto={e.IsDead} aliento={e.SecondWinds} furioso={e.Enraged} " +
+                          $"rutina={(routine == null ? "-" : routine.enabled ? (routine.IsAwake ? "despierto" : "en lo suyo") : "terminada")} clip={clip}");
+            }
+            Debug.Log("[Ayni Prueba] Rivales:" + sb);
+        }
+
+        /// <summary>Cierra el tutorial si está abierto (devuelve el tiempo y los controles), como si el jugador lo saltara.</summary>
+        public static void CloseTutorial()
+        {
+            var tutorial = Object.FindFirstObjectByType<Ayni.UI.AyniTutorial>();
+            var close = typeof(Ayni.UI.AyniTutorial).GetMethod("Close", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (tutorial == null || close == null) return;
+            close.Invoke(tutorial, null);
+            Debug.Log("[Ayni Prueba] Tutorial cerrado");
+        }
+
+        /// <summary>
+        /// Suelta la cámara de juego y la deja quieta en (x, y, z) mirando a (lx, ly, lz), para fotos del escenario.
+        /// FollowCamera(1) la devuelve detrás de Yari.
+        /// </summary>
+        public static void PlaceCamera(float x, float y, float z, float lx, float ly, float lz)
+        {
+            Camera cam = Camera.main;
+            if (cam == null) return;
+            var follow = cam.GetComponent<Ayni.Player.ThirdPersonSifuCamera>();
+            if (follow != null) follow.enabled = false;
+            var pos = new Vector3(x, y, z);
+            cam.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(new Vector3(lx, ly, lz) - pos));
+            Debug.Log($"[Ayni Prueba] Cámara fija en {pos}");
+        }
+
+        public static void FollowCamera(int snap)
+        {
+            var follow = Camera.main != null ? Camera.main.GetComponent<Ayni.Player.ThirdPersonSifuCamera>() : null;
+            if (follow == null) return;
+            follow.enabled = true;
+            if (snap != 0) follow.SnapBehindTarget();
+        }
+
         /// <summary>Pone a Yari en un estado del Animator en el punto indicado (speed 0 = congelado) y mide sus huesos.</summary>
         public static void PlayYariState(string state, float normalizedTime, float speed)
         {

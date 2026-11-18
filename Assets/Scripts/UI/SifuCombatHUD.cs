@@ -44,8 +44,18 @@ namespace Ayni.UI
             if (GetComponent<AyniLevelOutcome>() == null) gameObject.AddComponent<AyniLevelOutcome>();
             // Viento de la cordillera y tambores al entrar en los patios con rivales
             if (GetComponent<AyniLevelAmbience>() == null) gameObject.AddComponent<AyniLevelAmbience>();
+            // Música del camino, de las peleas y del jefe (las pistas de Suno en Resources/AyniAudio)
+            if (GetComponent<AyniLevelMusic>() == null) gameObject.AddComponent<AyniLevelMusic>();
+            // Pasillo alrededor del camino: ya no se puede salir del mapa ni caer al vacío detrás del inicio
+            if (GetComponent<Ayni.World.AyniLevelBounds>() == null) gameObject.AddComponent<Ayni.World.AyniLevelBounds>();
+            // Las llamas de Llama.obj eran estatuas: se cambian por llamas animadas de la fauna procedural
+            if (GetComponent<Ayni.World.Fauna.AyniStaticLlamaSwap>() == null) gameObject.AddComponent<Ayni.World.Fauna.AyniStaticLlamaSwap>();
+            // Parejas de guardias que patrullan el camino entre kancha y kancha
+            if (GetComponent<Ayni.World.AyniRoadPatrols>() == null) gameObject.AddComponent<Ayni.World.AyniRoadPatrols>();
             // Presentación del jefe: Amaru espera en la cabeza del puente y se interpone en el camino
             if (GetComponent<AyniBossIntro>() == null) gameObject.AddComponent<AyniBossIntro>();
+            // Amaru habla durante el duelo (provocaciones, segunda fase, cuando Yari cae)
+            if (GetComponent<AyniBossBarks>() == null) gameObject.AddComponent<AyniBossBarks>();
             // Cambio de fase de los jefes (caída, grito y segunda fase)
             if (GetComponent<AyniBossPhaseDirector>() == null) gameObject.AddComponent<AyniBossPhaseDirector>();
             // Pausa con las opciones de sonido (Esc / Menu)
@@ -234,7 +244,8 @@ namespace Ayni.UI
             float x = Screen.width / 2f - width / 2f;
             const float top = 22f;
 
-            string name = AyniInkaUI.Spaced(enemy.CharacterName);
+            // El que se levantó con su segundo aliento lo dice junto al nombre
+            string name = AyniInkaUI.Spaced(enemy.CharacterName) + (enemy.Enraged ? "  ·  FURIOSO" : "");
             AyniInkaUI.Label(new Rect(x, top, width, 18f), name, AyniInkaUI.Style(14, FontStyle.Bold, TextAnchor.MiddleCenter), AyniInkaUI.Bone);
 
             // Fases del jefe: un rombo por fase, lleno el de la fase en curso y las ya pasadas
@@ -392,7 +403,7 @@ namespace Ayni.UI
             for (int i = 0; i < enemies.Count; i++)
             {
                 EnemyController e = enemies[i];
-                if (e == null || e.IsDead) continue;
+                if (e == null || e.IsDead || e.Dormant) continue;
                 float dist = Vector3.Distance(yari.transform.position, e.transform.position);
                 if (dist < best)
                 {

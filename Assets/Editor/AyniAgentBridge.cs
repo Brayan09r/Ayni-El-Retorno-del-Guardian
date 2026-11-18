@@ -254,8 +254,11 @@ namespace Ayni.Editor
                     return true;
 
                 case "screenshot":
-                    string file = Path.Combine(CapturesFolder(), (string.IsNullOrEmpty(rest) ? "agent_screen" : rest) + ".png");
-                    ScreenCapture.CaptureScreenshot(file);
+                    // "screenshot nombre 3" multiplica la resolución de la Game View (para imprimir, p. ej. el póster)
+                    string[] shot = rest.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    int superSize = shot.Length > 1 && int.TryParse(shot[1], out int s) ? Mathf.Clamp(s, 1, 8) : 1;
+                    string file = Path.Combine(CapturesFolder(), (shot.Length > 0 ? shot[0] : "agent_screen") + ".png");
+                    ScreenCapture.CaptureScreenshot(file, superSize);
                     Append("[bridge] captura de Game View pedida: " + file);
                     return true;
 

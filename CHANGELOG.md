@@ -10,6 +10,93 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.10.0 — Rivales vivos, oleadas, pumas guardianes, Amaru que habla, límites del mapa y música · 17 de noviembre de 2026
+
+Versión para la Feria Interna de Proyectos ISI 2026. Integra lo que el equipo subió del 6 al 12 de noviembre.
+
+**Rivales que ya están ahí, como en Sifu** (`AyniRivalAmbient`, `AyniEncounterSite`)
+- Nadie aparece de la nada: los rivales esperan a la vista en su kancha haciendo lo suyo. Uno hace guardia mirando a los lados, otro
+  patrulla caminando (nuevo estado `Ambient_Walk` con `Walk_Forward_InPlace`) y otro descansa arrodillado.
+- Pelean cuando ven a Yari (delante y sin muros en medio, ~11 m), lo oyen (más lejos si corre), él cruza la portada o lo golpean. El que lo
+  descubre se gira y avisa; el resto se suma con unas décimas de diferencia. La barra del rival sale solo cuando ya pelea.
+
+**Peleas más duras y con más gente, como en Sifu** (`EnemyController`, `AyniEncounterSite`, `AyniRoadPatrols`)
+- Turnos de ataque: solo dos rivales atacan a la vez; el resto rodea a Yari en guardia a unos metros, sin amontonarse, y espera su turno.
+- Oleadas: cuando cae la mitad de una kancha llegan refuerzos corriendo desde la portada (1, 2, 2 y 3 según la kancha).
+- Segundo aliento: el rival más duro de cada kancha no se queda en el suelo; cae, brilla en rojo y se levanta furioso con más vida, más
+  aguante y golpes más fuertes y seguidos (el HUD lo marca como "FURIOSO").
+- Patrullas del camino: entre kancha y kancha una pareja de guardias va y viene por el Qhapaq Ñan y embosca a Yari; el camino ya no
+  está vacío.
+- Amaru llama a dos cazadores al pasar a su segunda fase, que llegan por la espalda de Yari.
+
+**Pumas guardianes del Kay Pacha** (`PumaTerritory`, `AyniPumaPack`)
+- Los pumas ya no mueren ni desaparecen: al "derrotarlos" huyen heridos a su guarida y se recuperan.
+- Golpear a un puma enfurece a la manada, como las gallinas de Zelda: los cercanos y hasta tres más que bajan del cerro persiguen a Yari
+  un rato y luego se van. "La Pachamama defiende a sus hijos" (ODS 15).
+
+**Límites del nivel** (`AyniLevelBounds`)
+- Un pasillo alrededor del Qhapaq Ñan, del inicio al puente: ya no se puede retroceder desde el inicio ni salir del mapa y caer al vacío.
+  Cerca del borde sale un aviso y, si Yari insiste, el puma más cercano baja a cortarle el paso. Las quebradas siguen siendo mortales.
+
+**Correr sin tirones** (`YariCombatController`)
+- Al girar corriendo la velocidad rota sin perder rapidez (antes perdía ~40 % en cada curva y los pasos iban a cámara lenta); solo la media
+  vuelta frena. Con teclado, cambiar de tecla ya no reinicia la carrera desde caminar.
+
+**Música del nivel** (`AyniLevelMusic`, pistas de Suno)
+- Tres pistas propias hechas con Suno (camino, combate y Amaru), importadas en streaming. Calla en el prólogo y en el Juicio.
+- Como van a tempos distintos, no se mezclan: cuando un rival da la voz el combate entra directo en su primer golpe fuerte; al acabar
+  la pelea hay un respiro con viento y el camino sigue por donde se había quedado (se oye la pista entera, no siempre su comienzo); el
+  combate también retoma donde iba. El golpe fuerte de la pista de Amaru cae sobre su título.
+
+**Amaru en el puente** (`AyniBossIntro`, `AyniBossBarks`)
+- Mientras espera camina de un lado a otro del estribo y mira el camino; al ver llegar a Yari ruge, lo sigue con la mirada y le habla.
+- Cada plano de la presentación lleva su frase y baja caminando del estribo. En el duelo provoca a Yari, grita en la segunda fase, se
+  burla cuando la Illa le cobra años y flaquea con poca vida (subtítulos con su nombre).
+
+**Recorrido con vida**
+- Corriendo contra un tronco o un muro bajo, Yari lo salta solo, sin frenar (trepar sigue pidiendo el botón).
+- Las 10 llamas de `Llama.obj` que estaban quietas como estatuas se cambian al empezar por llamas animadas de la fauna de Jhosue.
+
+**Del equipo**
+- Junior: menú principal con opciones (audio por canales, pantalla completa, resolución, restablecer), créditos animados y respuesta de los
+  botones; puma nuevo de Tripo en lugar del anterior; tronco del O1 restaurado.
+- Antonnyy: documentación sincronizada (MainMenu, General Sayri 3D, catálogo y QA).
+- Jhosue: fauna andina procedural y atmósfera por clima (abajo), ya colocada en el nivel: 5 cóndores, 22 camélidos y 12 vizcachas y zorros.
+
+**Herramientas**
+- Sondas: `TraceRun`, `ScanGround`, `TopDown`, `ListRivals`, `HitNearest`, `WhereIsYari`, `CloseTutorial`, `PlaceCamera`; el puente de
+  Unity guarda capturas con supermuestreo (`screenshot nombre 3`).
+
+### Fauna andina y atmósfera por clima (Jhosue, rama `feat/fauna-andina`)
+
+Detalle en `FAUNA_ANDINA.md` y en la sección 5 de `ILUMINACION_ANDINA.md`.
+
+**Atmósfera que acompaña al clima** (`AyniClimateBlend`, `AyniClimateGrade`, `AyniLightMotes`, `AyniCloudShadows`)
+- La gradación de color cambia con cada clima: contraste en el combate, tono cobrizo y bloom de brasas en la Fase 2, luz limpia con
+  verdes vivos en el Amanecer Ayni y color ceniciento con viñeta de sangre en el Ocaso de Venganza. La Hora Dorada no cambia.
+- Motas doradas de polvo en el aire de la tarde y brasas que suben durante la Fase 2 de Amaru.
+- Sombras de nubes arrastradas por el viento sobre el valle; el cielo se carga en el Ocaso y se abre en el Amanecer.
+- Todo sigue las transiciones de `AyniDynamicLighting` sin modificarlo y se instala solo en Play. Menú `Ayni > Iluminación > En Play`.
+
+**Cóndores sobre el cañón** (`AyniCondorFlight`, `AyniCondorModel`)
+- Cinco Kuntur planean en térmicas sobre la garganta del puente, el cañón norte, la aldea y muy alto sobre la plaza de Amaru.
+  Collar blanco, alas de ~3 m con plumas primarias abiertas y aleteos ocasionales.
+
+**Rebaños de camélidos** (`AyniCamelidModel`, `AyniGrazingAnimal`)
+- Llamas con borlas de lana de colores, alpacas lanudas y vicuñas silvestres pastan, miran y caminan en paso de andadura.
+- Alpacas con llama guardiana junto a la Kancha de los Tejedores, caravana de llamas en el Tambo del Camino, rebaño mixto en el
+  Puesto de Chasquis y vicuñas lejanas cerca de la Portada del Cazador. Se apartan cuando Yari se acerca (la vicuña desde más lejos).
+
+**Vizcachas y zorros andinos** (`AyniVizcacha`, `AyniCritterModel`)
+- Colonias de vizcachas toman sol en rocas y muros de piedra, vigilan a Yari y huyen a saltos.
+- Dos zorros (Atoq) rondan los bordes con trote diagonal y olfatean el suelo.
+
+**Herramientas**
+- Menú `Ayni > Fauna Andina` para soltar toda la fauna o cada grupo, y para quitarla por completo.
+- Todo es decorativo, sin colisionadores y de autoría propia (sin mallas externas). No cambia ningún sistema existente.
+
+---
+
 ## v0.9.0 — Inicio cinematográfico, cuenta de la Illa, Amaru en el puente y HUD inca · 1 de noviembre de 2026
 
 **Prólogo "La Noche de las Cenizas"** (PR #8)

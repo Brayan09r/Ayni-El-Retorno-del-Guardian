@@ -9,8 +9,8 @@ namespace Ayni.Core
     /// </summary>
     public static class AyniVersion
     {
-        public const string Number = "0.9.0";
-        public const string Title = "Inicio cinematográfico, cuenta de la Illa, Amaru en el puente y HUD inca";
+        public const string Number = "0.10.0";
+        public const string Title = "Rivales vivos, oleadas, pumas guardianes, Amaru que habla y música";
 
         public static string Label => "v" + Number;
     }

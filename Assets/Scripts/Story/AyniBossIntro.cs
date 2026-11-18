@@ -8,10 +8,12 @@ using Ayni.UI;
 namespace Ayni.Story
 {
     /// <summary>
-    /// Presentación del jefe: Amaru el Cazador espera de pie en la cabeza del puente colgante (sobre el estribo de
-    /// piedra del lado de la plaza), cerrando el paso al puente por el que Yari cayó en el prólogo y que lleva a casa.
-    /// Cuando Yari se acerca por primera vez: plano por encima de su hombro con Amaru en el puente, contrapicado de
-    /// Amaru rugiendo con su título y, por fin, Amaru baja del estribo hacia Yari y empieza el combate.
+    /// Presentación del jefe: Amaru el Cazador espera en la cabeza del puente colgante (sobre el estribo de piedra del
+    /// lado de la plaza), cerrando el paso al puente por el que Yari cayó en el prólogo y que lleva a casa. Mientras
+    /// espera camina de un lado a otro del estribo como una fiera enjaulada y se detiene a mirar el camino; cuando ve
+    /// llegar a Yari se planta, lo encara y le habla. Al acercarse: plano por encima del hombro de Yari con Amaru en el
+    /// puente, contrapicado de Amaru rugiendo con su título y, por fin, baja del estribo hacia Yari hablándole y empieza
+    /// el combate. Sus frases salen como subtítulos con su nombre.
     /// SifuCombatHUD lo añade solo. Se salta con Tab / Esc / Menu.
     /// </summary>
     public class AyniBossIntro : MonoBehaviour
@@ -34,6 +36,16 @@ namespace Ayni.Story
         private Vector3 toPlaza;    // horizontal, del puente hacia la plaza
         private bool ready, done, skip;
 
+        // Espera en el puente: pasea de un lado a otro del estribo y se para a mirar el camino
+        private static readonly int WalkState = Animator.StringToHash("Ambient_Walk");
+        private Vector3 paceTarget;
+        private float paceTimer = 1.5f, paceVertical, spottedAt;
+        private bool roarDone;
+        private bool pacing, spotted;
+
+        /// <summary>Frase de Amaru como subtítulo con su nombre.</summary>
+        public static void Say(string line, float seconds) => AyniScreenFX.Caption("AMARU: «" + line + "»", seconds);
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
@@ -53,6 +65,10 @@ namespace Ayni.Story
             bossAnim = boss.Animator;
             bossMover = boss.GetComponent<CharacterController>();
             PlaceBoss(head, toPlaza);
+            // Hasta la presentación lo mueve la espera (la IA no lo lanza contra Yari ni la música lo cuenta como pelea)
+            boss.ExternalControl = true;
+            boss.Dormant = true;
+            paceTarget = head;
             ready = true;
         }
 
@@ -101,11 +117,86 @@ namespace Ayni.Story
                 if (AyniInput.Down(AyniInput.Action.Skip)) skip = true;
                 return;
             }
-            if (AyniGameState.CinematicPlaying || AyniGameState.InputLocked || yari.IsDead || boss.IsDead) return;
-
+            if (boss.IsDead || AyniGameState.CinematicPlaying) return;
             Vector3 d = yari.transform.position - boss.transform.position;
             d.y = 0f;
+            UpdateWaiting(d);
+            if (AyniGameState.InputLocked || yari.IsDead) return;
             if (d.magnitude <= triggerDistance) StartCoroutine(Intro());
+        }
+
+        /// <summary>
+        /// Antes de la presentación: Amaru pasea por el estribo (poco más de un metro a cada lado, mirando al camino en
+        /// las pausas). Cuando ve llegar a Yari por el camino se planta, lo encara y le habla.
+        /// </summary>
+        private void UpdateWaiting(Vector3 toYari)
+        {
+            if (!spotted && toYari.magnitude < 48f)
+            {
+                spotted = true;
+                spottedAt = Time.time;
+                StopPacing();
+                Say("Huelo la Illa en ti, Yari. Sayri dijo que volverías.", 4f);
+                if (bossAnim != null && bossAnim.HasState(0, Animator.StringToHash("Phase_Roar"))) bossAnim.CrossFadeInFixedTime("Phase_Roar", 0.2f);
+            }
+            if (spotted)
+            {
+                // Acaba el rugido y queda en guardia, siguiéndolo con la mirada
+                if (!roarDone && Time.time - spottedAt > 2.6f)
+                {
+                    roarDone = true;
+                    if (bossAnim != null && bossAnim.HasState(0, Animator.StringToHash("Idle"))) bossAnim.CrossFadeInFixedTime("Idle", 0.4f);
+                }
+                if (toYari.sqrMagnitude > 0.01f)
+                {
+                    boss.transform.rotation = Quaternion.RotateTowards(boss.transform.rotation, Quaternion.LookRotation(toYari), 120f * Time.deltaTime);
+                }
+                return;
+            }
+
+            Vector3 side = Vector3.Cross(Vector3.up, toPlaza);
+            if (!pacing)
+            {
+                paceTimer -= Time.deltaTime;
+                // En la pausa mira hacia el camino, por donde llegará Yari
+                boss.transform.rotation = Quaternion.RotateTowards(boss.transform.rotation, Quaternion.LookRotation(toPlaza), 90f * Time.deltaTime);
+                if (paceTimer > 0f) return;
+                // Siguiente punto: al otro lado del estribo (si hay suelo de piedra debajo)
+                float offset = (paceTarget - head).sqrMagnitude < 0.01f ? (Random.value < 0.5f ? -1.4f : 1.4f) : 0f;
+                Vector3 next = head + side * offset;
+                if (Physics.Raycast(next + Vector3.up * 3f, Vector3.down, out RaycastHit hit, 6f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) &&
+                    Mathf.Abs(hit.point.y - head.y) < 0.6f)
+                {
+                    paceTarget = next;
+                    pacing = true;
+                    if (bossAnim != null && bossAnim.HasState(0, WalkState)) bossAnim.CrossFadeInFixedTime(WalkState, 0.3f);
+                }
+                else
+                {
+                    paceTimer = 2f;
+                }
+                return;
+            }
+
+            Vector3 to = paceTarget - boss.transform.position;
+            to.y = 0f;
+            if (to.magnitude < 0.12f)
+            {
+                StopPacing();
+                return;
+            }
+            boss.transform.rotation = Quaternion.RotateTowards(boss.transform.rotation, Quaternion.LookRotation(to), 160f * Time.deltaTime);
+            paceVertical = bossMover != null && bossMover.isGrounded ? -2f : paceVertical - 18f * Time.deltaTime;
+            Vector3 step = to.normalized * Mathf.Min(1.0f * Time.deltaTime, to.magnitude) + Vector3.up * (paceVertical * Time.deltaTime);
+            if (bossMover != null && bossMover.enabled) bossMover.Move(step);
+            else boss.transform.position += step;
+        }
+
+        private void StopPacing()
+        {
+            pacing = false;
+            paceTimer = Random.Range(2f, 3.5f);
+            if (bossAnim != null && bossAnim.HasState(0, Animator.StringToHash("Idle"))) bossAnim.CrossFadeInFixedTime("Idle", 0.3f);
         }
 
         private IEnumerator Intro()
@@ -136,7 +227,7 @@ namespace Ayni.Story
             Vector3 right = Vector3.Cross(Vector3.up, dir);
 
             // Plano 1: por encima del hombro de Yari; al fondo, Amaru en la cabeza del puente y la garganta detrás
-            AyniScreenFX.Caption("En la cabeza del puente, alguien le cierra el paso.", 3.0f);
+            Say("Ningún guardián vuelve a cruzar este puente.", 3.0f);
             yield return Shot(3.2f, u =>
             {
                 Vector3 pos = yariPos - dir * Mathf.Lerp(2.6f, 2.1f, u) + right * 0.75f + Vector3.up * 1.85f;
@@ -153,6 +244,7 @@ namespace Ayni.Story
                 AyniAudio.Play2D("titulo_golpe", 0.85f);
                 AyniAudio.Play2D("postura_rota", 0.6f, 0.8f);
                 AyniScreenFX.Title("AMARU EL CAZADOR", "Primer teniente de Sayri · Te cierra el camino a casa", 3.2f);
+                Say("Quemé tu bosque y cacé a sus animales. Ahora te toca a ti.", 3.3f);
                 Vector3 side = Vector3.Cross(Vector3.up, toPlaza);
                 yield return Shot(3.4f, u =>
                 {
@@ -171,7 +263,12 @@ namespace Ayni.Story
                     to = hit.point;
                 }
                 if (bossAnim != null) bossAnim.SetFloat("Speed", 0.5f);
-                if (bossAnim != null && bossAnim.HasState(0, Animator.StringToHash("Move"))) bossAnim.CrossFadeInFixedTime("Move", 0.2f);
+                bool walk = bossAnim != null && bossAnim.HasState(0, WalkState);
+                if (bossAnim != null && (walk || bossAnim.HasState(0, Animator.StringToHash("Move"))))
+                {
+                    bossAnim.CrossFadeInFixedTime(walk ? WalkState : Animator.StringToHash("Move"), 0.2f);
+                }
+                Say("Ven, viejo guardián. Que la Pachamama te vea caer.", 2.2f);
                 Vector3 side = Vector3.Cross(Vector3.up, dir);
                 yield return Shot(2.0f, u =>
                 {
@@ -216,7 +313,12 @@ namespace Ayni.Story
                 gameplayCamera.enabled = true;
                 gameplayCamera.SnapBehindTarget();
             }
-            if (boss != null) boss.ExternalControl = false;
+            if (boss != null)
+            {
+                boss.ExternalControl = false;
+                boss.Dormant = false;
+                if (bossAnim != null && bossAnim.HasState(0, Animator.StringToHash("Idle"))) bossAnim.CrossFadeInFixedTime("Idle", 0.2f);
+            }
             AyniGameState.UnlockInput();
             Running = false;
         }

@@ -132,6 +132,24 @@ namespace Ayni.Core
             return Get().StartLoop(clip, volume, fadeSeconds, false);
         }
 
+        /// <summary>
+        /// Música en bucle desde <paramref name="startAt"/> segundos (no desde un punto al azar como el ambiente).
+        /// −1 si no existe.
+        /// </summary>
+        public static int PlayMusicLoop(string name, float volume = 1f, float fadeSeconds = 1.5f, float startAt = 0f)
+        {
+            AudioClip clip = Clip(name);
+            if (clip == null) return -1;
+            return Get().StartLoop(clip, volume, fadeSeconds, true, randomStart: false, startAt: startAt);
+        }
+
+        /// <summary>Por dónde va un bucle o una pista (segundos), para retomarla luego en ese punto. 0 si ya no existe.</summary>
+        public static float LoopTime(int handle)
+        {
+            if (handle < 0 || player == null) return 0f;
+            return player.LoopTime(handle);
+        }
+
         public static void StopLoop(int handle, float fadeSeconds = 1.5f)
         {
             if (handle < 0 || player == null) return;
@@ -210,7 +228,7 @@ namespace Ayni.Core
             source.Play();
         }
 
-        public int StartLoop(AudioClip clip, float volume, float fadeSeconds, bool repeat)
+        public int StartLoop(AudioClip clip, float volume, float fadeSeconds, bool repeat, bool randomStart = true, float startAt = 0f)
         {
             var go = new GameObject("Bucle_" + clip.name);
             go.transform.SetParent(transform, false);
@@ -221,7 +239,8 @@ namespace Ayni.Core
             source.spatialBlend = 0f;
             source.volume = 0f;
             // Los bucles de ambiente empiezan en un punto al azar para que no suenen siempre igual al entrar
-            if (repeat) source.time = Random.Range(0f, clip.length * 0.9f);
+            if (repeat && randomStart) source.time = Random.Range(0f, clip.length * 0.9f);
+            else if (startAt > 0f && startAt < clip.length) source.time = startAt;
             source.Play();
 
             int handle = nextHandle++;
@@ -232,6 +251,11 @@ namespace Ayni.Core
                 speed = fadeSeconds > 0.01f ? 1f / fadeSeconds : 100f
             };
             return handle;
+        }
+
+        public float LoopTime(int handle)
+        {
+            return loops.TryGetValue(handle, out Loop loop) && loop.source != null ? loop.source.time : 0f;
         }
 
         public void StopLoop(int handle, float fadeSeconds)
