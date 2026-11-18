@@ -10,9 +10,45 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
-## Sin publicar — Fauna andina y atmósfera por clima en el Nivel 1 (rama `feat/fauna-andina`)
+## v0.10.0 — Rivales vivos, pumas guardianes, límites del mapa, carrera sin tirones y música · 17 de noviembre de 2026
 
-Propuesta como versión **MENOR** (nuevos sistemas ambientales). El número se fija al unir a `main`.
+Versión para la Feria Interna de Proyectos ISI 2026. Integra lo que el equipo subió del 6 al 12 de noviembre.
+
+**Rivales que ya están ahí, como en Sifu** (`AyniRivalAmbient`, `AyniEncounterSite`)
+- Nadie aparece de la nada: los rivales esperan a la vista en su kancha haciendo lo suyo. Uno hace guardia mirando a los lados, otro
+  patrulla caminando (nuevo estado `Ambient_Walk` con `Walk_Forward_InPlace`) y otro descansa arrodillado.
+- Pelean cuando ven a Yari (delante y sin muros en medio, ~11 m), lo oyen (más lejos si corre), él cruza la portada o lo golpean. El que lo
+  descubre se gira y avisa; el resto se suma con unas décimas de diferencia. La barra del rival sale solo cuando ya pelea.
+
+**Pumas guardianes del Kay Pacha** (`PumaTerritory`, `AyniPumaPack`)
+- Los pumas ya no mueren ni desaparecen: al "derrotarlos" huyen heridos a su guarida y se recuperan.
+- Golpear a un puma enfurece a la manada, como las gallinas de Zelda: los cercanos y hasta tres más que bajan del cerro persiguen a Yari
+  un rato y luego se van. "La Pachamama defiende a sus hijos" (ODS 15).
+
+**Límites del nivel** (`AyniLevelBounds`)
+- Un pasillo alrededor del Qhapaq Ñan, del inicio al puente: ya no se puede retroceder desde el inicio ni salir del mapa y caer al vacío.
+  Cerca del borde sale un aviso y, si Yari insiste, el puma más cercano baja a cortarle el paso. Las quebradas siguen siendo mortales.
+
+**Correr sin tirones** (`YariCombatController`)
+- Al girar corriendo la velocidad rota sin perder rapidez (antes perdía ~40 % en cada curva y los pasos iban a cámara lenta); solo la media
+  vuelta frena. Con teclado, cambiar de tecla ya no reinicia la carrera desde caminar.
+
+**Música del nivel** (`AyniLevelMusic`)
+- Pistas de camino, combate y jefe con fundidos según lo que pasa; calla en el prólogo y en el Juicio. Lee `musica_nivel1_exploracion`,
+  `musica_nivel1_combate` y `musica_amaru` de `Resources/AyniAudio` (generadas con Suno); sin los archivos no suena nada y no hay error.
+
+**Del equipo**
+- Junior: menú principal con opciones (audio por canales, pantalla completa, resolución, restablecer), créditos animados y respuesta de los
+  botones; puma nuevo de Tripo en lugar del anterior; tronco del O1 restaurado.
+- Antonnyy: documentación sincronizada (MainMenu, General Sayri 3D, catálogo y QA).
+- Jhosue: fauna andina procedural y atmósfera por clima (abajo), ya colocada en el nivel: 5 cóndores, 22 camélidos y 12 vizcachas y zorros.
+
+**Herramientas**
+- Sondas: `TraceRun`, `ScanGround`, `TopDown`, `ListRivals`, `HitNearest`, `WhereIsYari`, `CloseTutorial`, `PlaceCamera`; el puente de
+  Unity guarda capturas con supermuestreo (`screenshot nombre 3`).
+
+### Fauna andina y atmósfera por clima (Jhosue, rama `feat/fauna-andina`)
+
 Detalle en `FAUNA_ANDINA.md` y en la sección 5 de `ILUMINACION_ANDINA.md`.
 
 **Atmósfera que acompaña al clima** (`AyniClimateBlend`, `AyniClimateGrade`, `AyniLightMotes`, `AyniCloudShadows`)
