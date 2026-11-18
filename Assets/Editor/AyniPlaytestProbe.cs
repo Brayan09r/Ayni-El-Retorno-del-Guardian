@@ -531,6 +531,29 @@ namespace Ayni.Editor
             return result;
         }
 
+        public static string TestResurrectionAging()
+        {
+            var player = GameObject.Find("Yari_Hero");
+            if (player == null) return "No Yari_Hero";
+            var talisman = player.GetComponent<IllaTalismanSystem>();
+            if (talisman == null) return "No IllaTalismanSystem";
+
+            var young = player.transform.Find("Visual_Yari_3D");
+            var aged = player.transform.Find("Visual_Yari_Aged_3D");
+
+            string report = $"Inicio: Edad={talisman.CurrentAge}, YoungActive={young.gameObject.activeSelf}, AgedActive={aged.gameObject.activeSelf}";
+            Debug.Log("[Ayni Prueba Resurrección] " + report);
+
+            while (talisman.CurrentAge <= 35)
+            {
+                talisman.TriggerResurrection();
+                report += $" | Muerte -> Edad={talisman.CurrentAge}, YoungActive={young.gameObject.activeSelf}, AgedActive={aged.gameObject.activeSelf}";
+            }
+
+            Debug.Log("[Ayni Prueba Resurrección Resultado] " + report);
+            return report;
+        }
+
         public static void FrameYariAged(int aged)
         {
             var player = GameObject.Find("Yari_Hero");
