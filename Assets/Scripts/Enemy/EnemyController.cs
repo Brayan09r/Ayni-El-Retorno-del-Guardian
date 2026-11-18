@@ -184,8 +184,25 @@ namespace Ayni.Enemy
         /// </summary>
         public bool ExternalControl { get; set; }
 
+        /// <summary>
+        /// No puede morir (la fauna: los pumas). Su vida no baja de 1 y, al "derrotarlo" o rematarlo, en vez de caer
+        /// se lanza <see cref="OnDefeatRefused"/> para que su comportamiento decida (el puma huye herido).
+        /// </summary>
+        public bool Unkillable { get; set; }
         /// <summary>Está en su rutina antes de la pelea (AyniRivalAmbient): aún no ha visto a Yari.</summary>
         public bool Dormant { get; set; }
+        /// <summary>Recibió un golpe de Yari (con el daño ya aplicado).</summary>
+        public event System.Action<EnemyController> OnDamaged;
+        /// <summary>Un rival que no puede morir ha llegado al final de su vida o lo han intentado rematar.</summary>
+        public event System.Action<EnemyController> OnDefeatRefused;
+
+        /// <summary>Vuelve a tener toda la vida y la postura (un puma que se ha recuperado en su guarida).</summary>
+        public void RestoreHealth()
+        {
+            if (isDead) return;
+            currentHealth = maxHealth;
+            if (structure != null) structure.ResetStructure();
+        }
         public Animator Animator => animator;
         public CharacterController Mover => mover;
 
@@ -539,8 +556,15 @@ namespace Ayni.Enemy
             // Los jefes no mueren a golpes: al vaciar una barra pasan a la siguiente fase y en la última
             // su final se decide en el Juicio Ayni
             bool morePhases = isBoss && Phase < PhaseCount;
-            currentHealth = Mathf.Max(isBoss && !morePhases ? 1f : 0f, currentHealth - healthDmg);
+            currentHealth = Mathf.Max((isBoss && !morePhases) || Unkillable ? 1f : 0f, currentHealth - healthDmg);
             flashUntil = Time.time + 0.1f;
+            OnDamaged?.Invoke(this);
+
+            if (Unkillable && currentHealth <= 1f)
+            {
+                OnDefeatRefused?.Invoke(this);
+                return;
+            }
 
             if (morePhases && currentHealth <= 0f)
             {
@@ -702,6 +726,11 @@ namespace Ayni.Enemy
         public void Defeat(bool killed, float reactionDelay = 0f)
         {
             if (isDead) return;
+            if (Unkillable)
+            {
+                OnDefeatRefused?.Invoke(this);
+                return;
+            }
 
             isDead = true;
             state = EnemyState.Dead;
