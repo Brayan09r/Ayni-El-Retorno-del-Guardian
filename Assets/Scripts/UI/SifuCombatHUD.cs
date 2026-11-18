@@ -50,6 +50,8 @@ namespace Ayni.UI
             if (GetComponent<Ayni.World.AyniLevelBounds>() == null) gameObject.AddComponent<Ayni.World.AyniLevelBounds>();
             // Las llamas de Llama.obj eran estatuas: se cambian por llamas animadas de la fauna procedural
             if (GetComponent<Ayni.World.Fauna.AyniStaticLlamaSwap>() == null) gameObject.AddComponent<Ayni.World.Fauna.AyniStaticLlamaSwap>();
+            // Parejas de guardias que patrullan el camino entre kancha y kancha
+            if (GetComponent<Ayni.World.AyniRoadPatrols>() == null) gameObject.AddComponent<Ayni.World.AyniRoadPatrols>();
             // Presentación del jefe: Amaru espera en la cabeza del puente y se interpone en el camino
             if (GetComponent<AyniBossIntro>() == null) gameObject.AddComponent<AyniBossIntro>();
             // Amaru habla durante el duelo (provocaciones, segunda fase, cuando Yari cae)
