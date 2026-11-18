@@ -7,8 +7,9 @@ using UnityEngine;
 namespace Ayni.Editor
 {
     /// <summary>
-    /// Añade a los controladores de los rivales el estado "Ambient_Walk" (caminata con Walk_Forward_InPlace) que usa
-    /// AyniRivalAmbient para patrullar antes de la pelea. Se puede repetir: si el estado ya existe no hace nada.
+    /// Añade a los controladores de los rivales y de Amaru el estado "Ambient_Walk" (caminata con Walk_Forward_InPlace)
+    /// que usa AyniRivalAmbient para patrullar antes de la pelea y Amaru para pasear por el puente mientras espera.
+    /// Se puede repetir: si el estado ya existe no hace nada.
     /// </summary>
     public static class AyniRivalAmbientSetup
     {
@@ -19,6 +20,7 @@ namespace Ayni.Editor
             "Assets/Art/Characters/Saqueador_AnimatorController.controller",
             "Assets/Art/Characters/Guardia_AnimatorController.controller",
             "Assets/Art/Characters/CazadorElite_AnimatorController.controller",
+            "Assets/Art/Characters/Amaru_AnimatorController.controller",
         };
 
         [MenuItem("Ayni/Rivales/Añadir caminata de patrulla")]
