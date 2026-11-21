@@ -17,6 +17,8 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
    rivales quedan en pie y a cuántos metros está el destino; un rombo de oro lo marca en pantalla. **Amaru acecha el camino**:
    al salir del inicio y tras liberar cada una de las tres primeras kanchas se asoma a un cerro, habla y se va de un salto dejando
    un dardo de aviso a los pies de Yari. Ver *Objetivos y acecho de Amaru* más abajo.
+   En la **Portada del Cazador** hay tres jaulas con los trofeos vivos de Amaru (cría de puma, cóndor y vicuñas): se abren manteniendo
+   `V` / `LT` y cada animal liberado ayuda. Ver *Jaulas y animales aliados* más abajo.
 4. **Combate contra Amaru en tres fases:**
    - Más del 75 % de vida: cuerpo a cuerpo.
    - Desde el 75 %: además salta hacia atrás y lanza **ráfagas de 3 dardos envenenados**. Antes de cada dardo se tiñe de verde.
@@ -46,6 +48,30 @@ call Ayni.Editor.AyniPlaytestProbe.CloseTutorial                 la primera pele
 call Ayni.Editor.AyniObjectivesProbe.ClearSite 1                 derrota a sus rivales (repetir tras los refuerzos)
 call Ayni.Editor.AyniObjectivesProbe.Report                      objetivo, kanchas y acecho en la consola
 call Ayni.Story.AyniHunterStalker.Test 2                         fuerza la aparición 2
+```
+
+## Jaulas y animales aliados (v0.12.0)
+
+| Animal | Al liberarlo | En el duelo contra Amaru |
+| --- | --- | --- |
+| Cría de puma | Huye al cerro por la entrada de la kancha | Al empezar la segunda fase, la **puma madre** se lanza sobre Amaru y le rompe la postura |
+| Cóndor | Sale volando y planea sobre la plaza | Avisa de cada ráfaga de dardos y cada dardo tarda 0,35 s más en salir |
+| Vicuñas | La Pachamama sana a Yari y la Illa le devuelve 2 años | — |
+
+- `Scripts/World/AyniCaptiveCages.cs`: las jaulas (sitio en el patio de K4 en la tabla `Slots`, en coordenadas de la kancha), mantener
+  para abrir, recompensas inmediatas y el evento `OnFreed`. Si golpean a Yari mientras abre, pierde la mitad de lo avanzado.
+- `Scripts/Story/AyniFreedAllies.cs`: la puma madre y el cóndor en el duelo. La puma sale de un sitio a 9-16 m de Amaru que se vea en
+  pantalla y con camino libre hasta él.
+- La cría y la puma madre son copias visuales del puma de la escena (`AyniVisualClone`); si no hay pumas, la jaula de la cría no se pone.
+- Probar en Play:
+
+```
+call Ayni.Editor.AyniVillageBuilder.TeleportLocal K4 0 -11 0     Yari en la Portada del Cazador
+call Ayni.Editor.AyniObjectivesProbe.GoToCage 2                  ante la jaula de las vicuñas (0 puma, 1 cóndor)
+call Ayni.Core.AyniInput.Simulate Interact 1.8                   mantener V
+call Ayni.World.AyniCaptiveCages.TestFree 0                      abrir sin esperar
+call Ayni.Editor.AyniPlaytestProbe.PlaceYariNearBoss 4 0         ir al duelo
+call Ayni.Editor.AyniPlaytestProbe.HitBoss 400 0                 vaciar la primera barra: llega la puma madre
 ```
 
 ## Esquivas y guardia estilo Sifu

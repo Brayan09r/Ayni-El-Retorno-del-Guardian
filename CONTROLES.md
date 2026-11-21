@@ -25,6 +25,7 @@
 | Fijar rival | `RB` o `R3` | `Tab` / `Clic central` |
 | Elegir rival al golpear | Stick hacia el rival + `X` / `Y` | `WASD` hacia el rival + golpe |
 | Patada hacia atrás | Stick hacia un rival que está a tu espalda + golpe | `WASD` hacia él + golpe |
+| Abrir una jaula (mantener junto a la puerta) | Mantener `LT` | Mantener `V` |
 | Juicio Ayni: Venganza | `B` (botón rojo) | `F` |
 | Juicio Ayni: Ayni (perdón) | `A` (botón verde) | `X` |
 | Tutorial | `View` | `F1` |
