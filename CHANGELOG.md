@@ -10,6 +10,39 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.13.0 — El quipu de los chasquis, las tejedoras y las trampas de Amaru · 21 de noviembre de 2026
+
+Tercer paso del gancho del Nivel 1: lo que pasa en las dos primeras kanchas también cambia el duelo contra Amaru.
+
+**Puesto de Chasquis: el quipu** (`AyniQuipuChase`)
+- Al empezar la pelea, un Rastreador agarra el quipu de los mensajeros (se le ven las cuerdas de colores) y huye por el camino a avisar
+  a Amaru. Un rombo dorado lo marca y el panel de objetivos dice cuántos metros le faltan. Esquiva lo que tiene delante.
+- Si Yari lo alcanza y le pega, el Rastreador se gira a pelear; al derrotarlo, Yari recupera el quipu.
+- **Quipu recuperado:** en el duelo, mientras Amaru apunta cada dardo, un anillo verde se cierra sobre su pecho y marca el momento justo
+  de esquivar ("¡Esquiva!", y qué dardo de la ráfaga es) (`AyniDartReadCue`).
+- **Si escapa** (60 m o 30 s sin que lo toquen): Amaru queda avisado y siembra su plaza de **trampas de lazo con estacas** tapadas con
+  hojas (`AyniHunterTraps`). Pisar una es un golpe bajo: se evita con el saltito (Guardia + arriba). Al empezar el duelo, Amaru lo recuerda.
+
+**Kancha de los Tejedores: la casa en llamas** (`AyniWeaversFire`)
+- Una casa arde desde el principio (llamas en el techo y columna de humo). Al entrar en la kancha empieza una cuenta atrás de 55 s:
+  hay que romper la tranca de la puerta manteniendo `V` / `LT` (si golpean a Yari, pierde la mitad de lo avanzado).
+- **A tiempo:** las tejedoras le dan un chumpi y el veneno de los dardos de Amaru le dura la mitad (`AmaruHunter.PoisonSecondsMultiplier`).
+- **Tarde:** el fuego se lleva los telares (sin recompensa).
+
+**Lo que llevas** (`AyniRewardsHUD`)
+- Fichas encima del nombre de Yari con lo ganado para el duelo (quipu, chumpi, cóndor, puma) y, en rojo, si Amaru está avisado.
+- La tarjeta final dice qué pasó con el quipu y con las tejedoras.
+
+**Otros**
+- `AyniPathRewards`: dónde se guarda lo ganado en el camino. `AyniHoldPrompt`: aviso de "mantén el botón" y marcas en pantalla compartidos.
+- `AmaruHunter` expone el progreso del aviso de cada dardo (`WarningProgress`, `DartNumber`, `Shooter`).
+- **Arreglo:** la presentación de Amaru no se podía saltar con `Tab` / `Esc` / `Menu` (`AyniBossIntro` miraba la tecla después de
+  dar la escena por empezada). Ahora sí.
+- Para probar: `AyniQuipuChase.TestEscape` / `TestRecover`, `AyniWeaversFire.TestGoToDoor` / `TestRescue`,
+  `AyniHunterTraps.TestFaceTrap` (y andar hacia delante), `AyniObjectivesProbe.KeepYariAlive` (Yari no pierde vida unos segundos).
+
+---
+
 ## v0.12.0 — Jaulas de la Portada del Cazador y animales aliados · 21 de noviembre de 2026
 
 Segundo paso del gancho del Nivel 1: lo que haces en la última kancha cambia el duelo contra Amaru.
