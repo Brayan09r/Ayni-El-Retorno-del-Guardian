@@ -9,8 +9,8 @@ namespace Ayni.Core
     /// </summary>
     public static class AyniVersion
     {
-        public const string Number = "0.11.0";
-        public const string Title = "Objetivos de misión y Amaru acechando el camino";
+        public const string Number = "0.12.0";
+        public const string Title = "Jaulas de la Portada del Cazador y animales aliados";
 
         public static string Label => "v" + Number;
     }

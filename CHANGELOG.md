@@ -10,6 +10,34 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.12.0 — Jaulas de la Portada del Cazador y animales aliados · 21 de noviembre de 2026
+
+Segundo paso del gancho del Nivel 1: lo que haces en la última kancha cambia el duelo contra Amaru.
+
+**Los trofeos vivos de Amaru** (`AyniCaptiveCages`)
+- En el patio de la Portada del Cazador hay tres jaulas de palos atados con soga (hechas por código): una cría de puma, un cóndor y dos vicuñas.
+- Se abren manteniendo `V` / `LT` junto a la puerta (1,4 s). Si un rival golpea a Yari mientras tanto, el nudo se le escapa y pierde la
+  mitad de lo avanzado: abrirlas en plena pelea es un riesgo que se elige. Un rombo de jade marca cada jaula cerrada.
+- Al abrirlas, la cría y las vicuñas huyen por la entrada de la kancha (lejos de Amaru) y el cóndor sale aleteando y se queda planeando
+  sobre la plaza del jefe.
+- **Vicuñas:** en el momento, la Pachamama sana a Yari y la Illa le devuelve 2 años (`IllaTalismanSystem.Rejuvenate`, `YariCombatController.Heal`).
+
+**Ayni con la fauna en el duelo** (`AyniFreedAllies`)
+- **La puma madre:** si liberaste a la cría, cuando Amaru empieza su segunda fase baja del cerro, se le lanza encima y le rompe la
+  postura (momento para castigarlo). Luego vuelve al monte.
+- **El cóndor:** si lo liberaste, cada ráfaga de dardos de Amaru llega con su aviso (un bufido y aletazos) y cada dardo tarda 0,35 s
+  más en salir (`AmaruHunter.ExtraTelegraph`).
+- La tarjeta final cuenta los animales liberados. El panel de objetivos muestra las jaulas abiertas en la Portada.
+
+**Otros**
+- Nueva acción `Interact` en `AyniInput` (`V` / `LT`).
+- `AyniVisualClone`: copia visual (sin scripts ni colisiones) de un personaje de la escena; la usan el acecho de Amaru, la cría y la puma madre.
+- Sonidos nuevos generados por `generar_sfx.py` (`make_fauna`): `jaula_rota`, `condor_aviso`, `puma_rugido`.
+- Para probar: `call Ayni.Editor.AyniObjectivesProbe.GoToCage 0..2`, `call Ayni.World.AyniCaptiveCages.TestFree 0..2`,
+  `call Ayni.Story.AyniFreedAllies.TestPuma`.
+
+---
+
 ## v0.11.0 — Objetivos de misión y Amaru acechando el camino · 21 de noviembre de 2026
 
 Primer paso para que el camino hasta el jefe tenga gancho: el jugador siempre sabe qué hacer y siente que Amaru lo caza.
