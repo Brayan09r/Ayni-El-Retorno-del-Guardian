@@ -35,21 +35,22 @@ namespace Ayni.Editor
                 return;
             }
 
-            // 1. Configurar Humanoid
+            // 1. Configurar Humanoid (idéntico al flujo de Sayri y demás personajes de Mixamo)
             AssetDatabase.ImportAsset(AgedFbxPath, ImportAssetOptions.ForceUpdate);
             ModelImporter imp = AssetImporter.GetAtPath(AgedFbxPath) as ModelImporter;
             if (imp != null)
             {
-                // Resetear animación para limpiar cualquier mapeo previo
-                imp.animationType = ModelImporterAnimationType.None;
-                imp.SaveAndReimport();
-
-                imp.useFileUnits = false;
+                imp.useFileUnits = true;
                 imp.globalScale = 1.0f;
+                var hd = imp.humanDescription;
+                hd.human = new HumanBone[0];
+                hd.skeleton = new SkeletonBone[0];
+                imp.humanDescription = hd;
+                imp.autoGenerateAvatarMappingIfUnspecified = true;
                 imp.animationType = ModelImporterAnimationType.Human;
                 imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
                 imp.SaveAndReimport();
-                Debug.Log("<color=green>[AyniYariAged]</color> Yari_Aged_Rigged.fbx configurado como Humanoid con UVs (useFileUnits=false, scale=1.0).");
+                Debug.Log("<color=green>[AyniYariAged]</color> Yari_Aged_Rigged.fbx configurado como Humanoid base (useFileUnits=true).");
                 FixAgedScale(imp);
             }
 
@@ -98,6 +99,17 @@ namespace Ayni.Editor
                     Debug.Log($"[AyniYariAged] Escala corregida: {imp.globalScale:0.###} (Altura {youngHeight:0.00}m)");
                 }
             }
+
+            // Regenerar el esqueleto de referencia del Avatar Humanoid con la nueva escala final
+            var hd = imp.humanDescription;
+            hd.human = new HumanBone[0];
+            hd.skeleton = new SkeletonBone[0];
+            imp.humanDescription = hd;
+            imp.autoGenerateAvatarMappingIfUnspecified = true;
+            imp.animationType = ModelImporterAnimationType.Human;
+            imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+            imp.SaveAndReimport();
+            Debug.Log("<color=green>[AyniYariAged]</color> Avatar Humanoid regenerado a la escala final sin discrepancia de huesos.");
         }
 
         private static float MeasureHeight(string path)
@@ -266,7 +278,7 @@ namespace Ayni.Editor
                 agedObj.name = "Visual_Yari_Aged_3D";
             }
 
-            agedObj.transform.localPosition = Vector3.zero;
+            agedObj.transform.localPosition = youngVisual != null ? youngVisual.localPosition : Vector3.zero;
             agedObj.transform.localRotation = Quaternion.identity;
             agedObj.transform.localScale = youngVisual != null ? youngVisual.localScale : Vector3.one;
 
@@ -319,6 +331,65 @@ namespace Ayni.Editor
             }
 
             Debug.Log("<color=green>[AyniYariAged]</color> Visual_Yari_Aged_3D y AyniAgingSystem integrados en Yari_Hero.");
+        }
+
+        public static void PreparePlayTest(int enablePrologue)
+        {
+            PlayerPrefs.SetInt(Ayni.Story.AyniPrologue.PrefKey, enablePrologue != 0 ? 1 : 0);
+            PlayerPrefs.Save();
+            Debug.Log($"[AyniYariAged] Prólogo PlayerPref={enablePrologue}");
+        }
+
+        public static void SetAgeAndFrameCamera(int age)
+        {
+            GameObject player = GameObject.Find("Yari_Hero");
+            if (player == null)
+            {
+                Debug.LogError("[AyniYariAged] No se encontró Yari_Hero en Play.");
+                return;
+            }
+
+            var talisman = player.GetComponent<IllaTalismanSystem>();
+            if (talisman != null)
+            {
+                while (talisman.CurrentAge < age) talisman.TriggerResurrection();
+            }
+
+            var aging = player.GetComponent<AyniAgingSystem>();
+            if (aging != null)
+            {
+                aging.UpdateVisual(age);
+            }
+
+            Transform aged = player.transform.Find("Visual_Yari_Aged_3D");
+            if (aged != null)
+            {
+                var anim = aged.GetComponent<Animator>();
+                if (anim != null)
+                {
+                    anim.Play("Idle", 0, 0.25f);
+                    anim.Update(0.5f);
+                    var hips = anim.GetBoneTransform(HumanBodyBones.Hips);
+                    var head = anim.GetBoneTransform(HumanBodyBones.Head);
+                    var lHand = anim.GetBoneTransform(HumanBodyBones.LeftHand);
+                    var rHand = anim.GetBoneTransform(HumanBodyBones.RightHand);
+                    var lFoot = anim.GetBoneTransform(HumanBodyBones.LeftFoot);
+                    Debug.Log($"[AyniYariAged] VERIFICACIÓN PLAY ({age} años): isHuman={anim.isHuman}, avatarValid={anim.avatar != null && anim.avatar.isValid}, " +
+                              $"hips={(hips != null ? hips.position.ToString("F2") : "null")}, " +
+                              $"head={(head != null ? head.position.ToString("F2") : "null")}, " +
+                              $"lHand={(lHand != null ? lHand.position.ToString("F2") : "null")}, " +
+                              $"rHand={(rHand != null ? rHand.position.ToString("F2") : "null")}, " +
+                              $"lFoot={(lFoot != null ? lFoot.position.ToString("F2") : "null")}");
+                }
+            }
+
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                foreach (var mb in cam.GetComponents<MonoBehaviour>()) mb.enabled = false;
+                cam.transform.position = player.transform.position + player.transform.forward * 2.1f + Vector3.up * 1.15f;
+                cam.transform.LookAt(player.transform.position + Vector3.up * 0.95f);
+            }
         }
     }
 }
