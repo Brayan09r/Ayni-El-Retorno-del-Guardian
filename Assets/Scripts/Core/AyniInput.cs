@@ -19,7 +19,7 @@ namespace Ayni.Core
     ///   B agacharse / rematar (Venganza) · LB guardia (+ stick: esquivas) · RB o R3 fijar rival · RT o L3 esprintar
     ///   (el stick a medias camina y a fondo corre)
     /// Teclado: WASD camina y con Shift corre; no hay sprint.
-    ///   View tutorial · Menu saltar escena / reintentar · Cruceta arriba mostrar u ocultar controles
+    ///   View tutorial · Menu saltar escena / reintentar · Cruceta arriba mostrar u ocultar controles · LT interactuar (V)
     ///
     /// Los ejes del mando (stick derecho, gatillos, cruceta) los crea el menú Ayni > Mando > Configurar Ejes del Mando.
     /// Si faltan, el juego sigue funcionando con teclado y con el stick izquierdo.
@@ -44,7 +44,8 @@ namespace Ayni.Core
             Tutorial,
             Restart,
             ToggleHud,
-            Pause      // Menú de pausa y opciones de sonido
+            Pause,     // Menú de pausa y opciones de sonido
+            Interact   // Mantener para abrir jaulas y usar objetos del escenario
         }
 
         // Botones del mando de Xbox en Windows (Input Manager clásico)
@@ -164,6 +165,7 @@ namespace Ayni.Core
                 case Action.Restart: return pad ? "Menu" : "R";
                 case Action.ToggleHud: return pad ? "Cruceta ↑" : "H";
                 case Action.Pause: return pad ? "Menu" : "Esc";
+                case Action.Interact: return pad ? "LT" : "V";
             }
             return action.ToString();
         }
@@ -290,6 +292,7 @@ namespace Ayni.Core
             Set(Action.Restart, Input.GetKey(KeyCode.R) || Input.GetKey(PadMenu));
             Set(Action.ToggleHud, Input.GetKey(KeyCode.H) || dpadY > 0.5f);
             Set(Action.Pause, Input.GetKey(KeyCode.Escape) || Input.GetKey(PadMenu));
+            Set(Action.Interact, Input.GetKey(KeyCode.V) || lt > TriggerThreshold);
 
             for (int i = 0; i < ActionCount; i++)
             {
