@@ -81,6 +81,13 @@ namespace Ayni.Player
             if (agedVisual != null)
             {
                 agedVisual.SetActive(isAged);
+                if (isAged)
+                {
+                    foreach (var smr in agedVisual.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    {
+                        smr.updateWhenOffscreen = true;
+                    }
+                }
             }
 
             if (combat != null)

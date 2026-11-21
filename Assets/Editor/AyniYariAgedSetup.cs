@@ -44,10 +44,12 @@ namespace Ayni.Editor
                 imp.animationType = ModelImporterAnimationType.None;
                 imp.SaveAndReimport();
 
+                imp.useFileUnits = false;
+                imp.globalScale = 1.0f;
                 imp.animationType = ModelImporterAnimationType.Human;
                 imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
                 imp.SaveAndReimport();
-                Debug.Log("<color=green>[AyniYariAged]</color> Yari_Aged_Rigged.fbx configurado como Humanoid con UVs.");
+                Debug.Log("<color=green>[AyniYariAged]</color> Yari_Aged_Rigged.fbx configurado como Humanoid con UVs (useFileUnits=false, scale=1.0).");
                 FixAgedScale(imp);
             }
 
@@ -215,6 +217,12 @@ namespace Ayni.Editor
                 go.AddComponent<AndeanCombatStanceModifier>();
             }
 
+            foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                smr.updateWhenOffscreen = true;
+                smr.localBounds = new Bounds(Vector3.up * 0.9f, new Vector3(1.5f, 2.2f, 1.5f));
+            }
+
             PrefabUtility.SaveAsPrefabAsset(go, PrefabPath);
             UnityEngine.Object.DestroyImmediate(go);
             Debug.Log($"[AyniYariAged] Prefab creado en {PrefabPath}.");
@@ -282,6 +290,12 @@ namespace Ayni.Editor
             if (agedObj.GetComponent<AndeanCombatStanceModifier>() == null)
             {
                 agedObj.AddComponent<AndeanCombatStanceModifier>();
+            }
+
+            foreach (var smr in agedObj.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                smr.updateWhenOffscreen = true;
+                smr.localBounds = new Bounds(Vector3.up * 0.9f, new Vector3(1.5f, 2.2f, 1.5f));
             }
 
             // Inicia desactivado porque Yari comienza con su aspecto joven (20 años)
