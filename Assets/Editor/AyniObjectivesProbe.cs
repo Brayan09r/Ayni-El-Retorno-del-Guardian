@@ -17,6 +17,11 @@ namespace Ayni.Editor
     /// call Ayni.Editor.AyniObjectivesProbe.GoToCage 2                  Yari ante la puerta de una jaula (0 puma, 1 cóndor, 2 vicuñas)
     /// call Ayni.World.AyniCaptiveCages.TestFree 2                      la abre como si la abriera Yari
     /// call Ayni.Story.AyniFreedAllies.TestPuma                         la puma madre acude ya contra Amaru
+    /// call Ayni.World.AyniQuipuChase.TestEscape                         el Rastreador escapa (Amaru avisado: trampas)
+    /// call Ayni.World.AyniQuipuChase.TestRecover                        quipu recuperado (anillo de los dardos)
+    /// call Ayni.World.AyniWeaversFire.TestGoToDoor                      Yari ante la tranca de la casa en llamas
+    /// call Ayni.World.AyniWeaversFire.TestRescue                        tejedoras a salvo (chumpi)
+    /// call Ayni.Story.AyniHunterTraps.TestStepOnTrap                    Yari pisa una trampa de Amaru
     /// </code>
     /// </summary>
     public static class AyniObjectivesProbe
@@ -94,6 +99,15 @@ namespace Ayni.Editor
             AyniPlaytestProbe.PlaceCamera(cam.x, cam.y, cam.z, look.x, look.y, look.z);
         }
 
+        /// <summary>Durante unos segundos Yari recupera toda la vida en cada fotograma (para probar el duelo sin morir).</summary>
+        public static void KeepYariAlive(float seconds)
+        {
+            if (!Application.isPlaying) return;
+            var go = new GameObject("Prueba_MantenerVivo");
+            go.AddComponent<AyniTestHealer>().Until = Time.time + seconds;
+            Debug.Log($"[Ayni Prueba] Yari no perderá vida durante {seconds} s");
+        }
+
         /// <summary>Objetivo en pantalla, estado de cada kancha y del acecho.</summary>
         public static void Report()
         {
@@ -108,6 +122,27 @@ namespace Ayni.Editor
             AyniHunterStalker.Report();
             AyniCaptiveCages.Report();
             AyniFreedAllies.Report();
+            AyniQuipuChase.Report();
+            AyniWeaversFire.Report();
+            AyniHunterTraps.Report();
+        }
+    }
+
+    /// <summary>Lo usa <see cref="AyniObjectivesProbe.KeepYariAlive"/>: cura a Yari en cada fotograma hasta que se acaba el tiempo.</summary>
+    internal class AyniTestHealer : MonoBehaviour
+    {
+        public float Until;
+        private Ayni.Player.YariCombatController yari;
+
+        private void Update()
+        {
+            if (yari == null)
+            {
+                var player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null) yari = player.GetComponent<Ayni.Player.YariCombatController>();
+            }
+            if (yari != null) yari.Heal(10000f);
+            if (Time.time > Until) Destroy(gameObject);
         }
     }
 }
