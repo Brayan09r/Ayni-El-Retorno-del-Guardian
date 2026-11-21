@@ -17,6 +17,8 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
    rivales quedan en pie y a cuántos metros está el destino; un rombo de oro lo marca en pantalla. **Amaru acecha el camino**:
    al salir del inicio y tras liberar cada una de las tres primeras kanchas se asoma a un cerro, habla y se va de un salto dejando
    un dardo de aviso a los pies de Yari. Ver *Objetivos y acecho de Amaru* más abajo.
+   En el **Puesto de Chasquis** un Rastreador huye con el quipu de los mensajeros y en la **Kancha de los Tejedores** una casa arde con
+   las tejedoras dentro: lo que consigas (o dejes escapar) cambia el duelo. Ver *El quipu, las tejedoras y las trampas* más abajo.
    En la **Portada del Cazador** hay tres jaulas con los trofeos vivos de Amaru (cría de puma, cóndor y vicuñas): se abren manteniendo
    `V` / `LT` y cada animal liberado ayuda. Ver *Jaulas y animales aliados* más abajo.
 4. **Combate contra Amaru en tres fases:**
@@ -49,6 +51,19 @@ call Ayni.Editor.AyniObjectivesProbe.ClearSite 1                 derrota a sus r
 call Ayni.Editor.AyniObjectivesProbe.Report                      objetivo, kanchas y acecho en la consola
 call Ayni.Story.AyniHunterStalker.Test 2                         fuerza la aparición 2
 ```
+
+## El quipu, las tejedoras y las trampas (v0.13.0)
+
+| Kancha | Qué pasa | Si lo consigues | Si no |
+| --- | --- | --- | --- |
+| K1 · Puesto de Chasquis | Un Rastreador huye con el quipu hacia Amaru | **Quipu:** un anillo verde marca cuándo sopla cada dardo | **Amaru avisado:** 6 trampas de lazo en su plaza (golpe bajo: saltito) |
+| K2 · Kancha de los Tejedores | Casa en llamas con la puerta atrancada, 55 s | **Chumpi:** el veneno de Amaru dura la mitad | Se queman los telares |
+
+- `Scripts/World/AyniQuipuChase.cs`: la huida (60 m o 30 s; velocidad 3,1 m/s, Yari corre a ~4). Un golpe lo para; hay que derrotarlo.
+- `Scripts/Story/AyniHunterTraps.cs`: las trampas, alrededor de un punto 7 m por delante de donde espera Amaru, hacia la Portada.
+- `Scripts/World/AyniWeaversFire.cs`: elige la casa de un punto interior sin rivales cerca; la puerta sale de la colisión de la casa
+  medida en sus propios ejes. Llamas con `AyniFireLight`.
+- `Scripts/World/AyniPathRewards.cs`: lo ganado; `Scripts/UI/AyniRewardsHUD.cs`: las fichas; `Scripts/UI/AyniDartReadCue.cs`: el anillo.
 
 ## Jaulas y animales aliados (v0.12.0)
 
