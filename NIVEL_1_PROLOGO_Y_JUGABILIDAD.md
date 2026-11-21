@@ -13,6 +13,10 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
    Tambo del Camino y Portada del Cazador), con sus rivales: Rastreadores, Saqueadores, Guardias del Tambo y Cazadores de élite.
    El patio de cada uno es una sala de combate al estilo Sifu. Entre conjunto y conjunto hay de 115 a 165 m de camino con obstáculos:
    troncos quemados que saltar, derrumbes y empalizadas que obligan a serpentear y un muro a medio caer. Ver `ALDEA_INCA.md`.
+   Arriba a la derecha, el **panel de objetivos** dice qué toca (ir a la siguiente kancha, liberarla, llegar al puente), cuántos
+   rivales quedan en pie y a cuántos metros está el destino; un rombo de oro lo marca en pantalla. **Amaru acecha el camino**:
+   al salir del inicio y tras liberar cada una de las tres primeras kanchas se asoma a un cerro, habla y se va de un salto dejando
+   un dardo de aviso a los pies de Yari. Ver *Objetivos y acecho de Amaru* más abajo.
 4. **Combate contra Amaru en tres fases:**
    - Más del 75 % de vida: cuerpo a cuerpo.
    - Desde el 75 %: además salta hacia atrás y lanza **ráfagas de 3 dardos envenenados**. Antes de cada dardo se tiñe de verde.
@@ -24,6 +28,25 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
    - Ayni: llueve, vuelve a brotar el queñual (ver *El queñual del perdón*) y aparece el título "ODS 15".
    - Venganza: cae ceniza y el cielo se oscurece.
    - Después sale la tarjeta "Nivel 1 completado" con la edad, las caídas, el tiempo y la decisión. Desde ahí se puede volver a jugar o seguir explorando.
+
+## Objetivos y acecho de Amaru (v0.11.0)
+
+- `Scripts/UI/AyniLevelObjectives.cs`: el panel de objetivos. No guarda estado propio: lo lee de cada `AyniEncounterSite`
+  (`PlayerEntered`, `Cleared`, su lista de rivales) y del jefe (`Dormant`, `IsDead`). El nombre, el motivo y la frase de
+  "liberado" de cada kancha están en la tabla `Stories` (por orden 1 a 4).
+- `Scripts/Story/AyniHunterStalker.cs`: las apariciones. Las frases están en `Lines` (0 = al salir del inicio; 1-3 = tras liberar
+  K1-K3). El sitio se busca solo: terreno (no tejados ni patios) entre 16 y 34 m de Yari, más alto que él, a la vista desde sus ojos
+  y, si puede ser, dentro del encuadre de la cámara. La figura es una copia del modelo del jefe a la que se le quitan los scripts y
+  las colisiones antes de activarla.
+- Probar en Play:
+
+```
+call Ayni.Editor.AyniVillageBuilder.TeleportLocal K1 0 -6 0      Yari en el Puesto de Chasquis
+call Ayni.Editor.AyniPlaytestProbe.CloseTutorial                 la primera pelea abre el tutorial
+call Ayni.Editor.AyniObjectivesProbe.ClearSite 1                 derrota a sus rivales (repetir tras los refuerzos)
+call Ayni.Editor.AyniObjectivesProbe.Report                      objetivo, kanchas y acecho en la consola
+call Ayni.Story.AyniHunterStalker.Test 2                         fuerza la aparición 2
+```
 
 ## Esquivas y guardia estilo Sifu
 
