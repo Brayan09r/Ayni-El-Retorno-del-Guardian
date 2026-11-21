@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -59,8 +58,7 @@ namespace Ayni.Story
 
         private EnemyController boss;
         private YariCombatController yari;
-        private GameObject holder;   // contenedor (inactivo mientras no se usa) de la figura
-        private GameObject figure;
+        private GameObject figure;   // copia visual de Amaru (inactiva mientras no se asoma)
         private Animator figureAnim;
         private readonly bool[] done = new bool[Lines.Length];
         private Vector3? startPosition;
@@ -91,7 +89,7 @@ namespace Ayni.Story
 
         private void OnDestroy()
         {
-            if (holder != null) Destroy(holder);
+            if (figure != null) Destroy(figure);
         }
 
         private void HandleCleared(AyniEncounterSite site)
@@ -172,7 +170,7 @@ namespace Ayni.Story
             Transform t = figure.transform;
             t.position = perch;
             t.rotation = Quaternion.LookRotation(FlatDir(perch, yari.transform.position));
-            holder.SetActive(true);
+            figure.SetActive(true);
             Play("Idle", 0f);
 
             AyniAudio.Play2D("postura_rota", 0.4f, 0.7f);
@@ -211,7 +209,7 @@ namespace Ayni.Story
             }
             AyniDustPuff.Burst(t.position + Vector3.up * 0.9f);
             AyniAudio.Play("aterrizaje", t.position, 0.6f);
-            holder.SetActive(false);
+            figure.SetActive(false);
             Showing = false;
 
             if (index == 0) AyniScreenFX.Caption("Amaru te está cazando. Sigue el Qhapaq Ñan.", 3.2f);
@@ -298,92 +296,25 @@ namespace Ayni.Story
 
         // ───────────────────────── La figura ─────────────────────────
 
-        /// <summary>
-        /// Copia del modelo de Amaru sin scripts ni colisiones. Se hace dentro de un contenedor inactivo, así que ningún
-        /// componente de la copia llega a arrancar (ni se apunta como rival, ni suena, ni choca con nada).
-        /// </summary>
+        /// <summary>Copia del modelo de Amaru sin scripts ni colisiones (ver <see cref="AyniVisualClone"/>).</summary>
         private bool EnsureFigure()
         {
             if (figure != null) return true;
             if (boss == null) return false;
-
-            holder = new GameObject("Amaru_Acecho");
-            holder.SetActive(false);
-            figure = Instantiate(boss.gameObject, holder.transform);
-            figure.name = "Amaru_Silueta";
-            StripToVisual(figure);
-
-            figureAnim = figure.GetComponentInChildren<Animator>(true);
-            if (figureAnim != null)
-            {
-                figureAnim.applyRootMotion = false;
-                figureAnim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            }
-            foreach (SkinnedMeshRenderer smr in figure.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-            {
-                smr.updateWhenOffscreen = true;
-            }
-            return true;
+            figure = AyniVisualClone.Create(boss.gameObject, "Amaru_Silueta");
+            figureAnim = AyniVisualClone.AnimatorOf(figure);
+            return figure != null;
         }
-
-        /// <summary>Quita scripts, colisiones, físicas y sonidos; deja el esqueleto, las mallas y el Animator.</summary>
-        private static void StripToVisual(GameObject root)
-        {
-            var behaviours = new List<MonoBehaviour>(root.GetComponentsInChildren<MonoBehaviour>(true));
-            // Primero los que nadie necesita (RequireComponent): si no, Unity se niega a quitarlos
-            for (int guard = 0; behaviours.Count > 0 && guard < 64; guard++)
-            {
-                bool removed = false;
-                for (int i = behaviours.Count - 1; i >= 0; i--)
-                {
-                    MonoBehaviour b = behaviours[i];
-                    if (b == null)
-                    {
-                        behaviours.RemoveAt(i);
-                        continue;
-                    }
-                    if (RequiredByOthers(b, behaviours)) continue;
-                    DestroyImmediate(b);
-                    behaviours.RemoveAt(i);
-                    removed = true;
-                }
-                if (!removed) break;
-            }
-            foreach (Collider c in root.GetComponentsInChildren<Collider>(true)) DestroyImmediate(c);
-            foreach (Rigidbody r in root.GetComponentsInChildren<Rigidbody>(true)) DestroyImmediate(r);
-            foreach (AudioSource s in root.GetComponentsInChildren<AudioSource>(true)) DestroyImmediate(s);
-        }
-
-        private static bool RequiredByOthers(Component c, List<MonoBehaviour> others)
-        {
-            foreach (MonoBehaviour other in others)
-            {
-                if (other == null || other == c || other.gameObject != c.gameObject) continue;
-                foreach (object attribute in other.GetType().GetCustomAttributes(typeof(RequireComponent), true))
-                {
-                    var rc = (RequireComponent)attribute;
-                    if (Requires(rc.m_Type0, c) || Requires(rc.m_Type1, c) || Requires(rc.m_Type2, c)) return true;
-                }
-            }
-            return false;
-        }
-
-        private static bool Requires(Type type, Component c) => type != null && type.IsInstanceOfType(c);
 
         private bool HasState(string state) => figureAnim != null && figureAnim.HasState(0, Animator.StringToHash(state));
 
-        private void Play(string state, float fade)
-        {
-            if (!HasState(state)) return;
-            if (fade <= 0f) figureAnim.Play(state, 0, 0f);
-            else figureAnim.CrossFadeInFixedTime(state, fade);
-        }
+        private void Play(string state, float fade) => AyniVisualClone.Play(figureAnim, state, fade);
 
         // ───────────────────────── Marca en pantalla ─────────────────────────
 
         private void OnGUI()
         {
-            if (!Showing || figure == null || !holder.activeSelf) return;
+            if (!Showing || figure == null || !figure.activeSelf) return;
             GUI.depth = -20; // por encima del HUD y del panel de objetivos
             if (AyniGameState.CinematicPlaying || AyniJudgment.Active || AyniBossIntro.Running) return;
             Camera cam = Camera.main;
