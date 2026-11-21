@@ -42,6 +42,15 @@ namespace Ayni.Enemy
         /// <summary>True mientras Amaru apunta un dardo (el HUD muestra el aviso).</summary>
         public static bool DartWarning { get; private set; }
 
+        /// <summary>
+        /// Segundos de aviso añadidos a cada dardo (vuelven a cero al entrar en Play). El cóndor liberado
+        /// (AyniFreedAllies) los sube porque avisa a Yari desde el cielo.
+        /// </summary>
+        public static float ExtraTelegraph { get; set; }
+
+        /// <summary>Amaru empieza una ráfaga de dardos (antes del salto atrás).</summary>
+        public static event System.Action<EnemyController> OnVolleyStarted;
+
         private EnemyController enemy;
         private YariCombatController yari;
         private float nextVolley;
@@ -51,6 +60,8 @@ namespace Ayni.Enemy
         private static void ResetStatics()
         {
             DartWarning = false;
+            ExtraTelegraph = 0f;
+            OnVolleyStarted = null;
         }
 
         private void Awake()
@@ -105,6 +116,8 @@ namespace Ayni.Enemy
         {
             busy = true;
             enemy.ExternalControl = true;
+            OnVolleyStarted?.Invoke(enemy);
+            float warning = telegraphTime + Mathf.Max(0f, ExtraTelegraph);
 
             // 1. Salto hacia atrás, buscando suelo firme (nunca hacia la garganta)
             if (FindLeapTarget(out Vector3 landing))
@@ -133,10 +146,10 @@ namespace Ayni.Enemy
             // 2. Ráfaga de dardos, cada uno anunciado con el destello verde
             for (int i = 0; i < dartsPerVolley; i++)
             {
-                enemy.Telegraph(PoisonGreen, telegraphTime);
+                enemy.Telegraph(PoisonGreen, warning);
                 DartWarning = true;
                 float t = 0f;
-                while (t < telegraphTime)
+                while (t < warning)
                 {
                     if (ShouldAbort()) { Release(); yield break; }
                     FaceYari(12f);
