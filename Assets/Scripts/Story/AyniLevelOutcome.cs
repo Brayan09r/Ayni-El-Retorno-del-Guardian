@@ -206,6 +206,12 @@ namespace Ayni.Story
             float y = h * 0.36f;
             GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f), "Decisión: " + choice, cardText); y += 36f;
             GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f), $"Edad de Yari: <b>{age} años</b>   ·   Veces que cayó: <b>{falls}</b>   ·   Tiempo: <b>{minutes}:{seconds:00}</b>", cardText); y += 36f;
+            if (Ayni.World.AyniCaptiveCages.Total > 0)
+            {
+                GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f),
+                          $"Animales liberados de las jaulas de Amaru: <b>{Ayni.World.AyniCaptiveCages.Opened} / {Ayni.World.AyniCaptiveCages.Total}</b>", cardText);
+                y += 36f;
+            }
             GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f), mercy
                 ? "El Antisuyo vuelve a respirar. El primer paso del camino a casa está hecho."
                 : "Ganaste el combate, pero el Antisuyo sigue en llamas. El final verdadero exige Ayni.", cardText); y += 60f;

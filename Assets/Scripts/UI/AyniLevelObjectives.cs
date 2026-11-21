@@ -40,7 +40,7 @@ namespace Ayni.UI
                           "Saqueadores", "Los telares del ayllu dejan de arder."),
             new SiteStory("Tambo del Camino", "Los Guardias de Bronce custodian los tributos robados al pueblo.",
                           "Guardias del Tambo", "El tambo vuelve a ser del pueblo."),
-            new SiteStory("Portada del Cazador", "La puerta de la cacería. Más allá, Amaru espera en el puente.",
+            new SiteStory("Portada del Cazador", "Los Cazadores de élite guardan los trofeos vivos de Amaru: abre sus jaulas.",
                           "Cazadores de élite", "El paso hacia Amaru está libre."),
         };
 
@@ -151,6 +151,7 @@ namespace Ayni.UI
                 detail = standing > 0
                     ? $"{story?.rivals ?? "Rivales"} en pie: <b>{standing}</b>"
                     : "Derrota a los que quedan";
+                detail += CagesNote(fighting);
                 waypoint = null;
             }
             else if (next != null)
@@ -166,6 +167,10 @@ namespace Ayni.UI
                 {
                     objective = "Llega al puente de Amaru";
                     detail = $"El Cazador te espera · a {Mathf.RoundToInt(Flat(yari.transform.position, boss.transform.position))} m";
+                    if (AyniCaptiveCages.Total > 0 && AyniCaptiveCages.Opened < AyniCaptiveCages.Total)
+                    {
+                        detail += $" · jaulas {AyniCaptiveCages.Opened}/{AyniCaptiveCages.Total}";
+                    }
                     waypoint = boss.transform.position;
                 }
                 else
@@ -199,6 +204,15 @@ namespace Ayni.UI
         }
 
         private string currentDetailRich = "";
+
+        /// <summary>En la Portada del Cazador, cuántas jaulas van abiertas (opcional, pero cada animal ayuda).</summary>
+        private static string CagesNote(AyniEncounterSite site)
+        {
+            if (AyniCaptiveCages.Total == 0 || site == null || site.Order < AyniEncounterSite.All.Count) return "";
+            return AyniCaptiveCages.Opened < AyniCaptiveCages.Total
+                ? $" · <color=#5cc7a8>jaulas {AyniCaptiveCages.Opened}/{AyniCaptiveCages.Total}</color>"
+                : " · <color=#5cc7a8>animales libres</color>";
+        }
 
         /// <summary>Rivales de la kancha que siguen en pie (cuentan los refuerzos que ya llegaron).</summary>
         public static int Standing(AyniEncounterSite site)

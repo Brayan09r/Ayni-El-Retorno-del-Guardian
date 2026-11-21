@@ -62,6 +62,9 @@ namespace Ayni.UI
             if (GetComponent<AyniLevelObjectives>() == null) gameObject.AddComponent<AyniLevelObjectives>();
             // Amaru acecha a Yari por el camino: se asoma a un cerro entre kancha y kancha
             if (GetComponent<AyniHunterStalker>() == null) gameObject.AddComponent<AyniHunterStalker>();
+            // Jaulas de la Portada del Cazador y los animales liberados que ayudan contra Amaru
+            if (GetComponent<Ayni.World.AyniCaptiveCages>() == null) gameObject.AddComponent<Ayni.World.AyniCaptiveCages>();
+            if (GetComponent<AyniFreedAllies>() == null) gameObject.AddComponent<AyniFreedAllies>();
             // Pausa con las opciones de sonido (Esc / Menu)
             if (GetComponent<AyniPauseMenu>() == null) gameObject.AddComponent<AyniPauseMenu>();
 
