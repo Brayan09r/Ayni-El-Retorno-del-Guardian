@@ -529,6 +529,49 @@ def make_ui():
     save("ui_confirmar", x, 0.4)
 
 
+# ───────────────────────── Fauna liberada ─────────────────────────
+
+def make_fauna():
+    """Jaulas de la Portada del Cazador y los animales que Yari libera (generador propio, semilla fija)."""
+    r = np.random.default_rng(1400)
+
+    def noise(seconds):
+        return r.standard_normal(n_samples(seconds))
+
+    # La jaula se rompe: crujido de la madera, chasquido del palo y la soga que se suelta
+    total = 0.9
+    creak_t = time_axis(0.35)
+    creak = bandpass(noise(0.35), 250, 1400) * (0.5 + 0.5 * np.sign(np.sin(2 * np.pi * 38 * creak_t))) * env_exp(0.35, 0.05, 0.2)
+    snap = bandpass(noise(0.12), 900, 5200) * env_exp(0.12, 0.0004, 0.022)
+    body = sine_sweep(220, 90, 0.25, curve=6) * env_exp(0.25, 0.001, 0.07)
+    rope = highpass(noise(0.4), 1800) * bell_curve(0.4, 0.2, 1.5) * 0.25
+    save("jaula_rota", mix(at(creak * 0.5, 0, total), at(snap, 0.3, total), at(body * 0.7, 0.3, total), at(rope, 0.4, total)), 0.75)
+
+    # Cóndor: el cóndor no canta; avisa con un bufido ronco y un par de aletazos enormes
+    total = 1.4
+    t = time_axis(total)
+    hiss = bandpass(noise(total), 1200, 5200) * env_exp(total, 0.03, 0.25)
+    rasp = hiss * (0.6 + 0.4 * np.sin(2 * np.pi * 31 * t))
+    beats = np.zeros(n_samples(total))
+    for start in (0.35, 0.8):
+        length = 0.38
+        whoosh = lowpass(noise(length), 700) * bell_curve(length, 0.35, 1.6)
+        thump = np.sin(2 * np.pi * 70 * time_axis(length)) * env_exp(length, 0.01, 0.08) * 0.5
+        beats += at(mix(whoosh, thump), start, total)
+    save("condor_aviso", reverb(mix(rasp * 0.55, beats * 0.9), 1.0, 0.2), 0.7)
+
+    # Puma: rugido corto y grave que sube y se rompe en un bufido
+    total = 1.6
+    t = time_axis(total)
+    f = 95 + 55 * np.sin(np.pi * np.clip(t / 1.1, 0, 1))
+    voice = np.sin(2 * np.pi * np.cumsum(f) / SR)
+    voice = softclip(voice + 0.6 * np.sin(2 * np.pi * np.cumsum(f * 2.02) / SR), 2.5)
+    grit = bandpass(noise(total), 300, 1600) * (0.5 + 0.5 * np.sin(2 * np.pi * 23 * t))
+    growl = (voice * 0.7 + grit * 0.5) * bell_curve(total, 0.3, 1.2)
+    breath = highpass(noise(total), 2500) * env_exp(total, 0.9, 0.25) * 0.2
+    save("puma_rugido", reverb(mix(bandpass(growl, 80, 2400), breath), 1.2, 0.18), 0.8)
+
+
 def draw_spectra(path):
     import matplotlib
     matplotlib.use("Agg")
@@ -558,6 +601,7 @@ if __name__ == "__main__":
     make_ambience()
     make_music()
     make_ui()
+    make_fauna()
     print(f"{len(generated)} sonidos generados en {OUT}")
     for name, x in generated.items():
         rms = np.sqrt(np.mean(x ** 2))
