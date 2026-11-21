@@ -9,8 +9,8 @@ namespace Ayni.Core
     /// </summary>
     public static class AyniVersion
     {
-        public const string Number = "0.10.0";
-        public const string Title = "Rivales vivos, oleadas, pumas guardianes, Amaru que habla y música";
+        public const string Number = "0.11.0";
+        public const string Title = "Objetivos de misión y Amaru acechando el camino";
 
         public static string Label => "v" + Number;
     }

@@ -10,6 +10,29 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.11.0 — Objetivos de misión y Amaru acechando el camino · 21 de noviembre de 2026
+
+Primer paso para que el camino hasta el jefe tenga gancho: el jugador siempre sabe qué hacer y siente que Amaru lo caza.
+
+**Objetivos de misión** (`AyniLevelObjectives`)
+- Panel arriba a la derecha con el objetivo actual: ir a la siguiente kancha, liberarla, llegar al puente y derrotar a Amaru.
+  Debajo, los rivales que quedan en pie (cuenta los refuerzos) o la distancia al destino, y cuántas kanchas van liberadas (x / 4).
+- Rombo de oro en pantalla sobre el destino, con los metros; si queda fuera de la vista se pega al borde.
+- Al entrar en una kancha sale su nombre y el motivo de la pelea ("Los Saqueadores queman los telares del ayllu"); al despejarla,
+  "… LIBERADO" con una frase de lo que se recupera.
+- Se oculta en el prólogo, el tutorial, la presentación del jefe, el Juicio y la cuenta de años al caer.
+
+**Amaru acecha a Yari por el camino** (`AyniHunterStalker`)
+- Cuatro apariciones: al echar a andar desde el inicio y tras liberar el Puesto de Chasquis, la Kancha de los Tejedores y el Tambo.
+- Amaru se asoma a un cerro por delante (se elige un sitio alto que se vea desde la cámara), ruge, le habla a Yari y se va de un
+  salto entre una nube de polvo, clavándole a los pies un dardo de aviso que no hace daño. Un rombo rojo con su nombre lo señala.
+- Es una copia del modelo de Amaru sin IA ni colisiones: el jefe de verdad sigue esperando en el puente.
+- Si hay pelea cerca espera a que se calme; con el duelo ya empezado no aparece.
+
+**Para probar** (`Editor/AyniObjectivesProbe.cs`)
+- `call Ayni.Editor.AyniObjectivesProbe.ClearSite 1` derrota a los rivales de una kancha; `Report` muestra el objetivo y el acecho.
+- `call Ayni.Story.AyniHunterStalker.Test 0..3` fuerza una aparición.
+
 ## v0.10.0 — Rivales vivos, oleadas, pumas guardianes, Amaru que habla, límites del mapa y música · 17 de noviembre de 2026
 
 Versión para la Feria Interna de Proyectos ISI 2026. Integra lo que el equipo subió del 6 al 12 de noviembre.
