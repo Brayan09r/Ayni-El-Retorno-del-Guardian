@@ -51,6 +51,21 @@ namespace Ayni.Enemy
         /// <summary>Amaru empieza una ráfaga de dardos (antes del salto atrás).</summary>
         public static event System.Action<EnemyController> OnVolleyStarted;
 
+        /// <summary>Cuánto lleva el aviso del dardo en curso (0 al empezar a apuntar, 1 al soplar).</summary>
+        public static float WarningProgress { get; private set; }
+        /// <summary>Dardo de la ráfaga que está apuntando (1, 2, 3...).</summary>
+        public static int DartNumber { get; private set; }
+        /// <summary>Dardos que tiene la ráfaga en curso.</summary>
+        public static int DartsInVolley { get; private set; }
+        /// <summary>Quién está apuntando (para dibujar avisos sobre él).</summary>
+        public static Transform Shooter { get; private set; }
+
+        /// <summary>
+        /// Multiplica la duración del veneno de los dardos (vuelve a 1 al entrar en Play). El chumpi de las tejedoras
+        /// la deja en la mitad.
+        /// </summary>
+        public static float PoisonSecondsMultiplier { get; set; } = 1f;
+
         private EnemyController enemy;
         private YariCombatController yari;
         private float nextVolley;
@@ -62,6 +77,10 @@ namespace Ayni.Enemy
             DartWarning = false;
             ExtraTelegraph = 0f;
             OnVolleyStarted = null;
+            WarningProgress = 0f;
+            DartNumber = DartsInVolley = 0;
+            Shooter = null;
+            PoisonSecondsMultiplier = 1f;
         }
 
         private void Awake()
@@ -148,12 +167,16 @@ namespace Ayni.Enemy
             {
                 enemy.Telegraph(PoisonGreen, warning);
                 DartWarning = true;
+                DartNumber = i + 1;
+                DartsInVolley = dartsPerVolley;
+                Shooter = transform;
                 float t = 0f;
                 while (t < warning)
                 {
                     if (ShouldAbort()) { Release(); yield break; }
                     FaceYari(12f);
                     t += Time.deltaTime;
+                    WarningProgress = Mathf.Clamp01(t / warning);
                     yield return null;
                 }
 
@@ -175,6 +198,7 @@ namespace Ayni.Enemy
         private void Release()
         {
             DartWarning = false;
+            WarningProgress = 0f;
             if (enemy != null) enemy.ExternalControl = false;
             if (busy) nextVolley = Time.time + Random.Range(cooldown.x, cooldown.y);
             busy = false;
@@ -188,7 +212,7 @@ namespace Ayni.Enemy
                 Transform hand = enemy.Animator.GetBoneTransform(HumanBodyBones.RightHand);
                 if (hand != null) origin = hand.position;
             }
-            AmaruDart.Launch(origin, yari, dartSpeed, dartDamage, dartStructureDamage, poisonSeconds, poisonDamagePerSecond);
+            AmaruDart.Launch(origin, yari, dartSpeed, dartDamage, dartStructureDamage, poisonSeconds * Mathf.Max(0f, PoisonSecondsMultiplier), poisonDamagePerSecond);
             AyniAudio.Play("dardo_lanzado", origin, 0.9f, 0.08f);
         }
 
