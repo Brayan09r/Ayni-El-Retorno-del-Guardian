@@ -1382,6 +1382,15 @@ namespace Ayni.Player
 
         private Coroutine poisonRoutine;
 
+        /// <summary>Recupera vida (sin pasar de la máxima de su edad). Devuelve cuánta recuperó.</summary>
+        public float Heal(float amount)
+        {
+            if (isDead || amount <= 0f) return 0f;
+            float before = currentHealth;
+            currentHealth = Mathf.Min(MaxHealth, currentHealth + amount);
+            return currentHealth - before;
+        }
+
         /// <summary>Veneno de los dardos del Cazador: pierde vida poco a poco (sin llegar a matarlo) y la vista se nubla de verde.</summary>
         public void ApplyPoison(float seconds, float damagePerSecond)
         {

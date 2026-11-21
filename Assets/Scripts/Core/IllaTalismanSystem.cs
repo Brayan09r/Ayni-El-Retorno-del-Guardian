@@ -80,6 +80,23 @@ namespace Ayni.Core
             }
         }
 
+        /// <summary>
+        /// Devuelve años a Yari (por ejemplo, al liberar a los animales de Amaru). Nunca baja de la edad inicial.
+        /// Devuelve cuántos años se recuperaron de verdad.
+        /// </summary>
+        public int Rejuvenate(int years)
+        {
+            int before = CurrentAge;
+            CurrentAge = Mathf.Max(startingAge, CurrentAge - Mathf.Max(0, years));
+            int restored = before - CurrentAge;
+            if (restored > 0)
+            {
+                Debug.Log($"[Illa Sagrada] La Pachamama devuelve {restored} años a Yari. Nueva edad: {CurrentAge} años");
+                OnAgeChanged?.Invoke(CurrentAge);
+            }
+            return restored;
+        }
+
         public float GetDamageMultiplier()
         {
             return GetCurrentStage() switch
