@@ -36,23 +36,18 @@ namespace Ayni.Editor
             }
 
             // 1. Configurar Humanoid
+            AssetDatabase.ImportAsset(AgedFbxPath, ImportAssetOptions.ForceUpdate);
             ModelImporter imp = AssetImporter.GetAtPath(AgedFbxPath) as ModelImporter;
             if (imp != null)
             {
-                bool dirty = false;
-                if (imp.animationType != ModelImporterAnimationType.Human)
-                {
-                    imp.animationType = ModelImporterAnimationType.Human;
-                    imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
-                    dirty = true;
-                }
+                // Resetear animación para limpiar cualquier mapeo previo
+                imp.animationType = ModelImporterAnimationType.None;
+                imp.SaveAndReimport();
 
-                if (dirty)
-                {
-                    imp.SaveAndReimport();
-                    Debug.Log("<color=green>[AyniYariAged]</color> Yari_Aged_Rigged.fbx configurado como Humanoid.");
-                }
-
+                imp.animationType = ModelImporterAnimationType.Human;
+                imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                imp.SaveAndReimport();
+                Debug.Log("<color=green>[AyniYariAged]</color> Yari_Aged_Rigged.fbx configurado como Humanoid con UVs.");
                 FixAgedScale(imp);
             }
 
@@ -138,18 +133,39 @@ namespace Ayni.Editor
                 mat.shader = litShader;
             }
 
-            // Desactivar mapas de textura incompatibles con la malla sin UVs
-            mat.SetTexture("_BaseMap", null);
-            mat.SetTexture("_MainTex", null);
-            mat.SetTexture("_BumpMap", null);
-            mat.SetTexture("_MetallicGlossMap", null);
-            mat.SetTexture("_OcclusionMap", null);
-            mat.DisableKeyword("_NORMALMAP");
-            mat.DisableKeyword("_METALLICSPECGLOSSMAP");
-            mat.DisableKeyword("_OCCLUSIONMAP");
+            // 1. Textura Base (Diffuse / Albedo)
+            string diffusePath = "Assets/Art/Characters/Textures/Yari_Aged_Diffuse.png";
+            Texture2D diffuseTex = AssetDatabase.LoadAssetAtPath<Texture2D>(diffusePath);
+            if (diffuseTex != null)
+            {
+                mat.SetTexture("_BaseMap", diffuseTex);
+                mat.SetTexture("_MainTex", diffuseTex);
+                mat.SetColor("_BaseColor", Color.white);
+            }
+            else
+            {
+                mat.SetColor("_BaseColor", new Color(0.85f, 0.70f, 0.55f, 1f));
+            }
 
-            // Tonalidad cálida andina de guerrero maduro curtido por el sol
-            mat.SetColor("_BaseColor", new Color(0.72f, 0.52f, 0.40f, 1f));
+            // 2. Mapa de Normales
+            string normalPath = "Assets/Art/Characters/Textures/Yari_Aged_Normal.png";
+            if (File.Exists(normalPath))
+            {
+                TextureImporter normImp = AssetImporter.GetAtPath(normalPath) as TextureImporter;
+                if (normImp != null && normImp.textureType != TextureImporterType.NormalMap)
+                {
+                    normImp.textureType = TextureImporterType.NormalMap;
+                    normImp.SaveAndReimport();
+                }
+                Texture2D normalTex = AssetDatabase.LoadAssetAtPath<Texture2D>(normalPath);
+                if (normalTex != null)
+                {
+                    mat.SetTexture("_BumpMap", normalTex);
+                    mat.EnableKeyword("_NORMALMAP");
+                }
+            }
+
+            mat.SetFloat("_WorkflowMode", 1f); // Metallic
             mat.SetFloat("_Metallic", 0.05f);
             mat.SetFloat("_Smoothness", 0.35f);
             EditorUtility.SetDirty(mat);
