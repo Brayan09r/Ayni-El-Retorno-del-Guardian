@@ -111,12 +111,13 @@ namespace Ayni.Story
 
         private void Update()
         {
-            if (!ready || done) return;
+            // Primero la escena en curso: "done" ya es true mientras se reproduce, y si se mirara antes no se podría saltar
             if (Running)
             {
                 if (AyniInput.Down(AyniInput.Action.Skip)) skip = true;
                 return;
             }
+            if (!ready || done) return;
             if (boss.IsDead || AyniGameState.CinematicPlaying) return;
             Vector3 d = yari.transform.position - boss.transform.position;
             d.y = 0f;
