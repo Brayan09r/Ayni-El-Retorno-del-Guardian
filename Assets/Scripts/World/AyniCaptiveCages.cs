@@ -279,12 +279,7 @@ namespace Ayni.World
                 if (cage == focus)
                 {
                     // Aviso con el botón y la barra de lo que falta para soltar el nudo
-                    var band = new Rect(p.x - 130f, p.y - 40f, 260f, 44f);
-                    AyniInkaUI.Band(band, 0.9f);
-                    AyniInkaUI.Label(new Rect(band.x, band.y + 4f, band.width, 18f),
-                        $"<b>[{AyniInput.Label(AyniInput.Action.Interact)}]</b> Mantén: liberar {cage.DisplayName}",
-                        AyniInkaUI.Style(13, FontStyle.Normal, TextAnchor.MiddleCenter), AyniInkaUI.Bone);
-                    AyniInkaUI.Bar(new Rect(band.x + 30f, band.y + 28f, band.width - 60f, 5f), progress, progress, AyniInkaUI.Jade);
+                    AyniHoldPrompt.Draw(cage.transform.position + Vector3.up * (cage.Height + 0.45f), "liberar " + cage.DisplayName, progress);
                 }
                 else
                 {
