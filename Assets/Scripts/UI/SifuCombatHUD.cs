@@ -58,6 +58,10 @@ namespace Ayni.UI
             if (GetComponent<AyniBossBarks>() == null) gameObject.AddComponent<AyniBossBarks>();
             // Cambio de fase de los jefes (caída, grito y segunda fase)
             if (GetComponent<AyniBossPhaseDirector>() == null) gameObject.AddComponent<AyniBossPhaseDirector>();
+            // Objetivos de la misión: qué hacer ahora, rivales en pie y marca hacia la siguiente kancha
+            if (GetComponent<AyniLevelObjectives>() == null) gameObject.AddComponent<AyniLevelObjectives>();
+            // Amaru acecha a Yari por el camino: se asoma a un cerro entre kancha y kancha
+            if (GetComponent<AyniHunterStalker>() == null) gameObject.AddComponent<AyniHunterStalker>();
             // Pausa con las opciones de sonido (Esc / Menu)
             if (GetComponent<AyniPauseMenu>() == null) gameObject.AddComponent<AyniPauseMenu>();
 
