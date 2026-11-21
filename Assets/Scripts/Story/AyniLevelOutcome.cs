@@ -206,6 +206,14 @@ namespace Ayni.Story
             float y = h * 0.36f;
             GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f), "Decisión: " + choice, cardText); y += 36f;
             GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f), $"Edad de Yari: <b>{age} años</b>   ·   Veces que cayó: <b>{falls}</b>   ·   Tiempo: <b>{minutes}:{seconds:00}</b>", cardText); y += 36f;
+            if (Ayni.World.AyniPathRewards.QuipuRecovered || Ayni.World.AyniPathRewards.AmaruWarned ||
+                Ayni.World.AyniPathRewards.ChumpiReceived || Ayni.World.AyniPathRewards.WeaversLost)
+            {
+                string quipu = Ayni.World.AyniPathRewards.QuipuRecovered ? "recuperado" : Ayni.World.AyniPathRewards.AmaruWarned ? "Amaru fue avisado" : "—";
+                string weavers = Ayni.World.AyniPathRewards.ChumpiReceived ? "a salvo" : Ayni.World.AyniPathRewards.WeaversLost ? "perdieron sus telares" : "—";
+                GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f), $"Quipu de los chasquis: <b>{quipu}</b>   ·   Tejedoras: <b>{weavers}</b>", cardText);
+                y += 36f;
+            }
             if (Ayni.World.AyniCaptiveCages.Total > 0)
             {
                 GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f),

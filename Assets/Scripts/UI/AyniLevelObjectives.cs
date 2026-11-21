@@ -143,7 +143,21 @@ namespace Ayni.UI
             }
 
             string objective, detail;
-            if (fighting != null)
+            if (AyniQuipuChase.Fleeing)
+            {
+                // Urgente: el Rastreador huye con el quipu (lo marca AyniQuipuChase)
+                objective = "Atrapa al Rastreador del quipu";
+                detail = $"Huye a avisar a Amaru · le faltan <b>{Mathf.RoundToInt(AyniQuipuChase.MetersToEscape)} m</b>";
+                waypoint = null;
+            }
+            else if (AyniWeaversFire.Urgent)
+            {
+                // Urgente: las tejedoras siguen en la casa en llamas (lo marca AyniWeaversFire)
+                objective = "Salva a las tejedoras";
+                detail = $"La casa arde · quedan <b>{Mathf.CeilToInt(AyniWeaversFire.TimeLeft)} s</b>";
+                waypoint = null;
+            }
+            else if (fighting != null)
             {
                 int standing = Standing(fighting);
                 SiteStory? story = StoryOf(fighting);
