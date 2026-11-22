@@ -140,6 +140,7 @@ namespace Ayni.UI
         private float enemyHealthGhost = 1f, enemyGhostHold;
         private int lastAge = -1;
         private float ageGlowUntil;
+        private float costHintUntil = -1f;
 
         /// <summary>
         /// Abajo a la izquierda, como en Sifu: el medallón de la Illa con la edad de Yari, la estructura (fina, de oro)
@@ -152,8 +153,18 @@ namespace Ayni.UI
             var medal = new Rect(26f, h - 26f - 80f, 80f, 80f);
 
             int age = talisman != null ? talisman.CurrentAge : 0;
-            if (lastAge >= 0 && age != lastAge) ageGlowUntil = Time.unscaledTime + 2f;
+            if (lastAge >= 0 && age != lastAge)
+            {
+                ageGlowUntil = Time.unscaledTime + 2f;
+                costHintUntil = Time.unscaledTime + 7f;
+            }
+            // Al empezar también se explica la cuenta roja del medallón
+            if (costHintUntil < 0f) costHintUntil = Time.unscaledTime + 10f;
             lastAge = age;
+
+            // Fondo oscuro y suave detrás del nombre y las barras: sobre losas claras al sol no se leían
+            float bx = medal.xMax + 10f;
+            AyniInkaUI.Fill(new Rect(bx, medal.y + 2f, 290f, 72f), new Color(0f, 0f, 0f, 0.32f));
             float glow = Mathf.Clamp01((ageGlowUntil - Time.unscaledTime) / 2f);
             AyniInkaUI.Medallion(medal, talisman != null ? age.ToString() : "—", "AÑOS", glow);
 
@@ -189,6 +200,16 @@ namespace Ayni.UI
             AyniInkaUI.Bar(new Rect(x, medal.y + 44f, width, 8f), hr, healthGhost, AyniInkaUI.Grana);
 
             AyniInkaUI.TocapuBand(new Rect(x - 4f, medal.y + 62f, width + 8f, 6f), new Color(AyniInkaUI.Gold.r, AyniInkaUI.Gold.g, AyniInkaUI.Gold.b, 0.35f));
+
+            // Qué significa la cuenta roja: al empezar y unos segundos después de cada caída
+            if (talisman != null && Time.unscaledTime < costHintUntil)
+            {
+                float a = Mathf.Clamp01((costHintUntil - Time.unscaledTime) / 1f);
+                int cost = talisman.DeathCounter + 1;
+                AyniInkaUI.Label(new Rect(medal.x, medal.y - 24f, 360f, 16f),
+                                 $"Si caes, la Illa te devuelve con <b>+{cost} {(cost == 1 ? "año" : "años")}</b>",
+                                 AyniInkaUI.Style(11, FontStyle.Normal, TextAnchor.MiddleLeft), AyniInkaUI.Bone, a);
+            }
         }
 
         /// <summary>El valor fantasma espera un instante y luego baja hasta el real (o sube con él al curarse).</summary>
