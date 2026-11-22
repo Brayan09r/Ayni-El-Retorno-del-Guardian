@@ -337,6 +337,8 @@ namespace Ayni.World
     /// </summary>
     public class AyniCage : MonoBehaviour
     {
+        /// <summary>Velocidad de la cría de puma al escapar (m/s).</summary>
+        private const float CubRunSpeed = 4.5f;
         private static readonly Color Wood = new Color(0.34f, 0.23f, 0.14f);
         private static readonly Color WoodDark = new Color(0.22f, 0.15f, 0.09f);
         private static readonly Color Rope = new Color(0.62f, 0.52f, 0.36f);
@@ -565,8 +567,10 @@ namespace Ayni.World
                         if (param.name == "Speed" && param.type == AnimatorControllerParameterType.Float) animalAnim.SetFloat("Speed", 1f);
                     }
                     if (!AyniVisualClone.Play(animalAnim, "Run", 0.15f)) AyniVisualClone.Play(animalAnim, "Move", 0.15f);
+                    // La carrera del puma adulto avanza ~3.8 m/s; la cría mide algo más de la mitad
+                    animalAnim.speed = CubRunSpeed / (3.8f * 0.55f);
                 }
-                AyniFreedRunner.Run(animal, path, 6.5f, null, null);
+                AyniFreedRunner.Run(animal, path, CubRunSpeed, null, null);
             }
             else if (vicunas != null)
             {
@@ -574,17 +578,24 @@ namespace Ayni.World
                 {
                     GameObject v = vicunas[i].root;
                     v.transform.SetParent(null, true);
+                    float runSpeed = 5.2f + i * 0.4f;
                     var vAnim = v.GetComponentInChildren<Animator>();
                     if (vAnim != null && vAnim.runtimeAnimatorController != null)
                     {
+                        // Modelo 3D: la carrera del clip avanza ~0.85 m/s a escala 1. Corren a lo que dan sus patas
+                        // (antes iban a 5 m/s con la animación casi a ritmo normal y parecían deslizarse)
+                        float ground = 0.85f * vAnim.transform.lossyScale.x;
+                        runSpeed = Mathf.Min(2.2f + i * 0.2f, ground * 3.4f);
                         vAnim.CrossFadeInFixedTime("Run", 0.15f);
-                        vAnim.speed = 1.45f;
+                        vAnim.speed = Mathf.Clamp(runSpeed / Mathf.Max(0.1f, ground), 1f, 3.2f);
                     }
                     // La segunda sale un instante después, un paso al lado
                     var own = new List<Vector3>(path);
                     Vector3 side = Vector3.Cross(Vector3.up, transform.forward) * (i == 0 ? -0.6f : 0.6f);
                     for (int k = 0; k < own.Count; k++) own[k] += side;
-                    AyniFreedRunner.Run(v, own, 5.2f + i * 0.4f, vicunas[i].legs, vicunas[i].body, i * 0.4f);
+                    // Con modelo 3D las patas las mueve el Animator: el corredor solo la lleva por la ruta
+                    bool rigged = vAnim != null && vAnim.runtimeAnimatorController != null;
+                    AyniFreedRunner.Run(v, own, runSpeed, rigged ? null : vicunas[i].legs, rigged ? null : vicunas[i].body, i * 0.4f);
                 }
             }
         }
@@ -614,6 +625,8 @@ namespace Ayni.World
                 t.position = Vector3.Lerp(start, target, k);
                 Vector3 vel = target - start;
                 t.rotation = Quaternion.Slerp(t.rotation, Quaternion.LookRotation(vel.normalized + Vector3.up * 0.2f), 4f * Time.deltaTime);
+                // Se tiende para volar mientras despega
+                AyniCondorModel.SetPitch(t, AyniCondorModel.FlightPitch * Mathf.Clamp01(u * 2.5f));
                 float flap = Mathf.Sin(u * 2.6f * Mathf.PI * 2f * 1.6f) * 45f * (1f - k * 0.6f);
                 if (condor.leftWing != null) condor.leftWing.localRotation = Quaternion.AngleAxis(-flap, Vector3.forward);
                 if (condor.rightWing != null) condor.rightWing.localRotation = Quaternion.AngleAxis(flap, Vector3.forward);
@@ -630,6 +643,7 @@ namespace Ayni.World
             }
             var flight = t.gameObject.AddComponent<AyniCondorFlight>();
             flight.Configure(center, 22f, 18f, 9f, false, condor.leftWing, condor.rightWing);
+            flight.JoinFromCurrentPosition();
         }
     }
 
