@@ -65,6 +65,8 @@ namespace Ayni.World.Fauna
         private Vector3 bodyRestPos;
         private float nextAlertCheck;
         private Quaternion tailRest = Quaternion.identity;
+        private Animator anim;
+        private string currentAnimState;
 
         private static Transform cachedPlayer;
         private static float nextPlayerSearch;
@@ -117,11 +119,16 @@ namespace Ayni.World.Fauna
             yaw = transform.eulerAngles.y;
             if (body != null) bodyRestPos = body.localPosition;
             if (tail != null) tailRest = tail.localRotation;
+            anim = GetComponentInChildren<Animator>();
 
             // Cada animal empieza en un estado y momento distinto para que el rebaño no se mueva sincronizado
             neckAngle = neckGrazeAngle;
             EnterState(Random.value < 0.7f ? State.Grazing : State.Looking);
             stateTimer *= Random.value;
+            if (anim != null && !string.IsNullOrEmpty(currentAnimState))
+            {
+                anim.Play(currentAnimState, 0, Random.value);
+            }
             SnapToGround();
         }
 
@@ -266,6 +273,39 @@ namespace Ayni.World.Fauna
 
         private void AnimatePose(float dt)
         {
+            // Si el animal usa un modelo 3D riggeado con Animator, dirigir sus clips y sincronizar velocidad sin deslizamiento
+            if (anim != null && anim.runtimeAnimatorController != null)
+            {
+                string desiredState;
+                float animSpeed = 1f;
+                if (currentSpeed > walkSpeed * 1.45f)
+                {
+                    desiredState = "Run";
+                    animSpeed = Mathf.Clamp(currentSpeed / 3.4f, 0.85f, 2.2f);
+                }
+                else if (currentSpeed > 0.08f)
+                {
+                    desiredState = "Walk";
+                    animSpeed = Mathf.Clamp(currentSpeed / 0.95f, 0.65f, 2.0f);
+                }
+                else if (state == State.Grazing)
+                {
+                    desiredState = "Graze";
+                }
+                else
+                {
+                    desiredState = "Idle";
+                }
+
+                if (desiredState != currentAnimState)
+                {
+                    currentAnimState = desiredState;
+                    anim.CrossFadeInFixedTime(desiredState, 0.25f);
+                }
+                anim.speed = animSpeed;
+                return;
+            }
+
             // Cuello: abajo al pastar, arriba al mirar o caminar
             float neckTarget = state == State.Grazing ? neckGrazeAngle : neckUpAngle;
             neckAngle = Mathf.MoveTowards(neckAngle, neckTarget, dt * 70f);

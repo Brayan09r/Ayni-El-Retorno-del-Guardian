@@ -69,8 +69,28 @@ namespace Ayni.World.Fauna
         public static Parts Build(Transform parent, string name, AyniCamelidSpecies species, int seed)
         {
             var rng = new System.Random(seed);
-            Proportions p = GetProportions(species);
             float sizeJitter = 0.92f + (float)rng.NextDouble() * 0.16f;
+
+            // 1. Intentar instanciar el modelo 3D riggeado y animado de alta calidad desde Resources/Fauna/
+            string resPath = species == AyniCamelidSpecies.Vicuna ? "Fauna/Fauna_Vicuna" : "Fauna/Fauna_Llama";
+            GameObject prefab = Resources.Load<GameObject>(resPath);
+            if (prefab != null)
+            {
+                var root3D = new GameObject(name);
+                if (parent != null) root3D.transform.SetParent(parent, false);
+
+                var model = Object.Instantiate(prefab, root3D.transform);
+                model.name = "Modelo_3D";
+                float speciesScale = species == AyniCamelidSpecies.Alpaca ? 0.82f : 1.0f;
+                model.transform.localPosition = Vector3.zero;
+                model.transform.localRotation = Quaternion.identity;
+                model.transform.localScale = Vector3.one * (sizeJitter * speciesScale);
+
+                return new Parts { root = root3D, body = model.transform, legs = new Transform[4] };
+            }
+
+            // 2. Respaldo procedural si aún no se generaron los prefabs 3D
+            Proportions p = GetProportions(species);
 
             Color coat;
             switch (species)

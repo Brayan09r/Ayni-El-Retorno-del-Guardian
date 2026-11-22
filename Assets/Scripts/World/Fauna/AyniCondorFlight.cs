@@ -53,6 +53,8 @@ namespace Ayni.World.Fauna
         private float flapStartTime = -100f;
         private Quaternion leftWingRest;
         private Quaternion rightWingRest;
+        private Animator anim;
+        private bool isFlappingAnim;
 
         /// <summary>Permite configurar el cóndor desde el menú de editor sin usar el Inspector.</summary>
         public void Configure(Vector3 center, float radius, float altitude, float speed, bool turnClockwise,
@@ -80,6 +82,12 @@ namespace Ayni.World.Fauna
 
             if (leftWing != null) leftWingRest = leftWing.localRotation;
             if (rightWing != null) rightWingRest = rightWing.localRotation;
+            anim = GetComponentInChildren<Animator>();
+            if (anim != null && anim.runtimeAnimatorController != null)
+            {
+                anim.Play("Glide", 0, Random.value);
+                isFlappingAnim = false;
+            }
 
             ScheduleNextFlap();
             transform.position = OrbitPoint(angle);
@@ -130,8 +138,6 @@ namespace Ayni.World.Fauna
 
         private void UpdateWings()
         {
-            if (leftWing == null && rightWing == null) return;
-
             if (Time.time >= nextFlapTime)
             {
                 flapStartTime = Time.time;
@@ -140,8 +146,22 @@ namespace Ayni.World.Fauna
 
             float flapTime = Time.time - flapStartTime;
             float burstLength = flapDuration * flapsPerBurst;
+            bool flapping = flapTime < burstLength;
+
+            if (anim != null && anim.runtimeAnimatorController != null)
+            {
+                if (flapping != isFlappingAnim)
+                {
+                    isFlappingAnim = flapping;
+                    anim.CrossFadeInFixedTime(flapping ? "Fly_Flap" : "Glide", 0.30f);
+                }
+                return;
+            }
+
+            if (leftWing == null && rightWing == null) return;
+
             float flap = 0f;
-            if (flapTime < burstLength)
+            if (flapping)
             {
                 // Aleteo lento y profundo; se suaviza al empezar y al terminar
                 float envelope = Mathf.Sin(Mathf.Clamp01(flapTime / burstLength) * Mathf.PI);

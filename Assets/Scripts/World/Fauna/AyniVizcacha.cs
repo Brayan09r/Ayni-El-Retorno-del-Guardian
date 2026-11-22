@@ -45,6 +45,8 @@ namespace Ayni.World.Fauna
         private Quaternion leftEarRest, rightEarRest, tailRest;
         private float bodyStretch = 1f;
         private float nextAlertCheck;
+        private Animator anim;
+        private string currentAnimState;
 
         private static Transform cachedPlayer;
         private static float nextPlayerSearch;
@@ -66,8 +68,14 @@ namespace Ayni.World.Fauna
             if (leftEar != null) leftEarRest = leftEar.localRotation;
             if (rightEar != null) rightEarRest = rightEar.localRotation;
             if (tail != null) tailRest = tail.localRotation;
+            anim = GetComponentInChildren<Animator>();
             EnterBasking();
             stateTimer *= Random.value;
+            if (anim != null && anim.runtimeAnimatorController != null)
+            {
+                currentAnimState = "Idle";
+                anim.Play("Idle", 0, Random.value);
+            }
             nextEarTwitch = Time.time + Random.Range(0.5f, 3f);
         }
 
@@ -247,6 +255,22 @@ namespace Ayni.World.Fauna
 
         private void AnimateEarsAndTail()
         {
+            if (anim != null && anim.runtimeAnimatorController != null)
+            {
+                string desired = state == State.Hopping ? "Hop"
+                               : state == State.Alert ? "Alert"
+                               : "Idle";
+                if (desired != currentAnimState)
+                {
+                    currentAnimState = desired;
+                    anim.CrossFadeInFixedTime(desired, state == State.Hopping ? 0.08f : 0.2f);
+                }
+                anim.speed = state == State.Hopping
+                    ? Mathf.Clamp(0.8f / Mathf.Max(0.18f, hopDuration), 1.0f, 3.0f)
+                    : 1.0f;
+                return;
+            }
+
             // Movimiento rápido de una oreja cada pocos segundos
             if (Time.time >= nextEarTwitch)
             {

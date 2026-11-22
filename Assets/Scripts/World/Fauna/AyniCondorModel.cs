@@ -33,6 +33,20 @@ namespace Ayni.World.Fauna
         /// <summary>Crea un cóndor completo como hijo de <paramref name="parent"/>.</summary>
         public static Parts Build(Transform parent, string name, float scale = 1f)
         {
+            GameObject prefab = Resources.Load<GameObject>("Fauna/Fauna_Condor");
+            if (prefab != null)
+            {
+                var root3D = new GameObject(name);
+                if (parent != null) root3D.transform.SetParent(parent, false);
+
+                var model = Object.Instantiate(prefab, root3D.transform);
+                model.name = "Modelo_3D";
+                model.transform.localPosition = Vector3.zero;
+                model.transform.localRotation = Quaternion.identity;
+                model.transform.localScale = Vector3.one * scale;
+                return new Parts { root = root3D };
+            }
+
             EnsureAssets();
 
             var root = new GameObject(name);

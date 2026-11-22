@@ -51,6 +51,20 @@ namespace Ayni.World.Fauna
         /// <summary>Crea una vizcacha sentada como hijo de <paramref name="parent"/>.</summary>
         public static VizcachaParts BuildVizcacha(Transform parent, string name, float scale = 1f)
         {
+            GameObject prefab = Resources.Load<GameObject>("Fauna/Fauna_Vizcacha");
+            if (prefab != null)
+            {
+                var root3D = new GameObject(name);
+                if (parent != null) root3D.transform.SetParent(parent, false);
+
+                var model = Object.Instantiate(prefab, root3D.transform);
+                model.name = "Modelo_3D";
+                model.transform.localPosition = Vector3.zero;
+                model.transform.localRotation = Quaternion.identity;
+                model.transform.localScale = Vector3.one * scale;
+                return new VizcachaParts { root = root3D };
+            }
+
             var root = new GameObject(name);
             if (parent != null) root.transform.SetParent(parent, false);
 
