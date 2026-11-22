@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using Ayni.Combat;
 using Ayni.Core;
 using Ayni.Enemy;
 using Ayni.UI;
@@ -32,7 +33,7 @@ namespace Ayni.Story
         private Transform yari;
         private float nextTaunt, quietUntil;
         private int lastTaunt = -1;
-        private bool wasAging, weakSaid;
+        private bool wasAging, weakSaid, killaSaid;
 
         private void OnEnable() => EnemyController.OnPhaseTransitionStarted += HandlePhase;
         private void OnDisable() => EnemyController.OnPhaseTransitionStarted -= HandlePhase;
@@ -93,6 +94,16 @@ namespace Ayni.Story
             wasAging = aging;
             if (aging || !engaged) return;
 
+            // Con la historia de los quipus, Yari nombra a Killa y Amaru duda
+            if (!killaSaid && AyniAmaruQuipus.KnowsStory && boss.Phase >= boss.PhaseCount && !boss.InPhaseTransition &&
+                boss.HealthRatio < 0.8f && !AyniVoice.Speaking)
+            {
+                killaSaid = true;
+                quietUntil = Time.time + 9f;
+                StartCoroutine(KillaMoment());
+                return;
+            }
+
             if (!weakSaid && boss.InFinalPhase && boss.HealthRatio < 0.55f)
             {
                 weakSaid = true;
@@ -109,6 +120,22 @@ namespace Ayni.Story
             if (pick == lastTaunt) pick = (pick + 1) % Taunts.Length;
             lastTaunt = pick;
             Say(Taunts[pick], 2.8f, false);
+        }
+
+        /// <summary>
+        /// Yari grita el nombre de la hermana de Amaru (lo leyó en el último quipu). Amaru se queda helado: se tambalea y
+        /// pierde un 40 % de su postura, una ocasión de oro para romperla.
+        /// </summary>
+        private IEnumerator KillaMoment()
+        {
+            AyniScreenFX.Caption("YARI: «¡Killa te espera en el Antisuyo, Amaru!»", 2.8f);
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(2.6f));
+            if (boss == null || boss.IsDead || AyniJudgment.Active || boss.InPhaseTransition) yield break;
+            Say("¿Killa...? ¿Quién te dio ese nombre?", 3f, true);
+            float posture = boss.Structure != null ? boss.Structure.MaxStructure * 0.4f : 0f;
+            boss.TakeHit(0f, posture, yari.position, true, HitReaction.Heavy, 0.3f);
+            CombatFeedback.Flash(boss.transform.position + Vector3.up * 1.6f, new Color(1f, 0.85f, 0.55f), 1.4f, 0.4f);
+            Debug.Log("[Ayni Quipus] Amaru duda al oír el nombre de Killa");
         }
 
         private void Say(string line, float seconds, bool important)

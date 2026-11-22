@@ -72,6 +72,8 @@ namespace Ayni.UI
             // El Capitán del Tambo (K3) con su mini Juicio, y la apacheta del camino hacia la Portada
             if (GetComponent<Ayni.World.AyniTamboCaptain>() == null) gameObject.AddComponent<Ayni.World.AyniTamboCaptain>();
             if (GetComponent<Ayni.World.AyniApacheta>() == null) gameObject.AddComponent<Ayni.World.AyniApacheta>();
+            // Los quipus de Amaru, uno escondido en una casa de cada kancha
+            if (GetComponent<Ayni.World.AyniAmaruQuipus>() == null) gameObject.AddComponent<Ayni.World.AyniAmaruQuipus>();
             if (GetComponent<AyniDartReadCue>() == null) gameObject.AddComponent<AyniDartReadCue>();
             if (GetComponent<AyniRewardsHUD>() == null) gameObject.AddComponent<AyniRewardsHUD>();
             // Pausa con las opciones de sonido (Esc / Menu)

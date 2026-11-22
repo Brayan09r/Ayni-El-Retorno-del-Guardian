@@ -106,14 +106,26 @@ namespace Ayni.Story
                     "El fuego sigue avanzando por el Antisuyo. La Hucha, la energía pesada, se aferra al alma de Yari.",
                 };
 
+            // Con los cuatro quipus leídos, Yari sabe que Killa espera a su hermano
+            if (Ayni.World.AyniAmaruQuipus.KnowsStory)
+            {
+                var withKilla = new System.Collections.Generic.List<string>(lines)
+                {
+                    mercy
+                        ? "Amaru vuelve al ayllu de su infancia. Killa lo espera con las vicuñas, al borde de la selva."
+                        : "Al borde de la selva, Killa seguirá esperando a un hermano que no volverá.",
+                };
+                lines = withKilla.ToArray();
+            }
+
             // La cámara gira lentamente alrededor de los dos mientras cambia el paisaje
-            float duration = 11f;
+            float duration = lines.Length > 2 ? 16.8f : 11f;
             float t = 0f;
             float startAngle = cam != null ? Mathf.Atan2(cam.transform.position.x - center.x, cam.transform.position.z - center.z) * Mathf.Rad2Deg : 0f;
             int line = -1;
             while (t < duration)
             {
-                int wanted = t < 5.4f ? 0 : 1;
+                int wanted = Mathf.Min(lines.Length - 1, t < 5.4f ? 0 : t < 11.3f ? 1 : 2);
                 if (wanted != line)
                 {
                     line = wanted;
@@ -221,6 +233,13 @@ namespace Ayni.Story
                 string apacheta = Ayni.World.AyniPathRewards.ApuBlessing ? "el Apu te bendijo"
                                 : Ayni.World.AyniPathRewards.ApuRejected ? "rechazó tu piedra" : "sin ofrenda";
                 GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f), $"Capitán del Tambo: <b>{captain}</b>   ·   Apacheta: <b>{apacheta}</b>", cardText);
+                y += 36f;
+            }
+            if (Ayni.World.AyniAmaruQuipus.Placed > 0)
+            {
+                string story = Ayni.World.AyniAmaruQuipus.KnowsStory ? "   ·   conoces a <b>Killa</b>, su hermana" : "";
+                GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f),
+                          $"Quipus de Amaru leídos: <b>{Ayni.World.AyniAmaruQuipus.Read} / {Ayni.World.AyniAmaruQuipus.Total}</b>{story}", cardText);
                 y += 36f;
             }
             if (Ayni.World.AyniCaptiveCages.Total > 0)

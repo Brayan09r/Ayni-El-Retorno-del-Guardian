@@ -9,7 +9,7 @@ namespace Ayni.UI
 {
     /// <summary>
     /// Fichas pequeñas encima del nombre de Yari con lo que lleva ganado para el duelo contra Amaru (quipu, chumpi,
-    /// cóndor, puma madre) y, en rojo, lo que Amaru sabe (trampas en su plaza). Cada ficha nueva brilla un momento.
+    /// cóndor, puma madre, los quipus de Amaru) y, en rojo, lo que Amaru sabe (trampas en su plaza). Cada ficha nueva brilla un momento.
     /// Así el jugador ve que lo que hace en el camino cuenta. SifuCombatHUD lo añade solo.
     /// </summary>
     public class AyniRewardsHUD : MonoBehaviour
@@ -44,6 +44,8 @@ namespace Ayni.UI
             if (AyniCaptiveCages.PumaFreed && !AyniFreedAllies.PumaHelped) chips.Add(new Chip { key = "puma", text = "Puma · su madre acudirá", good = true });
             if (AyniPathRewards.CaptainSpared && AyniTamboCaptain.DeserterName != null) chips.Add(new Chip { key = "capitan", text = "Capitán · un Cazador menos", good = true });
             if (AyniPathRewards.CaptainSlain) chips.Add(new Chip { key = "champi", text = "Champi · +20 % de daño a Amaru", good = true });
+            if (AyniAmaruQuipus.KnowsStory) chips.Add(new Chip { key = "killa", text = "Killa · Amaru dudará", good = true });
+            else if (AyniAmaruQuipus.Read > 0) chips.Add(new Chip { key = "quipus" + AyniAmaruQuipus.Read, text = $"Quipus de Amaru · {AyniAmaruQuipus.Read} / {AyniAmaruQuipus.Total}", good = true });
             if (talisman != null && talisman.ProtectedFalls > 0) chips.Add(new Chip { key = "apu", text = "Apu · tu próxima caída no cuesta años", good = true });
             if (AyniPathRewards.AmaruWarned) chips.Add(new Chip { key = "avisado", text = "Amaru avisado · trampas", good = false });
         }
