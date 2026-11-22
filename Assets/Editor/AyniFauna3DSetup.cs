@@ -31,7 +31,10 @@ namespace Ayni.Editor
             public string[] states;
             public float smoothness;
             public bool reversedGait;   // los clips de marcha del FBX avanzan hacia atrás
+            public float gallopPhase;   // > 0: el Run del FBX mueve las patas por pares; se desfasan las derechas
         }
+
+        private const string GallopDir = "Assets/Art/Fauna/Clips";
 
         private static readonly SpeciesConfig[] Species =
         {
@@ -43,7 +46,8 @@ namespace Ayni.Editor
                 defaultState = "Idle",
                 states = new[] { "Idle", "Walk", "Run", "Graze" },
                 smoothness = 0.22f,
-                reversedGait = true
+                reversedGait = true,
+                gallopPhase = 0.22f
             },
             new SpeciesConfig
             {
@@ -53,7 +57,8 @@ namespace Ayni.Editor
                 defaultState = "Idle",
                 states = new[] { "Idle", "Walk", "Run", "Graze" },
                 smoothness = 0.25f,
-                reversedGait = true
+                reversedGait = true,
+                gallopPhase = 0.22f
             },
             new SpeciesConfig
             {
@@ -241,6 +246,8 @@ namespace Ayni.Editor
                     }
                 }
 
+                if (stateName == "Run" && sp.gallopPhase > 0f && match != null) match = BuildGallop(match, sp.key, sp.gallopPhase);
+
                 AnimatorState st = sm.AddState(stateName);
                 st.motion = match;
                 // En los FBX de llama y vicuña las patas apoyadas van hacia delante en Walk y Run (el animal "patina"
@@ -254,6 +261,89 @@ namespace Ayni.Editor
             EditorUtility.SetDirty(ctrl);
             Debug.Log($"[AyniFauna3D] Controller {ctrlPath} creado con {clips.Length} clips.");
             return ctrl;
+        }
+
+        /// <summary>
+        /// En el "Run" del FBX las dos patas delanteras van juntas y las dos traseras también (un salto a pares que parece
+        /// de troncos). Se crea una copia del clip con las patas derechas adelantadas una fracción del ciclo: queda un
+        /// galope en el que cada pata pisa a su tiempo. Se guarda en Assets/Art/Fauna/Clips/{especie}_Run_Galope.anim.
+        /// </summary>
+        public static AnimationClip BuildGallop(AnimationClip source, string key, float phase)
+        {
+            if (!AssetDatabase.IsValidFolder(GallopDir)) AssetDatabase.CreateFolder(FaunaArtDir, "Clips");
+            var clip = new AnimationClip { name = $"{key}_Run_Galope", frameRate = source.frameRate };
+            float length = Mathf.Max(0.01f, source.length);
+            const int samples = 48;
+            int shifted = 0;
+            foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(source))
+            {
+                AnimationCurve curve = AnimationUtility.GetEditorCurve(source, binding);
+                if (binding.path.Contains("Leg_R_"))
+                {
+                    // Muestrea el clip desplazado (da la vuelta al final del ciclo, que es un bucle)
+                    var keys = new Keyframe[samples + 1];
+                    for (int i = 0; i <= samples; i++)
+                    {
+                        float t = length * i / samples;
+                        keys[i] = new Keyframe(t, curve.Evaluate(Mathf.Repeat(t + phase * length, length)));
+                    }
+                    curve = new AnimationCurve(keys);
+                    for (int i = 0; i < keys.Length; i++) curve.SmoothTangents(i, 0f);
+                    shifted++;
+                }
+                AnimationUtility.SetEditorCurve(clip, binding, curve);
+            }
+            AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(source);
+            settings.loopTime = true;
+            AnimationUtility.SetAnimationClipSettings(clip, settings);
+
+            string path = $"{GallopDir}/{key}_Run_Galope.anim";
+            var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+            if (existing != null)
+            {
+                EditorUtility.CopySerialized(clip, existing);
+                clip = existing;
+            }
+            else
+            {
+                AssetDatabase.CreateAsset(clip, path);
+            }
+            EditorUtility.SetDirty(clip);
+            Debug.Log($"[AyniFauna3D] Galope {path}: {shifted} curvas de las patas derechas desfasadas un {phase:P0} del ciclo");
+            return clip;
+        }
+
+        /// <summary>
+        /// Rehace solo los galopes y los pone en el estado "Run" de los AnimatorController ya creados, sin regenerar
+        /// modelos, materiales ni prefabs. Desde el puente: call Ayni.Editor.AyniFauna3DSetup.RebuildGallops
+        /// </summary>
+        [MenuItem("Ayni/Fauna Andina/Rehacer galopes (llama y vicuña)")]
+        public static void RebuildGallops()
+        {
+            foreach (SpeciesConfig sp in Species)
+            {
+                if (sp.gallopPhase <= 0f) continue;
+                string fbxPath = $"{FaunaArtDir}/{sp.fbxName}";
+                AnimationClip run = null;
+                foreach (UnityEngine.Object a in AssetDatabase.LoadAllAssetsAtPath(fbxPath))
+                {
+                    if (a is AnimationClip c && !c.name.StartsWith("__preview__") &&
+                        (c.name == "Run" || c.name.EndsWith("|Run", StringComparison.OrdinalIgnoreCase))) run = c;
+                }
+                var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>($"{FaunaArtDir}/AC_Fauna_{sp.key}.controller");
+                if (run == null || ctrl == null)
+                {
+                    Debug.LogWarning($"[AyniFauna3D] {sp.key}: falta el clip Run o el controller");
+                    continue;
+                }
+                AnimationClip gallop = BuildGallop(run, sp.key, sp.gallopPhase);
+                foreach (ChildAnimatorState child in ctrl.layers[0].stateMachine.states)
+                {
+                    if (child.state.name == "Run") child.state.motion = gallop;
+                }
+                EditorUtility.SetDirty(ctrl);
+            }
+            AssetDatabase.SaveAssets();
         }
 
         private static void CreatePrefab(SpeciesConfig sp, string fbxPath, Material mat, AnimatorController ctrl)
