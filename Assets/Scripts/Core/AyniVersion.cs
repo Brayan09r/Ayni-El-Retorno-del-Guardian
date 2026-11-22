@@ -9,8 +9,8 @@ namespace Ayni.Core
     /// </summary>
     public static class AyniVersion
     {
-        public const string Number = "0.14.1";
-        public const string Title = "Fauna: galope, pastar y alas del cóndor";
+        public const string Number = "0.14.2";
+        public const string Title = "Fauna: galope sin estirones";
 
         public static string Label => "v" + Number;
     }

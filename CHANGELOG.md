@@ -10,6 +10,18 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.14.2 — Fauna: galope sin estirones · 21 de noviembre de 2026
+
+- **La panza ya no se estira al correr:** el "Run" del FBX arquea y estira mucho la columna en cada salto; con las patas desfasadas
+  el vientre quedaba tirante. El galope generado (`AyniFauna3DSetup.BuildGallop`) conserva ahora solo un 35 % de la flexión de
+  Pelvis y Spine, un 45 % del giro y un 55 % del vaivén de Root, y un 85 % del recorrido de hombros y caderas. Los giros se mezclan
+  como cuaterniones hacia la pose media del ciclo.
+- La velocidad de la animación de carrera se ajusta a lo que avanza de verdad el galope (llama 1,3 m/s y vicuña 0,6 m/s a escala 1,
+  hasta 3 veces más rápida): las pezuñas no patinan. Por eso las vicuñas huyen algo más despacio.
+- `AyniFaunaProbe`: escribe sus resultados también en el registro del puente, y `LoggerStatus` comprueba la consola.
+
+---
+
 ## v0.14.1 — Fauna: galope, pastar y alas del cóndor · 21 de noviembre de 2026
 
 - **Llamas y vicuñas galopan:** en el "Run" del FBX las dos patas delanteras iban juntas y las dos traseras también, como troncos.
