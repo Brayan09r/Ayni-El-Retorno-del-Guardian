@@ -103,7 +103,6 @@ namespace Ayni.Combat
             Flash(point, new Color(1f, 0.95f, 0.8f), 1.15f, 0.14f);
             Burst(point, direction, 12, 3.2f, new Color(1f, 0.92f, 0.78f, 0.9f), 0.05f);
             Burst(point, direction, 6, 1.6f, new Color(0.62f, 0.5f, 0.38f, 0.7f), 0.09f);
-            Grunt("dolor_rival", point, 0.8f, 0.7f);
         }
 
         public static void Finisher(Vector3 point, Vector3 direction = default)
@@ -116,7 +115,6 @@ namespace Ayni.Combat
             Flash(point, new Color(1f, 0.85f, 0.5f), 1.7f, 0.18f);
             Burst(point, direction, 22, 4.2f, new Color(1f, 0.9f, 0.7f, 0.95f), 0.055f);
             Burst(point, direction, 10, 2f, new Color(0.62f, 0.5f, 0.38f, 0.75f), 0.12f);
-            Grunt("dolor_rival", point, 0.95f, 1f);
         }
 
         public static void Parry(Vector3 point, Vector3 direction = default)
@@ -159,7 +157,6 @@ namespace Ayni.Combat
             AyniRumble.Pulse(0.8f, 0.3f, 0.22f);
             Flash(point, new Color(1f, 0.3f, 0.25f), 0.95f, 0.14f);
             Burst(point, direction, 8, 2.4f, new Color(0.95f, 0.85f, 0.72f, 0.85f), 0.045f);
-            Grunt("dolor_yari", point, 0.85f, 0.9f);
         }
 
         // ───────────────────────── Gritos y polvo ─────────────────────────
