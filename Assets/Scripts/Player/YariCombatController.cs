@@ -1075,7 +1075,7 @@ namespace Ayni.Player
             {
                 EnemyController enemy = enemies[i];
                 if (enemy == null || !enemy.CanBeJudged) continue;
-                if (Vector3.Distance(transform.position, enemy.transform.position) <= (enemy.IsBoss ? 9f : 3.2f)) return true;
+                if (Vector3.Distance(transform.position, enemy.transform.position) <= (enemy.IsBoss || enemy.JudgedLikeBoss ? 9f : 3.2f)) return true;
             }
             return false;
         }

@@ -192,6 +192,13 @@ namespace Ayni.Enemy
         public bool Unkillable { get; set; }
         /// <summary>Está en su rutina antes de la pelea (AyniRivalAmbient): aún no ha visto a Yari.</summary>
         public bool Dormant { get; set; }
+        /// <summary>Multiplica el daño a la vida que recibe de Yari (p. ej. la champi del Capitán del Tambo contra Amaru).</summary>
+        public float IncomingDamageMultiplier { get; set; } = 1f;
+        /// <summary>
+        /// Rival común que se juzga como un jefe: su Juicio se resuelve desde la misma distancia que el de un jefe
+        /// (el Capitán del Tambo y su mini Juicio).
+        /// </summary>
+        public bool JudgedLikeBoss { get; set; }
 
         /// <summary>
         /// Veces que puede levantarse al caer derrotado (segundo aliento). Cae, se queda en el suelo y se levanta furioso
@@ -632,6 +639,7 @@ namespace Ayni.Enemy
 
             // Con la postura rota (y fuera del Juicio) cada golpe duele más: es el momento de castigarlo
             if (structure.IsBroken && !CanBeJudged) healthDmg *= brokenDamageMultiplier;
+            healthDmg *= IncomingDamageMultiplier;
 
             // Los jefes no mueren a golpes: al vaciar una barra pasan a la siguiente fase y en la última
             // su final se decide en el Juicio Ayni

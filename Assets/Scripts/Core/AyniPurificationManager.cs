@@ -46,7 +46,7 @@ namespace Ayni.Core
                 if (enemy.CanBeJudged)
                 {
                     float dist = Vector3.Distance(playerPos, enemy.transform.position);
-                    if (dist <= (enemy.IsBoss ? bossJudgmentRange : executionRange))
+                    if (dist <= (enemy.IsBoss || enemy.JudgedLikeBoss ? bossJudgmentRange : executionRange))
                     {
                         ResolveDilemma(enemy, isAyniMercy);
                         return;

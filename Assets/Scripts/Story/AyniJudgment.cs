@@ -19,8 +19,13 @@ namespace Ayni.Story
 
         /// <summary>True mientras el juego espera la decisión del jugador.</summary>
         public static bool Active { get; private set; }
+        /// <summary>Rival que se está juzgando (o null).</summary>
+        public static EnemyController Target => instance != null && Active ? instance.target : null;
 
+        private static AyniJudgment instance;
         private EnemyController target;
+        // Textos de un Juicio que no es el de un jefe (el mini Juicio del Capitán del Tambo); null = los de siempre
+        private string customTitle, customLine, customVengeance, customAyni;
         private float startedAt;
         private float nextZoom;
         private GUIStyle titleStyle, buttonStyle, labelStyle, textStyle;
@@ -33,7 +38,23 @@ namespace Ayni.Story
 
         private void OnEnable()
         {
+            instance = this;
             EnemyController.OnJudgmentReady += Begin;
+        }
+
+        /// <summary>
+        /// Abre el Juicio para un rival que no es jefe (su postura ya debe estar rota y retenida con HoldBroken).
+        /// Se resuelve igual: botón rojo (Venganza) o verde (Ayni), y se cierra solo al resolverse.
+        /// </summary>
+        public static bool Open(EnemyController enemy, string title, string line, string vengeance, string ayni)
+        {
+            if (instance == null || enemy == null || Active) return false;
+            instance.Begin(enemy);
+            instance.customTitle = title;
+            instance.customLine = line;
+            instance.customVengeance = vengeance;
+            instance.customAyni = ayni;
+            return true;
         }
 
         private void OnDisable()
@@ -46,6 +67,7 @@ namespace Ayni.Story
         {
             if (Active) return;
             target = enemy;
+            customTitle = customLine = customVengeance = customAyni = null;
             Active = true;
             startedAt = Time.unscaledTime;
             nextZoom = 0f;
@@ -104,15 +126,15 @@ namespace Ayni.Story
             float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5f);
 
             GUI.color = new Color(1f, 0.85f, 0.45f, appear);
-            GUI.Label(new Rect(0, h * 0.2f, w, 44f), "JUICIO AYNI", titleStyle);
+            GUI.Label(new Rect(0, h * 0.2f, w, 44f), customTitle ?? "JUICIO AYNI", titleStyle);
             GUI.color = new Color(1f, 1f, 1f, 0.9f * appear);
-            GUI.Label(new Rect(w * 0.2f, h * 0.2f + 44f, w * 0.6f, 30f), $"{target.CharacterName} está a tu merced.", textStyle);
+            GUI.Label(new Rect(w * 0.15f, h * 0.2f + 44f, w * 0.7f, 50f), customLine ?? $"{target.CharacterName} está a tu merced.", textStyle);
 
             float cx = w * 0.5f, cy = h * 0.62f;
             DrawChoice(new Vector2(cx - 170f, cy), new Color(0.85f, 0.15f, 0.12f), AyniInput.Label(AyniInput.Action.Execute),
-                       "VENGANZA", "Lo rematas. La violencia deja\nla tierra marchita (Hucha).", appear, pulse);
+                       "VENGANZA", customVengeance ?? "Lo rematas. La violencia deja\nla tierra marchita (Hucha).", appear, pulse);
             DrawChoice(new Vector2(cx + 170f, cy), new Color(0.2f, 0.7f, 0.3f), AyniInput.Label(AyniInput.Action.Mercy),
-                       "AYNI", "Lo desarmas y perdonas.\nEl Antisuyo puede sanar.", appear, 1f - pulse);
+                       "AYNI", customAyni ?? "Lo desarmas y perdonas.\nEl Antisuyo puede sanar.", appear, 1f - pulse);
 
             GUI.color = Color.white;
             GUI.matrix = previous;
