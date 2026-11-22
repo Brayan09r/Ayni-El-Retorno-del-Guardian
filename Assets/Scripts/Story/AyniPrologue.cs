@@ -304,8 +304,11 @@ namespace Ayni.Story
             Vector3 pos = yariSpot;
             const float fallGravity = -15f;
             float elapsed = 0f;
-            Vector3 camAnchor = deck - acrossBridge * 0.5f + Vector3.up * 2.0f;
-            // Corte seco al plano desde el puente (si la cámara viajara desde el perfil, cruzaría los tablones)
+            // Fuera del puente, del lado de la caída y un poco atrás: así, al mirar hacia abajo, los tablones no se
+            // interponen (antes la cámara estaba sobre el tablero y Yari caía detrás de él)
+            Vector3 alongBridge = Vector3.Cross(acrossBridge, Vector3.up).normalized;
+            Vector3 camAnchor = deck + acrossBridge * 1.3f - alongBridge * 3.4f + Vector3.up * 2.6f;
+            // Corte seco al plano (si la cámara viajara desde el perfil, cruzaría los tablones)
             Aim(camAnchor, yariSpot + Vector3.up * 1.1f, 1f);
             bool slowEnded = false;
             bool closeShot = false;
@@ -379,7 +382,9 @@ namespace Ayni.Story
                     secondCaption = true;
                     AyniScreenFX.Caption("No morirá mientras su corazón anhele volver a casa... pero cada vez que caiga, la Illa cobrará años de su vida.", 5.0f);
                 }
-                return (illaPoint + illaView * Mathf.Lerp(1.15f, 0.75f, Smooth(u)), illaPoint);
+                // Arco lento alrededor del antebrazo (antes era un acercamiento quieto y largo)
+                Vector3 view = Quaternion.AngleAxis(Mathf.Lerp(-28f, 22f, Smooth(u)), Vector3.up) * illaView;
+                return (illaPoint + view * Mathf.Lerp(1.2f, 0.75f, Smooth(u)), illaPoint);
             });
             if (skipRequested) { Finish(); yield break; }
 
@@ -599,7 +604,8 @@ namespace Ayni.Story
         /// <summary>La noche de las cenizas: resplandor rojizo, brasas que suben de la garganta y el fuego del valle.</summary>
         private void BuildNightOfAshes()
         {
-            AyniScreenFX.Tint(new Color(0.2f, 0.035f, 0.015f), 0.22f);
+            // Velo rojizo de la noche: más suave que antes (0.22), la pelea del puente casi no se veía
+            AyniScreenFX.Tint(new Color(0.2f, 0.035f, 0.015f), 0.12f);
 
             Vector3 along = Vector3.Cross(acrossBridge, Vector3.up);
             var fireGo = new GameObject("Prologo_FuegoDelValle");

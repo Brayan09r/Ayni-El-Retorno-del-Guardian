@@ -287,8 +287,8 @@ namespace Ayni.Story
             fogMode = RenderSettings.fogMode;
 
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.2f, 0.12f, 0.14f);
-            RenderSettings.ambientEquatorColor = new Color(0.42f, 0.18f, 0.09f);
+            RenderSettings.ambientSkyColor = new Color(0.26f, 0.16f, 0.18f);
+            RenderSettings.ambientEquatorColor = new Color(0.5f, 0.24f, 0.12f);
             RenderSettings.ambientGroundColor = new Color(0.12f, 0.06f, 0.04f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
@@ -303,10 +303,20 @@ namespace Ayni.Story
             var glowLight = glow.AddComponent<Light>();
             glowLight.type = LightType.Point;
             glowLight.color = new Color(1f, 0.55f, 0.28f);
-            glowLight.range = 14f;
-            glowLight.intensity = 3.2f;
-            glow.AddComponent<PrologueFlicker>().Init(glowLight, 3.2f, 11);
+            glowLight.range = 16f;
+            glowLight.intensity = 4.6f;
+            glow.AddComponent<PrologueFlicker>().Init(glowLight, 4.6f, 11);
             spawned.Add(glow);
+            // Y desde el otro lado, más baja: el fuego de la garganta ilumina las caras desde abajo
+            var under = new GameObject("Prologo_ResplandorBajo");
+            under.transform.position = deck - Vector3.up * 2.5f - acrossBridge * 3f;
+            var underLight = under.AddComponent<Light>();
+            underLight.type = LightType.Point;
+            underLight.color = new Color(1f, 0.48f, 0.22f);
+            underLight.range = 13f;
+            underLight.intensity = 3f;
+            under.AddComponent<PrologueFlicker>().Init(underLight, 3f, 23);
+            spawned.Add(under);
             // El valle arde: fuegos con humo al otro lado de la garganta, donde mira el plano general
             Vector3[] fires =
             {
