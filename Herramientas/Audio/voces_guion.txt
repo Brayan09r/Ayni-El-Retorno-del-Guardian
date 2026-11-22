@@ -101,3 +101,16 @@ NARRADORA | 5.8 | La lluvia apaga las llamas del Antisuyo. Los comuneros liberad
 NARRADORA | 5.3 | Amaru el Cazador cae. Nadie queda para detener las sierras de bronce.
 NARRADORA | 5.3 | Amaru cae. Nadie queda para detener las sierras de bronce.
 NARRADORA | 5.8 | El fuego sigue avanzando por el Antisuyo. La Hucha, la energía pesada, se aferra al alma de Yari.
+# ── Los quipus de Amaru (uno en cada kancha) ──
+NARRADORA | 0 | Amaru nació en un ayllu del Antisuyo, al borde de la selva alta. De niño cuidaba las vicuñas y les silbaba para que bajaran del cerro.
+NARRADORA | 0 | Una sequía secó los ríos de la selva. Su ayllu pidió ayuda a los guardianes del Cusco, pero nadie subió. Amaru enterró solo a su madre.
+YARI | 0 | Nadie subió... Yo era uno de esos guardianes.
+NARRADORA | 0 | Sayri sí subió. Le dio maíz, una cerbatana y un nombre nuevo: el Cazador. A cambio le pidió las pieles, las plumas y los bosques del Antisuyo.
+NARRADORA | 0 | El último nudo lo ató su hermana Killa: «Vuelve a casa, Amaru. Ya no quiero maíz que huele a humo.»
+YARI | 0 | Amaru no caza por odio. Caza porque nadie volvió por él.
+# En el duelo, si Yari leyó los cuatro
+YARI | 0 | ¡Killa te espera en el Antisuyo, Amaru!
+AMARU | 0 | ¿Killa...? ¿Quién te dio ese nombre? | Killa... ¿Killa? ¿Quién te dio ese nombre?
+# Desenlace, si Yari leyó los cuatro
+NARRADORA | 5.3 | Amaru vuelve al ayllu de su infancia. Killa lo espera con las vicuñas, al borde de la selva.
+NARRADORA | 5.3 | Al borde de la selva, Killa seguirá esperando a un hermano que no volverá.
