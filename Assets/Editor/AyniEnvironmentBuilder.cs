@@ -290,7 +290,7 @@ namespace Ayni.Editor
             Vector3 origin = terrain.transform.position;
             Vector3 size = terrain.terrainData.size;
             mat.SetVector("_TerrainRect", new Vector4(origin.x, origin.z, size.x, size.z));
-            mat.SetFloat("_PaveSize", 1.0f);
+            mat.SetFloat("_PaveSize", 0.6f); // losas de 60 cm (v0.17; antes 1 m)
             mat.SetFloat("_WallRow", 0.7f);
             mat.SetFloat("_WallStone", 0.95f);
             mat.SetColor("_WallColor", new Color(0.64f, 0.59f, 0.52f));

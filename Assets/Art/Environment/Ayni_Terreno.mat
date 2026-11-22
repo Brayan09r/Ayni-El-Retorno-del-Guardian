@@ -83,7 +83,7 @@ Material:
     - _Metallic: 0.12
     - _NormalStrength: 1
     - _PathTiling: 50
-    - _PaveSize: 1
+    - _PaveSize: 0.6
     - _Paved: 1
     - _RockTiling: 30
     - _RockWorldScale: 9
