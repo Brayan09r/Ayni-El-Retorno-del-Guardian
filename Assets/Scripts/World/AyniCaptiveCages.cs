@@ -574,6 +574,12 @@ namespace Ayni.World
                 {
                     GameObject v = vicunas[i].root;
                     v.transform.SetParent(null, true);
+                    var vAnim = v.GetComponentInChildren<Animator>();
+                    if (vAnim != null && vAnim.runtimeAnimatorController != null)
+                    {
+                        vAnim.CrossFadeInFixedTime("Run", 0.15f);
+                        vAnim.speed = 1.45f;
+                    }
                     // La segunda sale un instante después, un paso al lado
                     var own = new List<Vector3>(path);
                     Vector3 side = Vector3.Cross(Vector3.up, transform.forward) * (i == 0 ? -0.6f : 0.6f);
@@ -589,6 +595,12 @@ namespace Ayni.World
             if (condor.root == null) yield break;
             Transform t = condor.root.transform;
             t.SetParent(null, true);
+            var cAnim = t.GetComponentInChildren<Animator>();
+            if (cAnim != null && cAnim.runtimeAnimatorController != null)
+            {
+                cAnim.CrossFadeInFixedTime("Fly_Flap", 0.15f);
+                cAnim.speed = 1.25f;
+            }
             if (condor.leftWing != null) condor.leftWing.localRotation = Quaternion.identity;
             if (condor.rightWing != null) condor.rightWing.localRotation = Quaternion.identity;
             AyniAudio.Play("condor_aviso", t.position, 0.9f);

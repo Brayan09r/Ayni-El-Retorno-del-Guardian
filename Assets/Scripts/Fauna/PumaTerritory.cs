@@ -187,7 +187,7 @@ namespace Ayni.Fauna
                     return;
                 }
                 recoverAt = Time.time + recoverSeconds;
-                if (enemy.Animator != null) { enemy.Animator.SetFloat("Speed", 0f); enemy.Animator.CrossFadeInFixedTime("Idle", .2f); }
+                if (enemy.Animator != null) { enemy.Animator.speed = 1f; enemy.Animator.SetFloat("Speed", 0f); enemy.Animator.CrossFadeInFixedTime("Idle", .2f); }
                 return;
             }
             if (Time.time < recoverAt) return;
@@ -204,7 +204,11 @@ namespace Ayni.Fauna
             gravity = mover.isGrounded ? -2f : gravity - 18f * Time.deltaTime;
             float step = Mathf.Min(speed * Time.deltaTime, to.magnitude);
             if (mover.enabled) mover.Move(to.normalized * step + Vector3.up * (gravity * Time.deltaTime));
-            if (enemy.Animator != null) enemy.Animator.SetFloat("Speed", 1f);
+            if (enemy.Animator != null)
+            {
+                enemy.Animator.SetFloat("Speed", 1f);
+                enemy.Animator.speed = Mathf.Clamp(speed / 3.8f, 0.85f, 2.1f);
+            }
             return false;
         }
 
@@ -221,7 +225,7 @@ namespace Ayni.Fauna
             mode = Mode.Home;
             enemy.ExternalControl = false;
             transform.rotation = originalRotation;
-            if (enemy.Animator != null) { enemy.Animator.SetFloat("Speed", 0f); enemy.Animator.CrossFadeInFixedTime("Idle", .15f); }
+            if (enemy.Animator != null) { enemy.Animator.speed = 1f; enemy.Animator.SetFloat("Speed", 0f); enemy.Animator.CrossFadeInFixedTime("Idle", .15f); }
         }
 
         private void PlayRun()
