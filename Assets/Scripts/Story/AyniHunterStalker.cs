@@ -92,6 +92,16 @@ namespace Ayni.Story
             if (figure != null) Destroy(figure);
         }
 
+        /// <summary>Lo que dice Amaru en la aparición <paramref name="index"/>: tras el Tambo, sabe qué hiciste con su capitán.</summary>
+        private static string LineFor(int index)
+        {
+            if (index == 3 && AyniPathRewards.CaptainSlain)
+                return "Mataste a mi capitán. Bien: ahora sé qué clase de presa eres. Te espero en el puente.";
+            if (index == 3 && AyniPathRewards.CaptainSpared)
+                return "¿Perdonaste a ese cobarde del tambo? Yo no perdono, guardián. Ven al puente: allí caerás.";
+            return Lines[index];
+        }
+
         private void HandleCleared(AyniEncounterSite site)
         {
             if (site == null || site.Order < 1 || site.Order >= Lines.Length) return;
@@ -103,6 +113,8 @@ namespace Ayni.Story
             yield return new WaitForSeconds(delay);
             // Si sigue la pelea (patrullas, refuerzos rezagados), espera un poco a que se calme
             for (float waited = 0f; waited < 12f && FightNearby(); waited += 0.5f) yield return new WaitForSeconds(0.5f);
+            // Y si el Capitán del Tambo está hablando, a que termine
+            for (float waited = 0f; waited < 20f && AyniTamboCaptain.Talking; waited += 0.5f) yield return new WaitForSeconds(0.5f);
             TryAppear(index);
         }
 
@@ -140,7 +152,7 @@ namespace Ayni.Story
             if (!FindPerch(goal, out Vector3 perch))
             {
                 // Sin un cerro a la vista: solo su voz, desde lejos
-                AyniBossIntro.Say(Lines[index], 4f);
+                AyniBossIntro.Say(LineFor(index), 4f);
                 Debug.Log($"[Ayni Acecho] Aparición {index}: sin sitio a la vista, solo la voz");
                 return;
             }
@@ -159,7 +171,7 @@ namespace Ayni.Story
         {
             if (!EnsureFigure())
             {
-                AyniBossIntro.Say(Lines[index], 4f);
+                AyniBossIntro.Say(LineFor(index), 4f);
                 yield break;
             }
             Showing = true;
@@ -176,7 +188,7 @@ namespace Ayni.Story
             AyniAudio.Play2D("postura_rota", 0.4f, 0.7f);
             yield return new WaitForSeconds(0.35f);
             Play("Phase_Roar", 0.15f);
-            AyniBossIntro.Say(Lines[index], 4.2f);
+            AyniBossIntro.Say(LineFor(index), 4.2f);
 
             // Mira a Yari mientras habla; si Yari se le echa encima, se va antes
             float until = Time.time + watchSeconds;
