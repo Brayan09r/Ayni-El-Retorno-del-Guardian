@@ -55,6 +55,9 @@ namespace Ayni.World.Fauna
         private Quaternion rightWingRest;
         private Animator anim;
         private bool isFlappingAnim;
+        private bool joinFromHere;
+        private Vector3 joinFrom;
+        private float joinTime, joinDuration;
 
         /// <summary>Permite configurar el cóndor desde el menú de editor sin usar el Inspector.</summary>
         public void Configure(Vector3 center, float radius, float altitude, float speed, bool turnClockwise,
@@ -67,6 +70,15 @@ namespace Ayni.World.Fauna
             clockwise = turnClockwise;
             leftWing = wingL;
             rightWing = wingR;
+        }
+
+        /// <summary>
+        /// Para un cóndor que ya está volando en otro sitio (p. ej. el que sale de la jaula): entra en su giro desde
+        /// donde está, sin saltar de golpe al círculo.
+        /// </summary>
+        public void JoinFromCurrentPosition()
+        {
+            joinFromHere = true;
         }
 
         private void Start()
@@ -85,11 +97,23 @@ namespace Ayni.World.Fauna
             anim = GetComponentInChildren<Animator>();
             if (anim != null && anim.runtimeAnimatorController != null)
             {
+                // El modelo 3D está posado (cuerpo vertical): en vuelo va tendido, con la cabeza al frente
+                AyniCondorModel.SetPitch(transform, AyniCondorModel.FlightPitch);
                 anim.Play("Glide", 0, Random.value);
                 isFlappingAnim = false;
             }
 
             ScheduleNextFlap();
+            if (joinFromHere)
+            {
+                // Empieza en el punto del giro más cercano y llega hasta él volando a su velocidad
+                Vector3 offset = transform.position - currentCenter;
+                angle = Mathf.Atan2(offset.z, offset.x);
+                joinFrom = transform.position;
+                joinTime = 0f;
+                joinDuration = Mathf.Clamp(Vector3.Distance(joinFrom, OrbitPoint(angle)) / Mathf.Max(1f, glideSpeed), 1.5f, 14f);
+                return;
+            }
             transform.position = OrbitPoint(angle);
         }
 
@@ -112,6 +136,11 @@ namespace Ayni.World.Fauna
 
             Vector3 previous = transform.position;
             Vector3 next = OrbitPoint(angle);
+            if (joinDuration > 0f && joinTime < joinDuration)
+            {
+                joinTime += dt;
+                next = Vector3.Lerp(joinFrom, next, Mathf.SmoothStep(0f, 1f, joinTime / joinDuration));
+            }
             transform.position = next;
 
             // 3. Orientación: mirar hacia donde vuela y alabear hacia el centro del giro

@@ -27,6 +27,26 @@ namespace Ayni.World.Fauna
         private static readonly Color PielCabeza = new Color(0.62f, 0.42f, 0.40f, 1f);
         private static readonly Color PicoMarfil = new Color(0.82f, 0.78f, 0.66f, 1f);
 
+        /// <summary>
+        /// El modelo 3D (Resources/Fauna/Fauna_Condor) está modelado posado, con el cuerpo casi vertical. En vuelo se
+        /// inclina hacia delante para que el cuerpo vaya horizontal y la cabeza mire hacia donde vuela.
+        /// </summary>
+        public const float FlightPitch = 50f;
+        /// <summary>Altura del centro del cuerpo del modelo 3D (a escala 1): la inclinación gira alrededor de ese punto.</summary>
+        private const float BodyCenterY = 0.6f;
+
+        /// <summary>Inclina el modelo 3D del cóndor (0 = posado, <see cref="FlightPitch"/> = en vuelo). Sin modelo 3D no hace nada.</summary>
+        public static void SetPitch(Transform condorRoot, float pitch)
+        {
+            if (condorRoot == null) return;
+            Transform model = condorRoot.Find("Modelo_3D");
+            if (model == null) return;
+            Vector3 center = Vector3.up * (BodyCenterY * model.localScale.y);
+            Quaternion q = Quaternion.Euler(pitch, 0f, 0f);
+            model.localRotation = q;
+            model.localPosition = center - q * center;
+        }
+
         private static Material matNegro, matBlanco, matCabeza, matPico;
         private static Mesh wingMesh, wingPanelMesh;
 
