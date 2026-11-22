@@ -18,12 +18,19 @@ namespace Ayni.Core
         public int DeathCounter => deathCounter;
         public int MaxAge => maxAge;
         /// <summary>Edad que tendrá Yari si cae ahora (la Illa cobra un año más por cada caída seguida).</summary>
-        public int AgeAfterNextFall => CurrentAge + deathCounter + 1;
+        public int AgeAfterNextFall => ProtectedFalls > 0 ? CurrentAge : CurrentAge + deathCounter + 1;
+        /// <summary>
+        /// Caídas que no cobrarán años (la bendición del Apu en la apacheta). La Illa levanta a Yari igual, pero sin
+        /// envejecerlo ni sumar al contador de caídas seguidas.
+        /// </summary>
+        public int ProtectedFalls { get; private set; }
         /// <summary>Veces que la Illa ha resucitado a Yari en esta partida.</summary>
         public int TotalResurrections { get; private set; }
 
         public event Action<int> OnAgeChanged;
         public event Action OnTrueDeath;
+        /// <summary>Yari se levantó sin perder años gracias a <see cref="ProtectedFalls"/>.</summary>
+        public event Action OnProtectedFall;
 
         public enum AgeStage
         {
@@ -50,6 +57,16 @@ namespace Ayni.Core
         /// </summary>
         public bool TriggerResurrection()
         {
+            if (ProtectedFalls > 0)
+            {
+                ProtectedFalls--;
+                TotalResurrections++;
+                Debug.Log($"[Illa Sagrada] El Apu protege a Yari: se levanta sin perder años ({CurrentAge}).");
+                OnAgeChanged?.Invoke(CurrentAge);
+                OnProtectedFall?.Invoke();
+                return true;
+            }
+
             deathCounter++;
             TotalResurrections++;
             int yearsLost = deathCounter;
@@ -95,6 +112,13 @@ namespace Ayni.Core
                 OnAgeChanged?.Invoke(CurrentAge);
             }
             return restored;
+        }
+
+        /// <summary>La próxima caída no cobrará años (ver <see cref="ProtectedFalls"/>).</summary>
+        public void GrantFallProtection()
+        {
+            ProtectedFalls++;
+            Debug.Log($"[Illa Sagrada] Bendición del Apu: {ProtectedFalls} caída(s) sin perder años.");
         }
 
         public float GetDamageMultiplier()
