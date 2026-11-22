@@ -265,34 +265,52 @@ namespace Ayni.Editor
 
         /// <summary>
         /// En el "Run" del FBX las dos patas delanteras van juntas y las dos traseras también (un salto a pares que parece
-        /// de troncos). Se crea una copia del clip con las patas derechas adelantadas una fracción del ciclo: queda un
-        /// galope en el que cada pata pisa a su tiempo. Se guarda en Assets/Art/Fauna/Clips/{especie}_Run_Galope.anim.
+        /// de troncos), y la columna se arquea y se estira mucho en cada salto. Se crea una copia del clip:
+        ///  - las patas derechas van adelantadas una fracción del ciclo: cada pata pisa a su tiempo (galope);
+        ///  - la flexión de Root, Pelvis y Spine se reduce (si no, con las patas desfasadas la panza se ve estirada);
+        ///  - el vaivén de hombros y caderas se suaviza un poco.
+        /// Se guarda en Assets/Art/Fauna/Clips/{especie}_Run_Galope.anim.
         /// </summary>
         public static AnimationClip BuildGallop(AnimationClip source, string key, float phase)
         {
             if (!AssetDatabase.IsValidFolder(GallopDir)) AssetDatabase.CreateFolder(FaunaArtDir, "Clips");
             var clip = new AnimationClip { name = $"{key}_Run_Galope", frameRate = source.frameRate };
             float length = Mathf.Max(0.01f, source.length);
-            const int samples = 48;
-            int shifted = 0;
+
+            // Curvas del original agrupadas por hueso
+            var byPath = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<EditorCurveBinding>>();
             foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(source))
             {
-                AnimationCurve curve = AnimationUtility.GetEditorCurve(source, binding);
-                if (binding.path.Contains("Leg_R_"))
-                {
-                    // Muestrea el clip desplazado (da la vuelta al final del ciclo, que es un bucle)
-                    var keys = new Keyframe[samples + 1];
-                    for (int i = 0; i <= samples; i++)
-                    {
-                        float t = length * i / samples;
-                        keys[i] = new Keyframe(t, curve.Evaluate(Mathf.Repeat(t + phase * length, length)));
-                    }
-                    curve = new AnimationCurve(keys);
-                    for (int i = 0; i < keys.Length; i++) curve.SmoothTangents(i, 0f);
-                    shifted++;
-                }
-                AnimationUtility.SetEditorCurve(clip, binding, curve);
+                if (!byPath.TryGetValue(binding.path, out var list)) byPath[binding.path] = list = new System.Collections.Generic.List<EditorCurveBinding>();
+                list.Add(binding);
             }
+
+            int changed = 0;
+            foreach (var pair in byPath)
+            {
+                string bone = pair.Key.Substring(pair.Key.LastIndexOf('/') + 1);
+                float shift = pair.Key.Contains("Leg_R_") ? phase : 0f;
+                float rotKeep = GallopRotationKeep(bone);
+                float posKeep = bone == "Root" ? 0.55f : 1f;
+                if (shift == 0f && rotKeep >= 1f && posKeep >= 1f)
+                {
+                    foreach (EditorCurveBinding binding in pair.Value)
+                        AnimationUtility.SetEditorCurve(clip, binding, AnimationUtility.GetEditorCurve(source, binding));
+                    continue;
+                }
+                changed++;
+                WriteGroup(source, clip, pair.Value, "m_LocalRotation", 4, length, shift, rotKeep, true);
+                WriteGroup(source, clip, pair.Value, "m_LocalPosition", 3, length, shift, posKeep, false);
+                WriteGroup(source, clip, pair.Value, "m_LocalScale", 3, length, shift, 1f, false);
+                // Cualquier otra curva del hueso, tal cual
+                foreach (EditorCurveBinding binding in pair.Value)
+                {
+                    if (binding.propertyName.StartsWith("m_LocalRotation") || binding.propertyName.StartsWith("m_LocalPosition") ||
+                        binding.propertyName.StartsWith("m_LocalScale")) continue;
+                    AnimationUtility.SetEditorCurve(clip, binding, AnimationUtility.GetEditorCurve(source, binding));
+                }
+            }
+
             AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(source);
             settings.loopTime = true;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
@@ -309,8 +327,86 @@ namespace Ayni.Editor
                 AssetDatabase.CreateAsset(clip, path);
             }
             EditorUtility.SetDirty(clip);
-            Debug.Log($"[AyniFauna3D] Galope {path}: {shifted} curvas de las patas derechas desfasadas un {phase:P0} del ciclo");
+            Debug.Log($"[AyniFauna3D] Galope {path}: {changed} huesos ajustados (patas derechas desfasadas un {phase:P0} del ciclo)");
             return clip;
+        }
+
+        /// <summary>Cuánto del giro del clip original se conserva en cada hueso (1 = todo).</summary>
+        private static float GallopRotationKeep(string bone)
+        {
+            if (bone == "Root") return 0.45f;
+            if (bone == "Pelvis" || bone == "Spine") return 0.35f;
+            if (bone.EndsWith("_Upper")) return 0.85f;
+            return 1f;
+        }
+
+        /// <summary>
+        /// Reescribe las curvas x, y, z (y w) de una propiedad de un hueso: desplazadas <paramref name="shift"/> del ciclo y
+        /// acercadas a su valor medio (conservando <paramref name="keep"/> del movimiento). Los giros se mezclan como
+        /// cuaterniones para que no se deformen.
+        /// </summary>
+        private static void WriteGroup(AnimationClip source, AnimationClip clip, System.Collections.Generic.List<EditorCurveBinding> bindings,
+                                       string property, int components, float length, float shift, float keep, bool quaternion)
+        {
+            string[] axis = { "x", "y", "z", "w" };
+            var group = new EditorCurveBinding[components];
+            var curves = new AnimationCurve[components];
+            for (int c = 0; c < components; c++)
+            {
+                int index = bindings.FindIndex(b => b.propertyName == property + "." + axis[c]);
+                if (index < 0) return; // el hueso no anima esta propiedad
+                group[c] = bindings[index];
+                curves[c] = AnimationUtility.GetEditorCurve(source, group[c]);
+            }
+
+            const int samples = 48;
+            var values = new Vector4[samples + 1];
+            for (int i = 0; i <= samples; i++)
+            {
+                float t = Mathf.Repeat(length * i / samples + shift * length, length);
+                for (int c = 0; c < components; c++) values[i][c] = curves[c].Evaluate(t);
+            }
+
+            if (keep < 1f)
+            {
+                if (quaternion)
+                {
+                    // Media de los giros (en el mismo hemisferio) y cada muestra acercada a ella
+                    Vector4 sum = Vector4.zero;
+                    for (int i = 0; i < samples; i++)
+                    {
+                        Vector4 q = values[i];
+                        if (Vector4.Dot(q, values[0]) < 0f) q = -q;
+                        sum += q;
+                    }
+                    Vector4 m = sum.normalized;
+                    var mean = new Quaternion(m.x, m.y, m.z, m.w);
+                    for (int i = 0; i <= samples; i++)
+                    {
+                        var q = new Quaternion(values[i].x, values[i].y, values[i].z, values[i].w);
+                        Quaternion r = Quaternion.Slerp(mean, q, keep);
+                        values[i] = new Vector4(r.x, r.y, r.z, r.w);
+                    }
+                    // Sin saltos de signo entre muestras (si no, la interpolación da una vuelta entera)
+                    for (int i = 1; i <= samples; i++) if (Vector4.Dot(values[i], values[i - 1]) < 0f) values[i] = -values[i];
+                }
+                else
+                {
+                    Vector4 mean = Vector4.zero;
+                    for (int i = 0; i < samples; i++) mean += values[i];
+                    mean /= samples;
+                    for (int i = 0; i <= samples; i++) values[i] = mean + (values[i] - mean) * keep;
+                }
+            }
+
+            for (int c = 0; c < components; c++)
+            {
+                var keys = new Keyframe[samples + 1];
+                for (int i = 0; i <= samples; i++) keys[i] = new Keyframe(length * i / samples, values[i][c]);
+                var curve = new AnimationCurve(keys);
+                for (int i = 0; i < keys.Length; i++) curve.SmoothTangents(i, 0f);
+                AnimationUtility.SetEditorCurve(clip, group[c], curve);
+            }
         }
 
         /// <summary>
