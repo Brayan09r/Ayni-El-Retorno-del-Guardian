@@ -98,6 +98,19 @@ call Ayni.World.AyniApacheta.TestOffer                            deja la piedra
 call Ayni.World.AyniTamboCaptain.Report / AyniApacheta.Report     estado en la consola
 ```
 
+## Cámara, combate y selva quemada (v0.17.0)
+
+- Cámara: `ThirdPersonSifuCamera.Unblocked` resuelve cada fotograma el punto libre entre la cabeza de Yari y la cámara
+  (ignora personajes y cuerpos físicos); el suavizado solo sirve para alejarse. `UpdateIndoor` detecta techo sobre Yari
+  y cambia al encuadre de interior. `call Ayni.Player.ThirdPersonSifuCamera.Report` dice la distancia, si está bajo techo
+  y el cabeceo.
+- Turnos de los rivales: `EnemyController.nextGroupAttackAt` (0,7-1,15 s entre el inicio de un golpe y el siguiente).
+- Gritos: clips `esfuerzo_yari_*`, `dolor_yari_*` y `dolor_rival_*` en `Resources/AyniAudio`, lanzados con
+  `CombatFeedback.Grunt`; chispas con `CombatFeedback.Burst`. Para rehacerlos: `python Herramientas/Audio/generar_esfuerzos.py`.
+- Selva quemada: *Ayni > Entorno > Construir Selva Quemada* (o `call Ayni.Editor.AyniVillageBuilder.BuildBurntForestWith 1`).
+  Guarda la escena y las mallas en `Assets/Art/Environment/Aldea/Selva_Mallas.asset`. *Quitar Selva Quemada* la borra.
+- Losas: `call Ayni.Editor.AyniVillageBuilder.SetPaveSize 0.6` cambia el tamaño en el material del terreno.
+
 ## Los quipus de Amaru (v0.16.0)
 
 - `Scripts/World/AyniAmaruQuipus.cs`: un quipu por kancha, en el punto interior más lejano de la entrada (en la de las

@@ -10,6 +10,50 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.17.0 — Cámara, combate y selva quemada · 22 de noviembre de 2026
+
+Mejoras salidas de una partida de revisión completa del Nivel 1.
+
+**Cámara** (`ThirdPersonSifuCamera`)
+- Ya no atraviesa muros ni terreno: si algo se interpone entre Yari y la cámara, se pone delante al instante (antes se
+  deslizaba a través durante unos fotogramas) y vuelve a alejarse con suavidad. Los rivales y los animales no la empujan.
+- Bajo techo (dentro de las casas) se acerca al hombro. Si un muro la deja casi pegada a Yari, sube y mira por encima de
+  su hombro; pegada del todo, deja de dibujar su cuerpo (solo su sombra) en vez de llenar la pantalla con su pelo.
+- Plano cercano de 8 cm: ya no se ve el interior de un muro pegado a la cámara.
+- Encuadre más bajo (más horizonte, menos suelo). Con un rival fijado se aleja un poco y, si el rival está lejos (el que
+  huye), mira a Yari en vez de dejarlo en el borde de abajo.
+- Varios campos cambiaron de nombre para que la escena tome los valores nuevos. `ThirdPersonSifuCamera.Report` para probar.
+
+**Combate**
+- Los rivales se turnan: cuando uno empieza un golpe, el siguiente espera entre 0,7 y 1,15 s, y sus pausas tienen algo de
+  azar. Antes dos cazadores golpeaban en el mismo instante, cada 2,5 s.
+- Gritos de esfuerzo de Yari en los golpes fuertes, de dolor al recibir y de los rivales en los golpes fuertes y remates.
+  Son sintéticos y libres (`Herramientas/Audio/generar_esfuerzos.py`), no siempre suenan y nunca se amontonan.
+- Chispas de sudor y polvo en cada impacto que se congelan con la micro-pausa del golpe.
+
+**Arreglos**
+- El Rastreador del quipu ya no se queda parado a unos 18 m de escapar: la distancia se mide por el camino recorrido (no
+  en línea recta) y, si llega a la siguiente kancha, escapa.
+- La fase 2 de Amaru ya no quema la imagen: sol menos intenso y menos naranja, menos bloom y saturación.
+- Los rombos de aviso que caen en el mismo sitio se apartan en vez de montarse; el aviso de «Mantén» de un objeto fuera
+  de la vista va abajo en el centro.
+- HUD: fondo oscuro detrás del nombre y las barras de Yari, y al empezar y tras cada caída se explica la cuenta roja del
+  medallón («Si caes, la Illa te devuelve con +1 año»).
+
+**Prólogo**
+- Más luz en la noche de las cenizas: velo rojo más suave, ambiente algo más claro y un segundo resplandor desde la
+  garganta que ilumina las caras. La pelea del puente se lee.
+- La caída se ve desde fuera del puente (antes los tablones tapaban a Yari) y el primer plano de la Illa es un arco
+  lento alrededor del brazo.
+
+**Mundo del Antisuyo**
+- Selva quemada: unos 450 troncos calcinados en pie (con raíces de contrafuerte) y 75 tumbados por los taludes, de 14 a
+  60 m del camino, y columnas de humo. Menú *Ayni > Entorno > Construir Selva Quemada* (`Assets/Editor/AyniBurntForest.cs`).
+  Si Yari perdona a Amaru, renacen con el resto: los cercanos al camino echan copa y varas, los lejanos recuperan el color.
+- Losas de la calzada y de los patios de 60 cm (antes 1 m).
+
+---
+
 ## v0.16.0 — Los quipus de Amaru · 22 de noviembre de 2026
 
 - **Cuatro quipus cuentan quién era Amaru:** hay uno escondido dentro de una casa de cada kancha (nunca en la que arde), colgado
