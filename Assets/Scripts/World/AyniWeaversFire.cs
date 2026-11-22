@@ -30,6 +30,10 @@ namespace Ayni.World
         /// <summary>Corre la cuenta atrás y las tejedoras siguen dentro.</summary>
         public static bool Urgent { get; private set; }
         public static float TimeLeft { get; private set; }
+        /// <summary>Se eligió la casa que arde (los quipus de Amaru no se esconden en ella).</summary>
+        public static bool HasBurningHouse { get; private set; }
+        /// <summary>Caja de la casa que arde, en el mundo.</summary>
+        public static Bounds BurningHouse { get; private set; }
 
         private static AyniWeaversFire instance;
 
@@ -38,6 +42,8 @@ namespace Ayni.World
         {
             Urgent = false;
             TimeLeft = 0f;
+            HasBurningHouse = false;
+            BurningHouse = default;
             instance = null;
         }
 
@@ -65,6 +71,8 @@ namespace Ayni.World
             if (player != null) yari = player.GetComponent<YariCombatController>();
             foreach (AyniEncounterSite s in AyniEncounterSite.All) if (s != null && s.Order == 2) site = s;
             if (site == null || !ChooseHouse()) return;
+            HasBurningHouse = true;
+            BurningHouse = house;
             Build();
             Debug.Log($"[Ayni Tejedoras] Casa en llamas en {site.SiteName}: puerta en {door} · techo en {roof}");
         }
