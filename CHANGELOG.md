@@ -10,6 +10,33 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.14.0 — El Capitán del Tambo y la apacheta · 21 de noviembre de 2026
+
+Cuarto paso del gancho del Nivel 1: en el Tambo del Camino hay que decidir el destino de un capitán, y la decisión se nota en el camino
+y en el duelo contra Amaru.
+
+**El Capitán del Tambo y su mini Juicio** (`AyniTamboCaptain`)
+- Un capitán con penacho rojo y disco de oro espera junto a la salida del tambo mirando cómo pelean sus guardias ("el capitán observa"
+  en el panel de objetivos). Cuando caen todos, entra él solo: más vida, más aguante y golpes algo más fuertes.
+- No muere a golpes: al romperle la postura llega un **Juicio Ayni** como el de los jefes, a cámara lenta y con sus propios textos.
+  - **Ayni:** lo perdona. Cuenta por qué servía a Sayri, le da a Yari la chicha del tambo (vida llena) y se lleva a su hermano, uno de los
+    Cazadores de la Portada del Cazador: **un rival menos** en la última kancha.
+  - **Venganza:** lo remata. Yari se queda su **champi de bronce: +20 % de daño contra Amaru**.
+- Amaru, al asomarse tras el Tambo, comenta lo que hiciste con su capitán.
+
+**La apacheta del camino** (`AyniApacheta`)
+- Un montículo de piedras con lanas de colores junto al camino, al salir del Tambo. Yari deja una piedra manteniendo `V` / `LT`.
+- **Bendición del Apu:** vida llena y **la próxima caída no cobra años** (`IllaTalismanSystem.ProtectedFalls`).
+- Si perdonaste al capitán, está arrodillado ante la apacheta: ya dejó la suya. Si lo ejecutaste, la piedra rueda cuesta abajo y no hay
+  bendición.
+
+**Interfaz**
+- Fichas nuevas sobre el nombre de Yari: "Capitán · un Cazador menos", "Champi · +20 % de daño a Amaru" y "Apu · tu próxima caída no
+  cuesta años". El panel de objetivos recuerda la apacheta camino de la Portada, y la tarjeta final dice qué pasó con el capitán y la ofrenda.
+- `AyniJudgment.Open` abre el Juicio para un rival que no es jefe; `EnemyController.JudgedLikeBoss` e `IncomingDamageMultiplier`.
+
+---
+
 ## v0.13.1 — Fauna 3D: patas que pisan bien · 21 de noviembre de 2026
 
 Arreglos de movimiento en los animales riggeados (llama, alpaca, vicuña, vizcacha y cóndor de `Assets/Art/Fauna`).

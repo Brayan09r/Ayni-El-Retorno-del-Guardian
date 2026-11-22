@@ -19,6 +19,9 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
    un dardo de aviso a los pies de Yari. Ver *Objetivos y acecho de Amaru* más abajo.
    En el **Puesto de Chasquis** un Rastreador huye con el quipu de los mensajeros y en la **Kancha de los Tejedores** una casa arde con
    las tejedoras dentro: lo que consigas (o dejes escapar) cambia el duelo. Ver *El quipu, las tejedoras y las trampas* más abajo.
+   En el **Tambo del Camino** el **Capitán del Tambo** mira cómo pelean sus guardias y luego entra él: al romperle la postura llega un
+   **mini Juicio Ayni**. A la salida del tambo hay una **apacheta** donde Yari puede dejar una piedra al Apu.
+   Ver *El Capitán del Tambo y la apacheta* más abajo.
    En la **Portada del Cazador** hay tres jaulas con los trofeos vivos de Amaru (cría de puma, cóndor y vicuñas): se abren manteniendo
    `V` / `LT` y cada animal liberado ayuda. Ver *Jaulas y animales aliados* más abajo.
 4. **Combate contra Amaru en tres fases:**
@@ -64,6 +67,34 @@ call Ayni.Story.AyniHunterStalker.Test 2                         fuerza la apari
 - `Scripts/World/AyniWeaversFire.cs`: elige la casa de un punto interior sin rivales cerca; la puerta sale de la colisión de la casa
   medida en sus propios ejes. Llamas con `AyniFireLight`.
 - `Scripts/World/AyniPathRewards.cs`: lo ganado; `Scripts/UI/AyniRewardsHUD.cs`: las fichas; `Scripts/UI/AyniDartReadCue.cs`: el anillo.
+
+## El Capitán del Tambo y la apacheta (v0.14.0)
+
+| Decisión en el mini Juicio | En el momento | En la apacheta | Contra Amaru |
+| --- | --- | --- | --- |
+| **Ayni** (perdonarlo) | Cuenta por qué servía a Sayri, da a Yari la chicha del tambo (vida llena) | Está arrodillado ante ella: ya dejó su piedra. La de Yari se acepta | Se lleva a su hermano: **un Cazador menos** en la Portada |
+| **Venganza** (rematarlo) | Yari se queda su **champi de bronce** | La piedra rueda cuesta abajo: no hay bendición | **+20 % de daño** a Amaru |
+
+- **Bendición del Apu** (dejar la piedra sin haber ejecutado al capitán): vida llena y la **próxima caída no cobra años**
+  (`IllaTalismanSystem.ProtectedFalls`); la Illa levanta a Yari igual y no suma al contador de caídas seguidas.
+- `Scripts/World/AyniTamboCaptain.cs`: crea al capitán con la plantilla de rival del tambo, junto a la salida, con más vida y postura,
+  penacho rojo y disco de oro. Espera quieto (`ExternalControl`) hasta que no queda ningún guardia en pie durante 1 s (o hasta que
+  Yari le pega). No muere a golpes (`Unkillable`): al romperle la postura (o al dejarlo sin vida) abre `AyniJudgment.Open` con sus
+  propios textos y se resuelve con los botones de siempre, desde la distancia de un jefe (`JudgedLikeBoss`).
+- `Scripts/World/AyniApacheta.cs`: el montículo, entre 9 y 24 m después de la salida del tambo, junto al camino (suelo llano y libre).
+  Se ofrece manteniendo `V` / `LT` cuando no hay rivales peleando cerca.
+- Amaru, en su aparición tras el Tambo, sabe lo que hiciste con su capitán.
+- Probar en Play:
+
+```
+call Ayni.Editor.AyniVillageBuilder.TeleportLocal K3 0 -7 0     Yari en el Tambo del Camino
+call Ayni.World.AyniTamboCaptain.TestClearGuards                  derrota a los guardias (repetir tras los refuerzos): entra el capitán
+call Ayni.World.AyniTamboCaptain.TestBreak                        le rompe la postura: mini Juicio
+call Ayni.World.AyniTamboCaptain.TestResolve 1                    Ayni (0 = Venganza)
+call Ayni.World.AyniApacheta.TestGoTo                             Yari junto a la apacheta
+call Ayni.World.AyniApacheta.TestOffer                            deja la piedra
+call Ayni.World.AyniTamboCaptain.Report / AyniApacheta.Report     estado en la consola
+```
 
 ## Jaulas y animales aliados (v0.12.0)
 
