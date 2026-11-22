@@ -99,8 +99,13 @@ namespace Ayni.World.Fauna
             {
                 // El modelo 3D está posado (cuerpo vertical): en vuelo va tendido, con la cabeza al frente
                 AyniCondorModel.SetPitch(transform, AyniCondorModel.FlightPitch);
+                AyniCondorModel.SetWingsFolded(transform, false, instant: !joinFromHere);
                 anim.Play("Glide", 0, Random.value);
                 isFlappingAnim = false;
+                // Con el modelo 3D se nota mucho que aletee: tandas de 3 aletazos cada pocos segundos
+                minFlapInterval = Mathf.Min(minFlapInterval, 3.5f);
+                maxFlapInterval = Mathf.Min(maxFlapInterval, 8f);
+                flapsPerBurst = Mathf.Max(flapsPerBurst, 3);
             }
 
             ScheduleNextFlap();

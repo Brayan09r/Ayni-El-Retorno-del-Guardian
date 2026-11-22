@@ -36,6 +36,14 @@ namespace Ayni.World.Fauna
         private const float BodyCenterY = 0.6f;
 
         /// <summary>Inclina el modelo 3D del cóndor (0 = posado, <see cref="FlightPitch"/> = en vuelo). Sin modelo 3D no hace nada.</summary>
+        /// <summary>Recoge o abre las alas del cóndor 3D (sin modelo 3D no hace nada).</summary>
+        public static void SetWingsFolded(Transform condorRoot, bool folded, bool instant = false)
+        {
+            if (condorRoot == null) return;
+            var wings = condorRoot.GetComponentInChildren<AyniCondorWings>();
+            if (wings != null) wings.SetFolded(folded, instant);
+        }
+
         public static void SetPitch(Transform condorRoot, float pitch)
         {
             if (condorRoot == null) return;
@@ -64,6 +72,8 @@ namespace Ayni.World.Fauna
                 model.transform.localPosition = Vector3.zero;
                 model.transform.localRotation = Quaternion.identity;
                 model.transform.localScale = Vector3.one * scale;
+                // Posado, con las alas recogidas (el FBX solo trae poses de alas abiertas)
+                model.AddComponent<AyniCondorWings>();
                 return new Parts { root = root3D };
             }
 

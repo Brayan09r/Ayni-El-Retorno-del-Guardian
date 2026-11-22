@@ -612,6 +612,7 @@ namespace Ayni.World
                 cAnim.CrossFadeInFixedTime("Fly_Flap", 0.15f);
                 cAnim.speed = 1.25f;
             }
+            AyniCondorModel.SetWingsFolded(t, false);
             if (condor.leftWing != null) condor.leftWing.localRotation = Quaternion.identity;
             if (condor.rightWing != null) condor.rightWing.localRotation = Quaternion.identity;
             AyniAudio.Play("condor_aviso", t.position, 0.9f);
