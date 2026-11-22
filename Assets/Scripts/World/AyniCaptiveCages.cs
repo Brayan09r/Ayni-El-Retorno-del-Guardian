@@ -243,7 +243,7 @@ namespace Ayni.World
                     if (yari != null) yari.Heal(yari.MaxHealth);
                     AyniAudio.Play2D("illa_brillo", 0.6f, 1.2f);
                     AyniScreenFX.Caption(years > 0
-                        ? $"Las vicuñas vuelven a la puna. La Pachamama te sana y la Illa te devuelve {years} años."
+                        ? $"Las vicuñas vuelven a la puna. La Pachamama te sana y la Illa te devuelve {(years == 1 ? "un año" : years + " años")}."
                         : "Las vicuñas vuelven a la puna. La Pachamama te sana.", 4.5f);
                     break;
             }

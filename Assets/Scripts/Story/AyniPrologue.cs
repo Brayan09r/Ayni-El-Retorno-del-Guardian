@@ -213,7 +213,8 @@ namespace Ayni.Story
             // Plano 1: la garganta en llamas; por el puente avanza Sayri con su guardia
             yield return Shot(6.2f, u =>
             {
-                if (u > 0.45f && !captionShown)
+                // Pronto: la narradora necesita algo más de 5 s para decirlo antes del plano siguiente
+                if (u > 0.08f && !captionShown)
                 {
                     captionShown = true;
                     AyniScreenFX.Caption("El General Sayri traicionó al Consejo de los Amautas y tomó el Cusco a sangre y fuego.", 4.2f);
@@ -236,8 +237,15 @@ namespace Ayni.Story
             Phase("plano 3: el traidor");
             // Plano 3: contrapicado de Sayri, ya frente a Yari
             AyniScreenFX.Title("GENERAL SAYRI", "Señor de la Guardia de Bronce · Antiguo hermano de armas de Yari", 3.2f);
+            bool bridgeCaption = false;
             yield return Shot(3.4f, u =>
             {
+                // Ya en este plano: el combate del puente dura poco más de 2 s y la frase, unos 4
+                if (u > 0.3f && !bridgeCaption)
+                {
+                    bridgeCaption = true;
+                    AyniScreenFX.Caption("En el puente sobre la garganta, Yari enfrentó a su antiguo hermano de armas...", 3.4f);
+                }
                 Vector3 s = SayriPosition();
                 Vector3 pos = s - along * Mathf.Lerp(2.0f, 1.75f, u) - acrossBridge * 0.55f + Vector3.up * 1.35f;
                 return (pos, s + Vector3.up * 1.55f);
@@ -246,7 +254,6 @@ namespace Ayni.Story
 
             Phase("el combate en el puente");
             // Plano de perfil: Sayri golpea, Yari bloquea y contraataca, y la Champi le rompe la guardia
-            AyniScreenFX.Caption("En el puente sobre la garganta, Yari enfrentó a su antiguo hermano de armas...", 3.4f);
             Vector3 fightMid = Vector3.Lerp(yariSpot, sayriStop, 0.5f);
             System.Func<float, (Vector3, Vector3)> profile = u =>
                 (fightMid - acrossBridge * Mathf.Lerp(3.6f, 3.2f, u) + along * 0.3f + Vector3.up * 2.15f, fightMid + Vector3.up * 1.3f);
