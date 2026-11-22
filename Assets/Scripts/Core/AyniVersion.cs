@@ -9,8 +9,8 @@ namespace Ayni.Core
     /// </summary>
     public static class AyniVersion
     {
-        public const string Number = "0.15.0";
-        public const string Title = "Voces en los subtítulos";
+        public const string Number = "0.16.0";
+        public const string Title = "Los quipus de Amaru";
 
         public static string Label => "v" + Number;
     }

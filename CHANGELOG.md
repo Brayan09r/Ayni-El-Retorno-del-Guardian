@@ -10,6 +10,27 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.16.0 — Los quipus de Amaru · 22 de noviembre de 2026
+
+- **Cuatro quipus cuentan quién era Amaru:** hay uno escondido dentro de una casa de cada kancha (nunca en la que arde), colgado
+  de un bastidor de palos y con una luz cálida tenue. Se leen manteniendo `V` / `LT` cuando no hay pelea cerca; un rombo
+  «Quipu» los marca a menos de 16 m. La narradora lee los nudos y Yari responde en dos de ellos:
+  1. Puesto de Chasquis: Amaru de niño, cuidando vicuñas en un ayllu del Antisuyo.
+  2. Kancha de los Tejedores: la sequía; los guardianes del Cusco no subieron a ayudar y Amaru enterró solo a su madre
+     (Yari: «Nadie subió... Yo era uno de esos guardianes.»).
+  3. Tambo del Camino: Sayri sí subió y lo convirtió en el Cazador.
+  4. Portada del Cazador: el nudo de Killa, su hermana menor, que le pide volver a casa.
+- **Con los cuatro, Yari conoce a Killa:** en la última fase del duelo (por debajo del 80 % de vida), Yari grita
+  «¡Killa te espera en el Antisuyo, Amaru!»; Amaru duda, se tambalea y pierde un 40 % de su postura. El desenlace añade una
+  frase sobre Killa (en el de Ayni vuelve con ella; en el de Venganza ella sigue esperando).
+- Una ficha nueva en el HUD («Quipus de Amaru · 2 / 4», y «Killa · Amaru dudará» con todos) y una línea en la tarjeta final.
+- 10 voces nuevas (88 en total).
+- Los subtítulos de juego suben un poco para no quedar debajo del retrato y la vida de Yari; en las escenas con franjas de
+  cine siguen justo encima de la franja.
+- `AyniWeaversFire` expone la casa que arde (`HasBurningHouse`, `BurningHouse`) para no esconder allí un quipu.
+
+---
+
 ## v0.15.0 — Voces en los subtítulos · 21 de noviembre de 2026
 
 - **Los subtítulos tienen voz:** 78 líneas habladas (narradora, Amaru, el Capitán del Tambo, la tejedora y Yari) en

@@ -22,6 +22,8 @@ Nota de trabajo para quien toque el Nivel 1 (personas y agentes). Sigue la Bibli
    En el **Tambo del Camino** el **Capitán del Tambo** mira cómo pelean sus guardias y luego entra él: al romperle la postura llega un
    **mini Juicio Ayni**. A la salida del tambo hay una **apacheta** donde Yari puede dejar una piedra al Apu.
    Ver *El Capitán del Tambo y la apacheta* más abajo.
+   Dentro de una casa de cada kancha hay un **quipu de Amaru** que cuenta su historia: con los cuatro, Yari conoce a
+   su hermana Killa y la nombra en el duelo. Ver *Los quipus de Amaru* más abajo.
    En la **Portada del Cazador** hay tres jaulas con los trofeos vivos de Amaru (cría de puma, cóndor y vicuñas): se abren manteniendo
    `V` / `LT` y cada animal liberado ayuda. Ver *Jaulas y animales aliados* más abajo.
 4. **Combate contra Amaru en tres fases:**
@@ -94,6 +96,27 @@ call Ayni.World.AyniTamboCaptain.TestResolve 1                    Ayni (0 = Veng
 call Ayni.World.AyniApacheta.TestGoTo                             Yari junto a la apacheta
 call Ayni.World.AyniApacheta.TestOffer                            deja la piedra
 call Ayni.World.AyniTamboCaptain.Report / AyniApacheta.Report     estado en la consola
+```
+
+## Los quipus de Amaru (v0.16.0)
+
+- `Scripts/World/AyniAmaruQuipus.cs`: un quipu por kancha, en el punto interior más lejano de la entrada (en la de las
+  tejedoras, nunca dentro de la casa que arde), contra la pared del fondo y mirando a la puerta. Se lee manteniendo
+  `V` / `LT` a menos de 2,2 m y sin rivales peleando a menos de 12 m. `AyniAmaruQuipus.Read` cuenta los leídos y
+  `KnowsStory` dice si están los cuatro.
+- Con los cuatro: `AyniBossBarks.KillaMoment` (en la última fase, vida < 80 %) hace que Amaru pierda un 40 % de su postura y
+  se tambalee, y `AyniLevelOutcome` añade una tercera frase al desenlace sobre Killa.
+- Los textos están en `Knots` y `Replies`; si se cambian, hay que actualizar `Herramientas/Audio/voces_guion.txt` y regenerar
+  las voces.
+- Probar en Play:
+
+```
+call Ayni.World.AyniAmaruQuipus.Report              dónde está cada quipu y cuáles se leyeron
+call Ayni.World.AyniAmaruQuipus.TestGoTo 2          Yari delante del quipu de la kancha 2
+call Ayni.World.AyniAmaruQuipus.TestRead 2          lo lee (narradora y respuesta de Yari)
+call Ayni.World.AyniAmaruQuipus.TestLearnAll        los da todos por leídos (para el duelo)
+call Ayni.Editor.AyniPlaytestProbe.HitBoss 400 0    fase 2 de Amaru; luego HitBoss 110 0: Yari nombra a Killa
+call Ayni.World.AyniAmaruQuipus.TestJudge 1         resuelve el Juicio de Amaru (1 Ayni, 0 Venganza)
 ```
 
 ## Voces y diálogos (v0.15.0)
