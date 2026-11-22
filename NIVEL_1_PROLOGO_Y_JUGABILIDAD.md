@@ -96,6 +96,26 @@ call Ayni.World.AyniApacheta.TestOffer                            deja la piedra
 call Ayni.World.AyniTamboCaptain.Report / AyniApacheta.Report     estado en la consola
 ```
 
+## Voces y diálogos (v0.15.0)
+
+- Cada subtítulo de `AyniScreenFX.Caption` suena si existe su voz en `Assets/Resources/AyniVoces/`. El archivo se llama
+  `v_` + el hash FNV-1a (8 cifras hex) del texto normalizado; el mismo cálculo está en `AyniVoice.Key` y en `generar_voces.py`.
+- **Añadir o cambiar una línea:** escribirla en `Herramientas/Audio/voces_guion.txt` con el formato
+  `PERSONAJE | segundos máx. (0 = libre) | texto exacto del subtítulo [| cómo se pronuncia]` y ejecutar
+  `python Herramientas/Audio/generar_voces.py` (solo genera las que faltan; `--todas` las rehace y `--limpiar` borra las que ya
+  no están en el guion). Necesita `pip install piper-tts` y ffmpeg.
+- Personajes: NARRADORA, AMARU (más grave, con eco), CAPITAN, YARI y TEJEDORA; el tono y el ritmo de cada uno están al principio
+  del script.
+- Una respuesta de Yari se lanza con `AyniVoice.Reply(this, "YARI: «…»", demoraMínima, segundos)`: espera a que acabe la voz que
+  suena. Para encadenar varias líneas en una corrutina: `yield return new WaitForSeconds(AyniVoice.HoldFor(segundos))`.
+- Probar en Play:
+
+```
+call Ayni.Core.AyniVoice.Report                                    cuántas voces hay y cuáles sonaron
+call Ayni.Core.AyniVoice.Test "AMARU: «Corre, guardián. A mis presas siempre les dejo correr un poco.»"
+call Ayni.Story.AyniHunterStalker.Test 1                           Amaru habla y Yari responde
+```
+
 ## Jaulas y animales aliados (v0.12.0)
 
 | Animal | Al liberarlo | En el duelo contra Amaru |

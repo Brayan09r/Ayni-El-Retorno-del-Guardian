@@ -10,6 +10,26 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.15.0 — Voces en los subtítulos · 21 de noviembre de 2026
+
+- **Los subtítulos tienen voz:** 78 líneas habladas (narradora, Amaru, el Capitán del Tambo, la tejedora y Yari) en
+  `Assets/Resources/AyniVoces/v_xxxxxxxx.ogg`. `AyniScreenFX.Caption` busca la voz de cada texto y alarga el subtítulo si la voz
+  dura más; las líneas sin voz se siguen mostrando igual y avisan en la consola (`[Ayni Voz] Sin voz`).
+- `Scripts/Core/AyniVoice.cs`: el nombre del archivo es un hash FNV-1a del texto normalizado (sin etiquetas, sin el prefijo
+  `NOMBRE:`, solo letras y números), así que cambiar comillas o colores no rompe la voz, pero cambiar las palabras sí pide
+  regenerarla. Una voz corta la anterior, y el ambiente baja al 55 % mientras alguien habla (`AyniAudio.Duck`).
+- **Yari responde:** a Amaru en cada aparición del acecho y en el puente («Y yo huelo en ti el humo de mi bosque, Amaru.»), al
+  capitán cuando entra en la pelea y cuando lo perdona, a la tejedora al recibir el chumpi, en la apacheta y a Amaru vencido
+  («Sayri te mintió, como nos mintió a todos.»). Lo que dice a Amaru tras el tambo depende de si perdonó o ejecutó al capitán.
+- Diálogos encadenados: cada línea espera a que termine la voz anterior (`AyniVoice.HoldFor`), y la ofrenda de la apacheta espera
+  a que Yari acabe su oración.
+- Prólogo: la primera narración entra antes y «En el puente sobre la garganta…» pasa al plano del título de Sayri, para que las
+  voces no se pisen.
+- Voces sintéticas generadas con Piper (`Herramientas/Audio/generar_voces.py` a partir de `voces_guion.txt`). Los modelos se
+  descargan solos en `Herramientas/Audio/modelos_voz/` (ignorada en git). Licencias en `CATALOGO_RECURSOS_Y_LICENCIAS.md`.
+
+---
+
 ## v0.14.2 — Fauna: galope sin estirones · 21 de noviembre de 2026
 
 - **La panza ya no se estira al correr:** el "Run" del FBX arquea y estira mucho la columna en cada salto; con las patas desfasadas
