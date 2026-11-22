@@ -201,9 +201,10 @@ namespace Ayni.World
                 case AyniLightingPreset.FaseDosBrasas:
                     return new LightingState
                     {
-                        sunEuler = new Vector3(12f, 112f, 0f),
-                        sunColor = new Color(1.0f, 0.58f, 0.34f),
-                        sunIntensity = 1.95f,
+                        // v0.17: menos intenso y menos naranja; antes quemaba la imagen y no se leían los ataques
+                        sunEuler = new Vector3(14f, 112f, 0f),
+                        sunColor = new Color(1.0f, 0.7f, 0.5f),
+                        sunIntensity = 1.45f,
                         shadowStrength = 0.86f,
                         ambientSky = new Color(0.46f, 0.42f, 0.58f),
                         ambientEquator = new Color(0.66f, 0.38f, 0.28f),

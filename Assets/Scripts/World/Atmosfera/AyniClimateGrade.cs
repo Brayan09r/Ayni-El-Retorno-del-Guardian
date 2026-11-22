@@ -129,14 +129,15 @@ namespace Ayni.World
                     break;
 
                 case AyniLightingPreset.FaseDosBrasas:
-                    g.exposure -= 0.1f;
-                    g.contrast += 12f;
-                    g.saturation += 6f;
-                    g.filter = b.filter * new Color(1f, 0.9f, 0.8f);
-                    g.temperature += 16f;
-                    g.tint += 4f;
-                    g.bloomIntensity += 0.25f;
-                    g.bloomThreshold -= 0.1f;
+                    // Cobrizo pero legible: menos temperatura, saturación y bloom que antes (v0.17)
+                    g.exposure -= 0.08f;
+                    g.contrast += 8f;
+                    g.saturation -= 4f;
+                    g.filter = b.filter * new Color(1f, 0.94f, 0.88f);
+                    g.temperature += 9f;
+                    g.tint += 3f;
+                    g.bloomIntensity += 0.12f;
+                    g.bloomThreshold -= 0.04f;
                     g.bloomTint = new Color(1f, 0.62f, 0.36f);
                     g.vignette += 0.12f;
                     g.vignetteColor = new Color(0.22f, 0.03f, 0f);
