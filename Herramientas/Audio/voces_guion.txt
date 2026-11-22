@@ -1,0 +1,103 @@
+# Guion de voces de AYNI: El Retorno del Guardián (Nivel 1)
+#
+# Una frase por línea:   PERSONAJE | segundos máx. | texto del subtítulo [| texto hablado]
+#  - El texto debe ser el mismo que sale en pantalla (sin el "NOMBRE:" del principio ni las comillas « »): el juego busca
+#    la voz por ese texto (ver Assets/Scripts/Core/AyniVoice.cs). Mayúsculas, signos y etiquetas de color no importan.
+#  - "segundos máx." es lo que cabe en la escena: si la voz dura más, se acelera un poco (hasta un 30 %). 0 = sin límite.
+#  - El texto hablado es opcional: lo que se pronuncia si no es igual a lo escrito (números, siglas).
+# Generar o regenerar:  python Herramientas/Audio/generar_voces.py
+# Personajes: NARRADORA, AMARU, CAPITAN, YARI, TEJEDORA (voces en generar_voces.py)
+
+# ── Prólogo ──
+NARRADORA | 5.6 | El General Sayri traicionó al Consejo de los Amautas y tomó el Cusco a sangre y fuego.
+NARRADORA | 4.6 | Esa noche su Guardia de Bronce arrasó el Ayllu del Valle Verde.
+NARRADORA | 4.4 | En el puente sobre la garganta, Yari enfrentó a su antiguo hermano de armas...
+NARRADORA | 4.2 | Sayri quebró su guardia con la Champi de bronce y lo arrojó al abismo.
+NARRADORA | 2.8 | ...pero la Illa de la Pachamama despertó.
+NARRADORA | 4.4 | En el fondo del cañón, la Illa absorbió el golpe mortal y selló un pacto con Yari.
+NARRADORA | 6.6 | No morirá mientras su corazón anhele volver a casa... pero cada vez que caiga, la Illa cobrará años de su vida.
+NARRADORA | 3.8 | Yari despierta. El camino a casa empieza aquí.
+NARRADORA | 4.2 | Al final del camino, en la cabeza del puente, le espera Amaru el Cazador.
+
+# ── El camino: acecho de Amaru y respuestas de Yari ──
+AMARU | 0 | Corre, guardián. A mis presas siempre les dejo correr un poco.
+YARI | 0 | No huyo de ti, Amaru. Voy hacia ti.
+NARRADORA | 0 | Amaru te está cazando. Sigue el Qhapaq Ñan.
+AMARU | 0 | Mis Rastreadores eran lentos. Los Saqueadores de los telares no lo serán.
+YARI | 0 | Que vengan todos. El ayllu no está solo.
+AMARU | 0 | ¿Oyes el silencio del bosque? Así suena el Antisuyo cuando yo cazo.
+YARI | 0 | Lo oigo. Por eso no voy a detenerme.
+AMARU | 0 | Ya casi llegas al puente, Yari. Allí cayó tu orden. Allí caerás tú.
+YARI | 0 | Esta vez no caeré. Esta vez me acompaña la Illa.
+AMARU | 0 | Mataste a mi capitán. Bien: ahora sé qué clase de presa eres. Te espero en el puente.
+YARI | 0 | Elegí mi camino. En el puente elegirás tú el tuyo.
+AMARU | 0 | ¿Perdonaste a ese cobarde del tambo? Yo no perdono, guardián. Ven al puente: allí caerás.
+YARI | 0 | No era un cobarde. Tenía miedo. Como tú.
+
+# ── Kanchas ──
+NARRADORA | 0 | ¡Llegan más guardias de Sayri!
+NARRADORA | 0 | ¡Un Rastreador huye con el quipu de los chasquis para avisar a Amaru! Alcánzalo y golpéalo.
+NARRADORA | 0 | ¡Lo alcanzaste! Derrótalo para recuperar el quipu.
+NARRADORA | 0 | Recuperas el quipu de los chasquis. Sus nudos dicen: «El Cazador se tiñe de verde antes de soplar». Ya sabes leer sus dardos.
+NARRADORA | 0 | El Rastreador escapó con el quipu: Amaru sabrá que vienes y te tenderá trampas.
+TEJEDORA | 0 | ¡Gracias, guardián! Toma este chumpi: lo tejimos con lana de vicuña para el Inca.
+YARI | 0 | Lo llevaré con honor. Vuelvan a tejer, hermanas.
+NARRADORA | 0 | El chumpi te protege: el veneno de los dardos de Amaru te durará la mitad.
+NARRADORA | 0 | El fuego devoró los telares. Las tejedoras escaparon por detrás, pero lo perdieron todo.
+
+# ── El Capitán del Tambo ──
+CAPITAN | 0 | Mis guardias primero, forastero. Si sigues en pie, me tendrás a mí.
+CAPITAN | 0 | ¡Basta! Este tambo lo defiendo yo.
+CAPITAN | 0 | ¿Te atreves a tocarme? Ven, pues.
+YARI | 0 | Entonces defiéndelo de mí.
+CAPITAN | 0 | Servía a Sayri por miedo, no por lealtad. Nadie me había tendido la mano.
+YARI | 0 | El miedo se acaba hoy. Levántate, capitán.
+CAPITAN | 0 | Uno de los Cazadores de la Portada es mi hermano. Me lo llevaré lejos: tendrás uno menos.
+CAPITAN | 0 | Me iré lejos de Amaru. No volveré a levantar la champi contra el pueblo.
+CAPITAN | 0 | Bebe la chicha del tambo, guardián. Y deja una piedra en la apacheta del camino: el Apu escucha a quien camina con Ayni.
+NARRADORA | 0 | El capitán cae. Yari recoge su champi de bronce: pesa, y golpea fuerte.
+NARRADORA | 0 | Con ella dolerán más tus golpes contra Amaru. Pero la Hucha se pega a quien la empuña.
+NARRADORA | 0 | Falta un Cazador en la Portada: el Capitán del Tambo cumplió su palabra.
+
+# ── La apacheta ──
+CAPITAN | 0 | Mi piedra ya está puesta. Pon la tuya, guardián: el Apu cuida a quien camina con Ayni.
+YARI | 0 | Gracias, capitán. Que el Apu te acompañe.
+YARI | 0 | Apu, cuida mi camino.
+NARRADORA | 0 | La piedra rueda cuesta abajo. La apacheta no acepta la ofrenda de unas manos manchadas de Hucha.
+NARRADORA | 0 | El Apu te levanta: esta vez la Illa no te cobra años.
+
+# ── Portada del Cazador: jaulas y animales ──
+NARRADORA | 0 | La cría de puma corre hacia el cerro. Su madre no olvidará a quien la liberó.
+NARRADORA | 0 | El cóndor vuelve al cielo. Desde lo alto vigilará a Amaru.
+NARRADORA | 0 | Las vicuñas vuelven a la puna. La Pachamama te sana y la Illa te devuelve un año.
+NARRADORA | 0 | Las vicuñas vuelven a la puna. La Pachamama te sana y la Illa te devuelve 2 años. | Las vicuñas vuelven a la puna. La Pachamama te sana y la Illa te devuelve dos años.
+NARRADORA | 0 | Las vicuñas vuelven a la puna. La Pachamama te sana.
+NARRADORA | 0 | Ningún trofeo vivo queda en manos de Amaru.
+NARRADORA | 0 | El cóndor te avisa desde lo alto: tienes más tiempo para esquivar los dardos.
+NARRADORA | 0 | ¡La puma madre baja del cerro! Devuelve el Ayni a quien liberó a su cría.
+NARRADORA | 0 | La Pachamama defiende a sus hijos: no dañes al puma, guardián del Kay Pacha (ODS 15). | La Pachamama defiende a sus hijos: no dañes al puma, guardián del Kay Pacha.
+
+# ── Amaru en el puente ──
+AMARU | 0 | Huelo la Illa en ti, Yari. Sayri dijo que volverías.
+YARI | 0 | Y yo huelo en ti el humo de mi bosque, Amaru.
+AMARU | 3.4 | Ningún guardián vuelve a cruzar este puente.
+AMARU | 3.6 | Quemé tu bosque y cacé a sus animales. Ahora te toca a ti.
+AMARU | 3.2 | Ven, viejo guardián. Que la Pachamama te vea caer.
+AMARU | 0 | Mi Rastreador me avisó de que venías, guardián. Mira bien dónde pisas.
+AMARU | 0 | ¡Cazadores, a mí! Que el guardián no salga vivo de esta plaza.
+AMARU | 0 | ¡Lento, guardián! La Illa no te devolvió los reflejos.
+AMARU | 0 | El Antisuyo ya es ceniza. Tú eres lo último que queda.
+AMARU | 0 | Sayri te arrojó al abismo una vez. Yo terminaré su trabajo.
+AMARU | 0 | Cada golpe que fallas, tu aldea lo paga.
+AMARU | 0 | ¿Eso es el Ayni? Golpes de anciano.
+AMARU | 0 | Cada caída te cuesta años. Yo tengo paciencia.
+AMARU | 0 | No... Sayri me prometió que ningún guardián volvería.
+YARI | 0 | Sayri te mintió, como nos mintió a todos.
+
+# ── Desenlace ──
+NARRADORA | 5.3 | Amaru el Cazador deja caer sus hachas de piedra. Por primera vez en años, alguien le ofrece la mano.
+NARRADORA | 5.3 | Amaru deja caer sus hachas de piedra. Por primera vez en años, alguien le ofrece la mano.
+NARRADORA | 5.8 | La lluvia apaga las llamas del Antisuyo. Los comuneros liberados vuelven a sembrar queñuales.
+NARRADORA | 5.3 | Amaru el Cazador cae. Nadie queda para detener las sierras de bronce.
+NARRADORA | 5.3 | Amaru cae. Nadie queda para detener las sierras de bronce.
+NARRADORA | 5.8 | El fuego sigue avanzando por el Antisuyo. La Hucha, la energía pesada, se aferra al alma de Yari.
