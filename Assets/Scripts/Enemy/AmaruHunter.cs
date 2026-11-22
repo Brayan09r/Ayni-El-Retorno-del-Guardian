@@ -21,23 +21,23 @@ namespace Ayni.Enemy
         [Tooltip("Fracción de vida por debajo de la cual Amaru empieza a usar la cerbatana.")]
         [Range(0f, 1f)] [SerializeField] private float activateBelowHealth = 0.75f;
         [Tooltip("Segundos entre ráfagas (mínimo y máximo).")]
-        [SerializeField] private Vector2 cooldown = new Vector2(8f, 12f);
+        [SerializeField] private Vector2 cooldown = new Vector2(6.5f, 9.5f);
 
         [Header("Salto hacia atrás")]
         [SerializeField] private float leapDistance = 5.5f;
         [SerializeField] private float leapHeight = 1.1f;
-        [SerializeField] private float leapTime = 0.55f;
+        [SerializeField] private float leapTime = 0.50f;
 
         [Header("Dardos")]
-        [SerializeField] private int dartsPerVolley = 3;
+        [SerializeField] private int dartsPerVolley = 4;
         [Tooltip("Segundos de aviso (Amaru se tiñe de verde) antes de cada dardo.")]
-        [SerializeField] private float telegraphTime = 0.5f;
-        [SerializeField] private float dartInterval = 0.35f;
-        [SerializeField] private float dartSpeed = 20f;
-        [SerializeField] private float dartDamage = 8f;
-        [SerializeField] private float dartStructureDamage = 12f;
-        [SerializeField] private float poisonSeconds = 3f;
-        [SerializeField] private float poisonDamagePerSecond = 2.5f;
+        [SerializeField] private float telegraphTime = 0.45f;
+        [SerializeField] private float dartInterval = 0.30f;
+        [SerializeField] private float dartSpeed = 23f;
+        [SerializeField] private float dartDamage = 10f;
+        [SerializeField] private float dartStructureDamage = 15f;
+        [SerializeField] private float poisonSeconds = 3.2f;
+        [SerializeField] private float poisonDamagePerSecond = 3.2f;
 
         /// <summary>True mientras Amaru apunta un dardo (el HUD muestra el aviso).</summary>
         public static bool DartWarning { get; private set; }
@@ -109,7 +109,7 @@ namespace Ayni.Enemy
         /// <summary>Al empezar la segunda fase, la primera ráfaga llega pronto.</summary>
         private void HandlePhaseStarted(EnemyController who, int phase)
         {
-            if (who == enemy) nextVolley = Time.time + 3.5f;
+            if (who == enemy) nextVolley = Time.time + 2.5f;
         }
 
         private void Update()
