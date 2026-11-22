@@ -427,6 +427,44 @@ namespace Ayni.Editor
             Object.DestroyImmediate(go);
         }
 
+        /// <summary>
+        /// Jerarquía de huesos de un modelo (ruta, posición en reposo en el espacio del modelo) y las rutas que anima
+        /// cada clip, para saber qué huesos mueve cada animación.
+        /// </summary>
+        public static void Bones(string key, string clipName)
+        {
+            var prefab = Resources.Load<GameObject>("Fauna/Fauna_" + key);
+            if (prefab == null) { Debug.LogWarning($"[Ayni Fauna Prueba] No hay Fauna_{key}"); return; }
+            var go = Object.Instantiate(prefab);
+            go.hideFlags = HideFlags.DontSave;
+            go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            var anim = go.GetComponentInChildren<Animator>();
+            var log = new StringBuilder($"[Ayni Fauna Prueba] Huesos de {key}:");
+            foreach (Transform t in go.GetComponentsInChildren<Transform>())
+            {
+                if (t.GetComponent<Renderer>() != null) continue;
+                Vector3 p = go.transform.InverseTransformPoint(t.position);
+                log.Append($"\n   {UnityEditor.AnimationUtility.CalculateTransformPath(t, go.transform)} ({p.x:F2},{p.y:F2},{p.z:F2})");
+            }
+            if (anim != null && anim.runtimeAnimatorController != null)
+            {
+                foreach (AnimationClip clip in anim.runtimeAnimatorController.animationClips)
+                {
+                    if (!string.IsNullOrEmpty(clipName) && clip.name != clipName) continue;
+                    var bindings = UnityEditor.AnimationUtility.GetCurveBindings(clip);
+                    log.Append($"\n   clip {clip.name}: {bindings.Length} curvas, {clip.length:F2} s, {clip.frameRate} fps");
+                    if (string.IsNullOrEmpty(clipName)) continue;
+                    foreach (var b in bindings)
+                    {
+                        var curve = UnityEditor.AnimationUtility.GetEditorCurve(clip, b);
+                        log.Append($"\n      {b.path} · {b.propertyName} · {curve.keys.Length} claves");
+                    }
+                }
+            }
+            Debug.Log(log.ToString());
+            Object.DestroyImmediate(go);
+        }
+
         private static Vector3 Flat(Vector3 v)
         {
             v.y = 0f;
