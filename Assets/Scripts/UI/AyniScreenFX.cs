@@ -206,7 +206,9 @@ namespace Ayni.UI
             if (!string.IsNullOrEmpty(caption) && now < captionEnd)
             {
                 float a = Envelope(now, captionStart, captionEnd, 0.5f, 0.6f);
-                float bottom = letterbox > 0.01f ? h * (1f - 0.11f * letterbox) : h - 40f;
+                // En juego, por encima del retrato y la vida de Yari (abajo a la izquierda) para que las frases largas no
+                // queden debajo; con las franjas de cine, justo encima de la franja de abajo
+                float bottom = letterbox > 0.01f ? h * (1f - 0.11f * letterbox) : h - 128f;
                 DrawShadowed(new Rect(w * 0.12f, bottom - 92f, w * 0.76f, 84f), caption, captionStyle, new Color(1f, 0.97f, 0.9f, a), a);
             }
 
