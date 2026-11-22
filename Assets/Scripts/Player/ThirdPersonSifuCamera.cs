@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Ayni.Player
@@ -6,7 +7,9 @@ namespace Ayni.Player
     /// Cámara en tercera persona con encuadre cinematográfico cercano estilo Sifu.
     /// - Empieza detrás de Yari (no de frente ni de lado).
     /// - Sigue al personaje sobre el hombro y gira con el ratón.
-    /// - Si hay una montaña/roca entre la cámara y Yari, la cámara se acerca para no perderlo de vista.
+    /// - Si hay una montaña/roca/muro entre la cámara y Yari, la cámara se acerca al instante (sin atravesarlo) y vuelve
+    ///   a alejarse con suavidad cuando hay sitio. Los rivales y los animales no la empujan.
+    /// - Bajo techo (dentro de una casa) se acerca al hombro para no meterse en los muros.
     /// - Con un rival fijado (Lock-On) se coloca sola detrás de Yari mirando hacia el rival y encuadra a los dos.
     /// - Al correr y al esprintar abre un poco el campo de visión y se aleja: Yari se siente más rápido sin serlo.
     /// </summary>
@@ -15,9 +18,12 @@ namespace Ayni.Player
         [Header("Objetivo")]
         [SerializeField] private Transform target;
 
+        // v0.17: varios campos cambiaron de nombre para que la escena tome los valores nuevos en vez de los guardados
         [Header("Distancia y Ángulos")]
-        [SerializeField] private Vector3 offset = new Vector3(0.5f, 1.6f, -3.2f); // Desplazamiento sobre el hombro
-        [SerializeField] private float lookAtHeight = 1.4f;                         // Altura del pecho/cabeza de Yari
+        [SerializeField] private Vector3 shoulderOffset = new Vector3(0.5f, 1.5f, -3.2f);   // Desplazamiento sobre el hombro
+        [SerializeField] private float lookHeight = 1.5f;                         // Altura del pecho/cabeza de Yari
+        [Tooltip("Inclinación inicial de la cámara (y al volver de una escena). Baja: se ve más horizonte y menos suelo.")]
+        [SerializeField] private float defaultPitch = 8f;
         [SerializeField] private float mouseSensitivity = 3.0f;
         [SerializeField] private float smoothSpeed = 10f;
         [SerializeField] private float minPitch = -20f;
@@ -30,17 +36,37 @@ namespace Ayni.Player
         [SerializeField] private bool invertStickY = false;
 
         [Header("Colisión con el escenario")]
-        [SerializeField] private float collisionRadius = 0.25f;
-        [SerializeField] private float minDistance = 0.8f;
+        [SerializeField] private float wallRadius = 0.3f;
+        [Tooltip("Distancia mínima a Yari cuando un muro empuja la cámara (si el muro está aún más cerca, manda el muro).")]
+        [SerializeField] private float minWallDistance = 0.45f;
+        [Tooltip("Plano cercano de la cámara: bajo, para que no se vea el interior de un muro pegado a la cámara.")]
+        [SerializeField] private float nearClip = 0.08f;
+        [Tooltip("Si un muro deja la cámara a menos de estos metros, sube por encima del hombro de Yari.")]
+        [SerializeField] private float craneBelow = 1.1f;
+        [SerializeField] private float craneHeight = 0.75f;
+        [Tooltip("A menos de estos metros de la cabeza de Yari, su cuerpo deja de dibujarse (solo su sombra).")]
+        [SerializeField] private float hideBelow = 0.3f;
+
+        [Header("Bajo techo")]
+        [Tooltip("Encuadre dentro de una casa: más cerca del hombro y más bajo.")]
+        [SerializeField] private Vector3 indoorOffset = new Vector3(0.38f, 1.35f, -2.2f);
+        [Tooltip("Altura máxima del techo (sobre los pies de Yari) para considerar que está bajo techo.")]
+        [SerializeField] private float roofCheckHeight = 4.5f;
 
         [Header("Fijación de Blanco (Lock-On)")]
         [Tooltip("Rapidez con la que la cámara se coloca detrás de Yari mirando al rival fijado.")]
         [SerializeField] private float lockYawSpeed = 6f;
         [Tooltip("Inclinación de la cámara con un rival fijado.")]
-        [SerializeField] private float lockPitch = 14f;
+        [SerializeField] private float lockTiltDeg = 10f;
         [Tooltip("0 = mira solo a Yari, 1 = mira solo al rival. Un valor intermedio encuadra a los dos.")]
-        [Range(0f, 1f)] [SerializeField] private float lockFraming = 0.35f;
+        [Range(0f, 1f)] [SerializeField] private float lockFramingAmount = 0.3f;
         [SerializeField] private float lockTargetHeight = 1.3f;
+        [Tooltip("Metros como mucho que se desplaza el punto de mira hacia el rival: con uno lejano (huyendo) Yari no se sale del cuadro.")]
+        [SerializeField] private float lockMaxLookShift = 1.8f;
+        [Tooltip("Con un rival fijado la cámara se aleja un poco para que quepan los dos.")]
+        [SerializeField] private float lockPullBack = 0.12f;
+        [Tooltip("Metros a los que el rival fijado empieza a contar para el encuadre; más lejos, la cámara mira solo a Yari.")]
+        [SerializeField] private float lockFramingRange = 12f;
 
         [Header("Sensación de velocidad")]
         [Tooltip("Grados que se abre el campo de visión al correr a fondo. Yari no va más rápido: solo lo parece.")]
@@ -65,6 +91,13 @@ namespace Ayni.Player
         private YariCombatController yari;
         private float lockBlend;          // 0 = cámara libre, 1 = encuadre de rival fijado (suavizado)
         private Vector3 lastEnemyPoint;
+        private float indoorBlend;        // 0 = al aire libre, 1 = bajo techo (suavizado)
+        private float indoorCheckAt;
+        private bool indoor;
+        private readonly RaycastHit[] castHits = new RaycastHit[16];
+        private bool targetHidden;
+        private readonly List<KeyValuePair<Renderer, UnityEngine.Rendering.ShadowCastingMode>> hiddenRenderers =
+            new List<KeyValuePair<Renderer, UnityEngine.Rendering.ShadowCastingMode>>();
 
         // Sensación de impacto
         private Vector3 smoothedPosition;
@@ -101,6 +134,8 @@ namespace Ayni.Player
             Ayni.Combat.CombatFeedback.OnShake -= HandleShake;
             Ayni.Combat.CombatFeedback.OnKick -= HandleKick;
             Ayni.Combat.CombatFeedback.OnFinisherCamera -= HandleFinisherCamera;
+            // Si Yari estaba oculto por tener la cámara encima, vuelve a verse (una escena toma la cámara)
+            if (targetHidden && target != null) UpdateTargetFade(99f);
             kickOffset = kickVelocity = kickAngles = kickAngularVelocity = Vector3.zero;
 
             // Una escena toma la cámara: se le devuelve con su campo de visión normal
@@ -225,7 +260,11 @@ namespace Ayni.Player
             if (target != null) yari = target.GetComponent<YariCombatController>();
 
             cam = GetComponent<Camera>();
-            if (cam != null) baseFov = cam.fieldOfView;
+            if (cam != null)
+            {
+                baseFov = cam.fieldOfView;
+                cam.nearClipPlane = Mathf.Min(cam.nearClipPlane, nearClip);
+            }
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -239,34 +278,128 @@ namespace Ayni.Player
             if (target == null) return;
 
             yaw = target.eulerAngles.y;
-            pitch = 10f;
+            pitch = defaultPitch;
             smoothedPosition = ComputeCameraPosition();
             transform.position = smoothedPosition;
-            transform.LookAt(target.position + Vector3.up * lookAtHeight);
+            transform.LookAt(target.position + Vector3.up * lookHeight);
             initialized = true;
         }
 
         private Vector3 ComputeCameraPosition()
         {
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
-            Vector3 pivot = target.position + Vector3.up * lookAtHeight;
-            // En los remates la cámara se acerca; al correr y esprintar se aleja un poco
-            Vector3 framing = Vector3.Lerp(offset, new Vector3(offset.x, offset.y, offset.z * finisherZoom), finisherBlend);
-            framing.z *= 1f + SpeedPullBack;
+            // Bajo techo, más cerca del hombro; en los remates se acerca; al correr y esprintar y con un rival
+            // fijado se aleja un poco
+            Vector3 baseOffset = Vector3.Lerp(shoulderOffset, indoorOffset, indoorBlend);
+            Vector3 framing = Vector3.Lerp(baseOffset, new Vector3(baseOffset.x, baseOffset.y, baseOffset.z * finisherZoom), finisherBlend);
+            framing.z *= 1f + SpeedPullBack + lockPullBack * lockBlend * (1f - indoorBlend);
             Vector3 desired = target.position + rotation * framing;
+            return Unblocked(desired);
+        }
 
-            // Evitar que la cámara atraviese el terreno o las rocas
+        private Vector3 Pivot => target.position + Vector3.up * Mathf.Lerp(lookHeight, indoorOffset.y, indoorBlend);
+
+        /// <summary>
+        /// El punto más lejano entre Yari y <paramref name="desired"/> al que puede ir la cámara sin atravesar el terreno,
+        /// las rocas o los muros. Los personajes (Yari, rivales, aldeanos) y los disparadores no cuentan.
+        /// </summary>
+        private Vector3 Unblocked(Vector3 desired)
+        {
+            Vector3 pivot = Pivot;
             Vector3 dir = desired - pivot;
             float dist = dir.magnitude;
-            if (dist > 0.001f &&
-                Physics.SphereCast(pivot, collisionRadius, dir / dist, out RaycastHit hit, dist,
-                                   Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) &&
-                !hit.transform.IsChildOf(target))
+            if (dist < 0.001f) return desired;
+            dir /= dist;
+            int count = Physics.SphereCastNonAlloc(pivot, wallRadius, dir, castHits, dist,
+                                                   Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            float nearest = dist;
+            for (int i = 0; i < count; i++)
             {
-                desired = pivot + dir / dist * Mathf.Max(hit.distance, minDistance);
+                RaycastHit hit = castHits[i];
+                if (hit.collider == null || IgnoredByCamera(hit.collider)) continue;
+                // distance 0: la esfera ya empieza dentro de algo (muy pegado a un muro); se trata como muro a 0 m
+                if (hit.distance < nearest) nearest = hit.distance;
             }
+            if (nearest >= dist) return desired;
+            // Contra el muro, pero sin bajar de la distancia mínima salvo que el muro esté aún más cerca
+            float keep = nearest >= minWallDistance ? nearest : Mathf.Max(0.12f, nearest);
+            Vector3 blocked = pivot + dir * keep;
+            if (keep >= craneBelow) return blocked;
 
-            return desired;
+            // Muy pegada (Yari de espaldas a un muro): en vez de meterse en su nuca, la cámara sube y mira por encima
+            // de su hombro, si por arriba hay sitio
+            Vector3 back = -dir;
+            back.y = 0f;
+            back = back.sqrMagnitude > 0.001f ? back.normalized : -target.forward;
+            Vector3 crane = pivot + Vector3.up * craneHeight - back * 0.35f;
+            Vector3 craneDir = crane - pivot;
+            float craneDist = craneDir.magnitude;
+            craneDir /= craneDist;
+            float craneFree = craneDist;
+            count = Physics.SphereCastNonAlloc(pivot, wallRadius * 0.8f, craneDir, castHits, craneDist,
+                                               Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                RaycastHit hit = castHits[i];
+                if (hit.collider == null || IgnoredByCamera(hit.collider)) continue;
+                if (hit.distance < craneFree) craneFree = hit.distance;
+            }
+            if (craneFree <= keep) return blocked;
+            // Mezcla: cuanto más pegada al muro, más arriba
+            float t = Mathf.InverseLerp(craneBelow, 0.12f, keep);
+            return Vector3.Lerp(blocked, pivot + craneDir * craneFree, t);
+        }
+
+        /// <summary>
+        /// Con la cámara casi dentro de Yari (pegado a un muro) se dejan de dibujar sus mallas (siguen proyectando sombra)
+        /// para no llenar la pantalla con su pelo.
+        /// </summary>
+        private void UpdateTargetFade(float distanceToPivot)
+        {
+            bool hide = distanceToPivot < hideBelow || (targetHidden && distanceToPivot < hideBelow + 0.15f);
+            if (hide == targetHidden) return;
+            targetHidden = hide;
+            if (hide)
+            {
+                hiddenRenderers.Clear();
+                foreach (Renderer r in target.GetComponentsInChildren<Renderer>())
+                {
+                    if (r == null || !r.enabled || r.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly) continue;
+                    hiddenRenderers.Add(new KeyValuePair<Renderer, UnityEngine.Rendering.ShadowCastingMode>(r, r.shadowCastingMode));
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+                }
+            }
+            else
+            {
+                foreach (var pair in hiddenRenderers) if (pair.Key != null) pair.Key.shadowCastingMode = pair.Value;
+                hiddenRenderers.Clear();
+            }
+        }
+
+        private bool IgnoredByCamera(Collider c)
+        {
+            if (c.transform.IsChildOf(target)) return true;
+            if (c is CharacterController) return true;
+            if (c.attachedRigidbody != null && !c.attachedRigidbody.isKinematic) return true;
+            return c.GetComponentInParent<Ayni.Enemy.EnemyController>() != null;
+        }
+
+        /// <summary>¿Hay techo sobre Yari (casa, kallanka)? Se comprueba unas veces por segundo.</summary>
+        private void UpdateIndoor()
+        {
+            if (Time.unscaledTime >= indoorCheckAt)
+            {
+                indoorCheckAt = Time.unscaledTime + 0.2f;
+                Vector3 head = target.position + Vector3.up * 1.2f;
+                indoor = false;
+                int count = Physics.RaycastNonAlloc(head, Vector3.up, castHits, roofCheckHeight - 1.2f,
+                                                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                for (int i = 0; i < count; i++)
+                {
+                    if (castHits[i].collider != null && !IgnoredByCamera(castHits[i].collider)) { indoor = true; break; }
+                }
+            }
+            indoorBlend = Mathf.MoveTowards(indoorBlend, indoor ? 1f : 0f, 1.6f * Time.unscaledDeltaTime);
         }
 
         /// <summary>
@@ -330,7 +463,7 @@ namespace Ayni.Player
                     float desiredYaw = Mathf.Atan2(toEnemy.x, toEnemy.z) * Mathf.Rad2Deg;
                     yaw = Mathf.LerpAngle(yaw, desiredYaw, lockYawSpeed * Time.deltaTime);
                 }
-                pitch = Mathf.Lerp(pitch, lockPitch, lockYawSpeed * Time.deltaTime);
+                pitch = Mathf.Lerp(pitch, lockTiltDeg, lockYawSpeed * Time.deltaTime);
 
                 lastEnemyPoint = lockTarget.position + Vector3.up * lockTargetHeight;
             }
@@ -347,19 +480,45 @@ namespace Ayni.Player
             finisherBlend = Mathf.MoveTowards(finisherBlend, Time.unscaledTime < finisherUntil ? 1f : 0f, 4f * Time.unscaledDeltaTime);
             UpdateSpeedFeel(lockTarget == null && Time.unscaledTime >= finisherUntil && !Ayni.Core.AyniGameState.InputLocked);
 
+            UpdateIndoor();
+            lockBlend = Mathf.MoveTowards(lockBlend, lockTarget != null ? 1f : 0f, 3f * Time.deltaTime);
+
             Vector3 desiredPosition = ComputeCameraPosition();
             smoothedPosition = Vector3.Lerp(smoothedPosition, desiredPosition, smoothSpeed * Time.deltaTime);
+            // El suavizado solo sirve para alejarse: si entre Yari y la cámara suavizada queda un muro o el terreno
+            // (un muro que aparece de golpe, un salto, un teletransporte), la cámara se pone delante al instante
+            smoothedPosition = Unblocked(smoothedPosition);
             transform.position = smoothedPosition;
+            float toPivot = Vector3.Distance(smoothedPosition, Pivot);
+            UpdateTargetFade(toPivot);
 
-            // El punto de mira se desplaza suavemente de Yari hacia el rival al fijar, y vuelve al soltar
-            lockBlend = Mathf.MoveTowards(lockBlend, lockTarget != null ? 1f : 0f, 3f * Time.deltaTime);
-            Vector3 lookPoint = target.position + Vector3.up * lookAtHeight;
-            if (lockBlend > 0f) lookPoint = Vector3.Lerp(lookPoint, lastEnemyPoint, lockFraming * lockBlend);
+            // El punto de mira se desplaza suavemente de Yari hacia el rival al fijar, y vuelve al soltar; con un rival
+            // lejano el desplazamiento se limita para que Yari no se salga del cuadro
+            Vector3 lookPoint = target.position + Vector3.up * Mathf.Lerp(lookHeight, indoorOffset.y, indoorBlend);
+            if (lockBlend > 0f)
+            {
+                // Solo cuenta un rival cercano: con uno lejano (el que huye) la cámara mira a Yari
+                Vector3 toRival = lastEnemyPoint - lookPoint;
+                float near = Mathf.InverseLerp(lockFramingRange, lockFramingRange * 0.45f, new Vector2(toRival.x, toRival.z).magnitude);
+                Vector3 shift = Vector3.ClampMagnitude(toRival * lockFramingAmount, lockMaxLookShift);
+                lookPoint += shift * (lockBlend * near);
+            }
+
             transform.LookAt(lookPoint);
 
             ApplyShake();
 
             // El cursor lo libera el menú de pausa (Esc), que también sirve para salir del Play en el Editor
+        }
+
+        /// <summary>Estado de la cámara en la consola (para el puente de agentes).</summary>
+        public static void Report()
+        {
+            var c = Camera.main != null ? Camera.main.GetComponent<ThirdPersonSifuCamera>() : null;
+            if (c == null || c.target == null) { Debug.LogWarning("[Ayni Cámara] No hay cámara de juego activa"); return; }
+            float d = Vector3.Distance(c.transform.position, c.Pivot);
+            Debug.Log($"[Ayni Cámara] a {d:F2} m de Yari · bajo techo {c.indoor} ({c.indoorBlend:F2}) · fijado {c.lockBlend:F2} · " +
+                      $"cabeceo {c.pitch:F0}° · plano cercano {(c.cam != null ? c.cam.nearClipPlane : -1f):F2}");
         }
     }
 }
