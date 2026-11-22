@@ -43,6 +43,9 @@ namespace Ayni.Combat
         private static CombatFeedback instance;
         private static Sprite burstSprite;
         private static Material spriteMaterial;
+        private static Texture2D softDot;
+        private static readonly Dictionary<string, float> lastGrunt = new Dictionary<string, float>();
+        private ParticleSystem debris;
 
         private readonly List<FlashInstance> flashes = new List<FlashInstance>();
         private float hitstopUntil;
@@ -58,6 +61,8 @@ namespace Ayni.Combat
             instance = null;
             burstSprite = null;
             spriteMaterial = null;
+            softDot = null;
+            lastGrunt.Clear();
             OnShake = null;
             OnKick = null;
             OnFinisherCamera = null;
@@ -85,6 +90,7 @@ namespace Ayni.Combat
             Shake(0.015f, 0.10f);
             AyniRumble.Pulse(0.12f, 0.35f, 0.08f);
             Flash(point, Color.white, 0.75f);
+            Burst(point, direction, 5, 2.2f, new Color(1f, 0.95f, 0.85f, 0.85f), 0.035f);
         }
 
         public static void HeavyHit(Vector3 point, Vector3 direction = default)
@@ -95,6 +101,9 @@ namespace Ayni.Combat
             Shake(0.035f, 0.16f);
             AyniRumble.Pulse(0.55f, 0.4f, 0.15f);
             Flash(point, new Color(1f, 0.95f, 0.8f), 1.15f, 0.14f);
+            Burst(point, direction, 12, 3.2f, new Color(1f, 0.92f, 0.78f, 0.9f), 0.05f);
+            Burst(point, direction, 6, 1.6f, new Color(0.62f, 0.5f, 0.38f, 0.7f), 0.09f);
+            Grunt("dolor_rival", point, 0.8f, 0.7f);
         }
 
         public static void Finisher(Vector3 point, Vector3 direction = default)
@@ -105,6 +114,9 @@ namespace Ayni.Combat
             Shake(0.06f, 0.24f);
             AyniRumble.Pulse(0.9f, 0.55f, 0.28f);
             Flash(point, new Color(1f, 0.85f, 0.5f), 1.7f, 0.18f);
+            Burst(point, direction, 22, 4.2f, new Color(1f, 0.9f, 0.7f, 0.95f), 0.055f);
+            Burst(point, direction, 10, 2f, new Color(0.62f, 0.5f, 0.38f, 0.75f), 0.12f);
+            Grunt("dolor_rival", point, 0.95f, 1f);
         }
 
         public static void Parry(Vector3 point, Vector3 direction = default)
@@ -146,6 +158,103 @@ namespace Ayni.Combat
             Shake(0.045f, 0.18f);
             AyniRumble.Pulse(0.8f, 0.3f, 0.22f);
             Flash(point, new Color(1f, 0.3f, 0.25f), 0.95f, 0.14f);
+            Burst(point, direction, 8, 2.4f, new Color(0.95f, 0.85f, 0.72f, 0.85f), 0.045f);
+            Grunt("dolor_yari", point, 0.85f, 0.9f);
+        }
+
+        // ───────────────────────── Gritos y polvo ─────────────────────────
+
+        /// <summary>
+        /// Grito de esfuerzo o de dolor (clips <c>esfuerzo_yari</c>, <c>dolor_yari</c>, <c>dolor_rival</c>). No suena más de
+        /// uno de cada tipo cada <paramref name="gap"/> segundos y, con <paramref name="chance"/> &lt; 1, no siempre: si cada
+        /// golpe gritara, cansaría.
+        /// </summary>
+        public static void Grunt(string clip, Vector3 point, float volume, float chance = 1f, float gap = 0.35f)
+        {
+            if (lastGrunt.TryGetValue(clip, out float last) && Time.unscaledTime - last < gap) return;
+            if (UnityEngine.Random.value > chance) return;
+            lastGrunt[clip] = Time.unscaledTime;
+            AyniAudio.Play(clip, point, volume, 0.06f);
+        }
+
+        /// <summary>
+        /// Chispas de sudor y polvo que saltan del punto de contacto hacia donde va el golpe. Se congelan con la
+        /// micro-pausa del golpe (van en tiempo de juego), que es lo que da la sensación de fotograma clavado.
+        /// </summary>
+        public static void Burst(Vector3 point, Vector3 direction, int count, float speed, Color color, float size)
+        {
+            ParticleSystem ps = Get().Debris();
+            Vector3 dir = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector3.up;
+            var p = new ParticleSystem.EmitParams();
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 v = dir * 0.85f + UnityEngine.Random.insideUnitSphere * 0.75f + Vector3.up * 0.4f;
+                p.position = point;
+                p.velocity = v.normalized * speed * UnityEngine.Random.Range(0.45f, 1.15f);
+                p.startSize = size * UnityEngine.Random.Range(0.6f, 1.35f);
+                p.startLifetime = UnityEngine.Random.Range(0.22f, 0.5f);
+                p.startColor = color;
+                ps.Emit(p, 1);
+            }
+        }
+
+        private ParticleSystem Debris()
+        {
+            if (debris != null) return debris;
+            var go = new GameObject("ImpactDebris");
+            go.transform.SetParent(transform, false);
+            debris = go.AddComponent<ParticleSystem>();
+            debris.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            ParticleSystem.MainModule main = debris.main;
+            main.playOnAwake = false;
+            main.loop = true;
+            main.duration = 1f;
+            main.maxParticles = 500;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.gravityModifier = 1.3f;
+            main.startSpeed = 0f;
+            ParticleSystem.EmissionModule emission = debris.emission;
+            emission.enabled = false;
+            ParticleSystem.ShapeModule shape = debris.shape;
+            shape.enabled = false;
+            ParticleSystem.ColorOverLifetimeModule fade = debris.colorOverLifetime;
+            fade.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                             new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0.8f, 0.5f), new GradientAlphaKey(0f, 1f) });
+            fade.color = gradient;
+            ParticleSystem.SizeOverLifetimeModule shrink = debris.sizeOverLifetime;
+            shrink.enabled = true;
+            shrink.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0.35f));
+            ParticleSystem.LimitVelocityOverLifetimeModule drag = debris.limitVelocityOverLifetime;
+            drag.enabled = true;
+            drag.drag = 2.5f;
+            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.material = new Material(SpriteMaterial) { mainTexture = SoftDot() };
+            debris.Play();
+            return debris;
+        }
+
+        /// <summary>Punto redondo de borde suave (textura de las chispas).</summary>
+        private static Texture2D SoftDot()
+        {
+            if (softDot != null) return softDot;
+            const int size = 32;
+            softDot = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color[size * size];
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x + 0.5f) / size * 2f - 1f, dy = (y + 0.5f) / size * 2f - 1f;
+                float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy));
+                pixels[y * size + x] = new Color(1f, 1f, 1f, a * a);
+            }
+            softDot.SetPixels(pixels);
+            softDot.Apply();
+            return softDot;
         }
 
         // ───────────────────────── Piezas ─────────────────────────
