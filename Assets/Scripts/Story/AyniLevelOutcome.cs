@@ -214,6 +214,15 @@ namespace Ayni.Story
                 GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f), $"Quipu de los chasquis: <b>{quipu}</b>   ·   Tejedoras: <b>{weavers}</b>", cardText);
                 y += 36f;
             }
+            if (Ayni.World.AyniPathRewards.CaptainSpared || Ayni.World.AyniPathRewards.CaptainSlain || Ayni.World.AyniApacheta.Offered)
+            {
+                string captain = Ayni.World.AyniPathRewards.CaptainSpared ? "<color=#7CFC9A>perdonado</color>"
+                               : Ayni.World.AyniPathRewards.CaptainSlain ? "<color=#FF7A6A>ejecutado</color>" : "—";
+                string apacheta = Ayni.World.AyniPathRewards.ApuBlessing ? "el Apu te bendijo"
+                                : Ayni.World.AyniPathRewards.ApuRejected ? "rechazó tu piedra" : "sin ofrenda";
+                GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f), $"Capitán del Tambo: <b>{captain}</b>   ·   Apacheta: <b>{apacheta}</b>", cardText);
+                y += 36f;
+            }
             if (Ayni.World.AyniCaptiveCages.Total > 0)
             {
                 GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f),

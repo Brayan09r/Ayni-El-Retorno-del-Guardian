@@ -21,13 +21,18 @@ namespace Ayni.UI
         }
 
         private YariCombatController yari;
+        private IllaTalismanSystem talisman;
         private readonly Dictionary<string, float> firstSeen = new Dictionary<string, float>();
         private readonly List<Chip> chips = new List<Chip>();
 
         private void Start()
         {
             var player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null) yari = player.GetComponent<YariCombatController>();
+            if (player != null)
+            {
+                yari = player.GetComponent<YariCombatController>();
+                talisman = player.GetComponent<IllaTalismanSystem>();
+            }
         }
 
         private void Collect()
@@ -37,6 +42,9 @@ namespace Ayni.UI
             if (AyniPathRewards.ChumpiReceived) chips.Add(new Chip { key = "chumpi", text = "Chumpi · veneno a la mitad", good = true });
             if (AyniCaptiveCages.CondorFreed) chips.Add(new Chip { key = "kuntur", text = "Kuntur · avisa los dardos", good = true });
             if (AyniCaptiveCages.PumaFreed && !AyniFreedAllies.PumaHelped) chips.Add(new Chip { key = "puma", text = "Puma · su madre acudirá", good = true });
+            if (AyniPathRewards.CaptainSpared && AyniTamboCaptain.DeserterName != null) chips.Add(new Chip { key = "capitan", text = "Capitán · un Cazador menos", good = true });
+            if (AyniPathRewards.CaptainSlain) chips.Add(new Chip { key = "champi", text = "Champi · +20 % de daño a Amaru", good = true });
+            if (talisman != null && talisman.ProtectedFalls > 0) chips.Add(new Chip { key = "apu", text = "Apu · tu próxima caída no cuesta años", good = true });
             if (AyniPathRewards.AmaruWarned) chips.Add(new Chip { key = "avisado", text = "Amaru avisado · trampas", good = false });
         }
 

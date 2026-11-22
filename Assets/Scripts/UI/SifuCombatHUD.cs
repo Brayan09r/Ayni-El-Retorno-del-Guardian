@@ -69,6 +69,9 @@ namespace Ayni.UI
             if (GetComponent<Ayni.World.AyniQuipuChase>() == null) gameObject.AddComponent<Ayni.World.AyniQuipuChase>();
             if (GetComponent<Ayni.World.AyniWeaversFire>() == null) gameObject.AddComponent<Ayni.World.AyniWeaversFire>();
             if (GetComponent<AyniHunterTraps>() == null) gameObject.AddComponent<AyniHunterTraps>();
+            // El Capitán del Tambo (K3) con su mini Juicio, y la apacheta del camino hacia la Portada
+            if (GetComponent<Ayni.World.AyniTamboCaptain>() == null) gameObject.AddComponent<Ayni.World.AyniTamboCaptain>();
+            if (GetComponent<Ayni.World.AyniApacheta>() == null) gameObject.AddComponent<Ayni.World.AyniApacheta>();
             if (GetComponent<AyniDartReadCue>() == null) gameObject.AddComponent<AyniDartReadCue>();
             if (GetComponent<AyniRewardsHUD>() == null) gameObject.AddComponent<AyniRewardsHUD>();
             // Pausa con las opciones de sonido (Esc / Menu)

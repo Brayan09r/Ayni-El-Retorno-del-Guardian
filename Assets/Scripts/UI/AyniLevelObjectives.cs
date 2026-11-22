@@ -157,14 +157,24 @@ namespace Ayni.UI
                 detail = $"La casa arde · quedan <b>{Mathf.CeilToInt(AyniWeaversFire.TimeLeft)} s</b>";
                 waypoint = null;
             }
+            else if (fighting != null && fighting.Order == 3 && AyniTamboCaptain.Fighting)
+            {
+                // El Capitán del Tambo entró en la pelea: su mini Juicio
+                objective = "Vence al Capitán del Tambo";
+                detail = "Rompe su postura y decide su destino";
+                waypoint = null;
+            }
             else if (fighting != null)
             {
                 int standing = Standing(fighting);
+                bool captainWatching = fighting.Order == 3 && AyniTamboCaptain.Waiting;
+                if (captainWatching) standing = Mathf.Max(0, standing - 1);
                 SiteStory? story = StoryOf(fighting);
                 objective = "Libera " + Article(fighting) + NameOf(fighting);
                 detail = standing > 0
                     ? $"{story?.rivals ?? "Rivales"} en pie: <b>{standing}</b>"
                     : "Derrota a los que quedan";
+                if (captainWatching) detail += " · <color=#e0604a>el capitán observa</color>";
                 detail += CagesNote(fighting);
                 waypoint = null;
             }
@@ -173,6 +183,7 @@ namespace Ayni.UI
                 Vector3 target = next.Entry != null ? next.Entry.position : next.transform.position;
                 objective = "Ve " + ToArticle(next) + NameOf(next);
                 detail = $"Sigue el camino · a {Mathf.RoundToInt(Flat(yari.transform.position, target))} m";
+                if (next.Order == 4 && AyniApacheta.Exists && !AyniApacheta.Offered) detail += " · <color=#d9c08c>deja una piedra en la apacheta</color>";
                 waypoint = target;
             }
             else if (boss != null && !boss.IsDead)
