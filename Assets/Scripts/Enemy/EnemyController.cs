@@ -221,6 +221,16 @@ namespace Ayni.Enemy
         /// su turno. Los jefes no esperan turno.
         /// </summary>
         public const int MaxSimultaneousAttackers = 2;
+
+        /// <summary>
+        /// Antes de esto ningún rival (salvo el jefe) puede empezar un golpe: cuando uno ataca, el siguiente espera un
+        /// momento. Así los rivales se turnan en vez de golpear todos en el mismo instante.
+        /// </summary>
+        private static float nextGroupAttackAt;
+        private const float GroupAttackGapMin = 0.7f, GroupAttackGapMax = 1.15f;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetAttackTurns() => nextGroupAttackAt = 0f;
         private const float WaitRing = 3.6f;
         /// <summary>Recibió un golpe de Yari (con el daño ya aplicado).</summary>
         public event System.Action<EnemyController> OnDamaged;
@@ -421,6 +431,8 @@ namespace Ayni.Enemy
                     FacePlayer(turnSpeed);
                     // Sin turno de ataque se queda en el anillo de espera, en guardia, sin amontonarse sobre Yari
                     bool myTurn = isBoss || AttackersNow() < MaxSimultaneousAttackers;
+                    // Aunque tenga sitio, espera a que pase un momento desde el último golpe de otro rival
+                    bool canSwing = isBoss || Time.time >= nextGroupAttackAt;
                     float stopAt = myTurn ? attackRange * 0.85f : WaitRing;
                     if (dist > stopAt)
                     {
@@ -434,7 +446,7 @@ namespace Ayni.Enemy
                         SetAnimSpeed(0f);
                         Vector3 apart = Separation();
                         if (apart.sqrMagnitude > 0.01f) mover.Move(apart * (1.2f * Time.deltaTime));
-                        if (myTurn && Time.time >= nextAttackTime) BeginWindup();
+                        if (myTurn && canSwing && Time.time >= nextAttackTime) BeginWindup();
                     }
                     break;
 
@@ -512,6 +524,7 @@ namespace Ayni.Enemy
 
         private void BeginWindup()
         {
+            if (!isBoss) nextGroupAttackAt = Time.time + Random.Range(GroupAttackGapMin, GroupAttackGapMax);
             state = EnemyState.Windup;
             stateTimer = windupTime;
             pendingHeight = Random.value < lowAttackChance ? AttackHeight.Low : AttackHeight.High;
@@ -584,7 +597,8 @@ namespace Ayni.Enemy
         /// <summary>Instante en que el golpe conecta: Yari lo esquiva, desvía, bloquea o lo recibe.</summary>
         private void Strike()
         {
-            nextAttackTime = Time.time + attackCooldown;
+            // Un poco de azar en la espera: dos rivales con la misma pausa acabarían sincronizados
+            nextAttackTime = Time.time + attackCooldown * Random.Range(0.85f, 1.25f);
             state = EnemyState.Recover;
             stateTimer = recoverTime;
 
