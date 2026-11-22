@@ -71,10 +71,13 @@ namespace Ayni.World.Fauna
         // ── Modelo 3D riggeado (Resources/Fauna) ──
         // Velocidad a la que pasa el suelo bajo las patas apoyadas en cada clip, a escala 1 (medido con
         // Ayni.Editor.AyniFaunaProbe.GaitSpeed). Con ella se ajusta la velocidad de la animación para que no patinen.
-        private const float LlamaWalkGround = 0.5f, LlamaRunGround = 1.8f;
-        private const float VicunaWalkGround = 0.33f, VicunaRunGround = 0.85f;
+        // La carrera es el galope generado (Assets/Art/Fauna/Clips/*_Run_Galope.anim).
+        private const float LlamaWalkGround = 0.5f, LlamaRunGround = 1.3f;
+        private const float VicunaWalkGround = 0.33f, VicunaRunGround = 0.6f;
         /// <summary>Más rápido que esto la animación se ve atropellada: el animal no corre más de lo que sus patas pueden.</summary>
         private const float MaxAnimSpeed = 2.6f;
+        /// <summary>El galope aguanta ir algo más rápido que el paso sin verse atropellado.</summary>
+        private const float MaxRunAnimSpeed = 3f;
         private float walkGround = LlamaWalkGround, runGround = LlamaRunGround;
         private float modelScale = 1f;
         // El clip "Graze" del FBX dobla el cuello hacia atrás, sobre el lomo. Al pastar se usa "Idle" y el cuello
@@ -299,7 +302,7 @@ namespace Ayni.World.Fauna
             walkGround = vicuna ? VicunaWalkGround : LlamaWalkGround;
             runGround = vicuna ? VicunaRunGround : LlamaRunGround;
             modelScale = Mathf.Max(0.05f, anim.transform.lossyScale.x);
-            fleeSpeed = Mathf.Min(fleeSpeed, runGround * modelScale * MaxAnimSpeed);
+            fleeSpeed = Mathf.Min(fleeSpeed, runGround * modelScale * MaxRunAnimSpeed);
             walkSpeed = Mathf.Min(walkSpeed, walkGround * modelScale * MaxAnimSpeed);
 
             foreach (Transform t in anim.GetComponentsInChildren<Transform>())
@@ -391,7 +394,7 @@ namespace Ayni.World.Fauna
                 if (currentSpeed > walkSpeed * 1.45f)
                 {
                     desiredState = "Run";
-                    animSpeed = Mathf.Clamp(currentSpeed / (runGround * modelScale), 0.7f, MaxAnimSpeed);
+                    animSpeed = Mathf.Clamp(currentSpeed / (runGround * modelScale), 0.7f, MaxRunAnimSpeed);
                 }
                 else if (currentSpeed > 0.08f)
                 {

@@ -582,10 +582,10 @@ namespace Ayni.World
                     var vAnim = v.GetComponentInChildren<Animator>();
                     if (vAnim != null && vAnim.runtimeAnimatorController != null)
                     {
-                        // Modelo 3D: la carrera del clip avanza ~0.85 m/s a escala 1. Corren a lo que dan sus patas
+                        // Modelo 3D: el galope avanza ~0.6 m/s a escala 1. Corren a lo que dan sus patas
                         // (antes iban a 5 m/s con la animación casi a ritmo normal y parecían deslizarse)
-                        float ground = 0.85f * vAnim.transform.lossyScale.x;
-                        runSpeed = Mathf.Min(2.2f + i * 0.2f, ground * 3.4f);
+                        float ground = 0.6f * vAnim.transform.lossyScale.x;
+                        runSpeed = Mathf.Min(2.2f + i * 0.2f, ground * 3.2f);
                         vAnim.CrossFadeInFixedTime("Run", 0.15f);
                         vAnim.speed = Mathf.Clamp(runSpeed / Mathf.Max(0.1f, ground), 1f, 3.2f);
                     }
