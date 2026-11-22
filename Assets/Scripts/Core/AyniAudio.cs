@@ -22,6 +22,8 @@ namespace Ayni.Core
         public static float Volume = 1f;
         /// <summary>Volumen de la música y del ambiente (0-1).</summary>
         public static float AmbienceVolume = 1f;
+        /// <summary>Atenuación de la música y el ambiente mientras habla alguien (la pone <see cref="AyniVoice"/>).</summary>
+        public static float Duck = 1f;
 
         private static Dictionary<string, List<AudioClip>> clips;
         private static readonly Queue<string> recent = new Queue<string>();
@@ -286,7 +288,7 @@ namespace Ayni.Core
                     finished.Add(pair.Key);
                     continue;
                 }
-                float wanted = loop.target * AyniAudio.AmbienceVolume;
+                float wanted = loop.target * AyniAudio.AmbienceVolume * AyniAudio.Duck;
                 loop.source.volume = Mathf.MoveTowards(loop.source.volume, wanted, loop.speed * Time.unscaledDeltaTime);
                 bool ended = !loop.source.loop && !loop.source.isPlaying;
                 if (ended || (loop.stopping && loop.source.volume <= 0.001f))

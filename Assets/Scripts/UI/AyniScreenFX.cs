@@ -92,9 +92,14 @@ namespace Ayni.UI
             Get().letterboxTarget = on ? 1f : 0f;
         }
 
-        /// <summary>Subtítulo de narración abajo, con aparición y desaparición suaves.</summary>
+        /// <summary>
+        /// Subtítulo de narración abajo, con aparición y desaparición suaves. Si la frase tiene voz (AyniVoice), suena y
+        /// el subtítulo se queda en pantalla al menos lo que dura.
+        /// </summary>
         public static void Caption(string text, float seconds)
         {
+            float voice = Ayni.Core.AyniVoice.Speak(text);
+            if (voice > 0f) seconds = Mathf.Max(seconds, voice + 0.35f);
             AyniScreenFX fx = Get();
             fx.caption = text;
             fx.captionStart = Time.unscaledTime;
@@ -104,6 +109,7 @@ namespace Ayni.UI
         public static void ClearCaption()
         {
             if (instance != null) instance.caption = null;
+            Ayni.Core.AyniVoice.Stop();
         }
 
         /// <summary>Título grande centrado (nombre de capítulo, de jefe...).</summary>
@@ -125,6 +131,7 @@ namespace Ayni.UI
         /// <summary>Quita todo de golpe (al saltar una escena).</summary>
         public static void ClearAll()
         {
+            Ayni.Core.AyniVoice.Stop();
             if (instance == null) return;
             instance.caption = null;
             instance.title = null;
