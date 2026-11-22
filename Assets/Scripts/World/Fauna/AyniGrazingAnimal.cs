@@ -68,6 +68,24 @@ namespace Ayni.World.Fauna
         private Animator anim;
         private string currentAnimState;
 
+        // ── Modelo 3D riggeado (Resources/Fauna) ──
+        // Velocidad a la que pasa el suelo bajo las patas apoyadas en cada clip, a escala 1 (medido con
+        // Ayni.Editor.AyniFaunaProbe.GaitSpeed). Con ella se ajusta la velocidad de la animación para que no patinen.
+        private const float LlamaWalkGround = 0.5f, LlamaRunGround = 1.8f;
+        private const float VicunaWalkGround = 0.33f, VicunaRunGround = 0.85f;
+        /// <summary>Más rápido que esto la animación se ve atropellada: el animal no corre más de lo que sus patas pueden.</summary>
+        private const float MaxAnimSpeed = 2.6f;
+        private float walkGround = LlamaWalkGround, runGround = LlamaRunGround;
+        private float modelScale = 1f;
+        // El clip "Graze" del FBX dobla el cuello hacia atrás, sobre el lomo. Al pastar se usa "Idle" y el cuello
+        // se baja por código en LateUpdate (encima de la animación).
+        private Transform neckBase, neckMid, headBone;
+        private Quaternion lastNeckWrite;
+        private float grazeWeight;
+        private float lookYaw;
+        private float groundPitch;
+        private const float GrazeNeckBase = 70f, GrazeNeckMid = 45f, GrazeHead = 30f;
+
         private static Transform cachedPlayer;
         private static float nextPlayerSearch;
 
@@ -120,6 +138,7 @@ namespace Ayni.World.Fauna
             if (body != null) bodyRestPos = body.localPosition;
             if (tail != null) tailRest = tail.localRotation;
             anim = GetComponentInChildren<Animator>();
+            if (anim != null && anim.runtimeAnimatorController != null) SetupRig();
 
             // Cada animal empieza en un estado y momento distinto para que el rebaño no se mueva sincronizado
             neckAngle = neckGrazeAngle;
@@ -157,12 +176,13 @@ namespace Ayni.World.Fauna
                     break;
 
                 case State.Walking:
-                    targetSpeed = walkSpeed;
+                    // Si el destino queda muy de lado, primero gira casi en el sitio (antes daba vueltas en círculo)
+                    targetSpeed = walkSpeed * HeadingFactor(target, 0.25f);
                     if (SteerTowards(target, dt) || stateTimer <= 0f) EnterState(State.Grazing);
                     break;
 
                 case State.Fleeing:
-                    targetSpeed = fleeSpeed;
+                    targetSpeed = fleeSpeed * HeadingFactor(target, 0.55f);
                     // Al terminar de huir se queda mirando, todavía atento
                     if (SteerTowards(target, dt) || stateTimer <= 0f) EnterState(State.Looking);
                     break;
@@ -260,6 +280,71 @@ namespace Ayni.World.Fauna
             return false;
         }
 
+        /// <summary>1 si el destino está delante; baja hasta <paramref name="min"/> cuando queda de lado o detrás.</summary>
+        private float HeadingFactor(Vector3 destination, float min)
+        {
+            Vector3 to = destination - transform.position;
+            to.y = 0f;
+            if (to.sqrMagnitude < 0.0001f) return 1f;
+            float error = Mathf.Abs(Mathf.DeltaAngle(yaw, Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg));
+            return Mathf.Lerp(min, 1f, Mathf.InverseLerp(100f, 25f, error));
+        }
+
+        /// <summary>Prepara el modelo 3D: medidas de su marcha, huesos del cuello y tope de velocidad al huir.</summary>
+        private void SetupRig()
+        {
+            bool vicuna = anim.runtimeAnimatorController.name.IndexOf("Vicuna", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            walkGround = vicuna ? VicunaWalkGround : LlamaWalkGround;
+            runGround = vicuna ? VicunaRunGround : LlamaRunGround;
+            modelScale = Mathf.Max(0.05f, anim.transform.lossyScale.x);
+            fleeSpeed = Mathf.Min(fleeSpeed, runGround * modelScale * MaxAnimSpeed);
+            walkSpeed = Mathf.Min(walkSpeed, walkGround * modelScale * MaxAnimSpeed);
+
+            foreach (Transform t in anim.GetComponentsInChildren<Transform>())
+            {
+                if (t.name == "Neck_1") neckBase = t;
+                else if (t.name == "Neck_2") neckMid = t;
+                else if (t.name == "Head") headBone = t;
+            }
+        }
+
+        protected virtual void LateUpdate()
+        {
+            if (anim == null || neckBase == null || Time.deltaTime <= 0f) return;
+            float dt = Time.deltaTime;
+
+            // Al pastar baja el cuello hasta el ichu; al mirar gira la cabeza a los lados
+            bool grazing = state == State.Grazing && currentSpeed < 0.05f;
+            grazeWeight = Mathf.MoveTowards(grazeWeight, grazing ? 1f : 0f, dt * (grazing ? 0.8f : 1.6f));
+            if (state == State.Looking)
+            {
+                if (Time.time >= nextLookSwitch)
+                {
+                    lookYawTarget = Random.Range(-40f, 40f);
+                    nextLookSwitch = Time.time + Random.Range(0.8f, 2f);
+                }
+            }
+            else
+            {
+                lookYawTarget = 0f;
+            }
+            lookYaw = Mathf.MoveTowardsAngle(lookYaw, lookYawTarget, dt * 70f);
+
+            float w = Mathf.SmoothStep(0f, 1f, grazeWeight);
+            if (w < 0.001f && Mathf.Abs(lookYaw) < 0.05f) return;
+            // Con el Animator fuera de cámara (CullUpdateTransforms) los huesos no se reescriben: no sumar dos veces
+            if (Quaternion.Angle(neckBase.localRotation, lastNeckWrite) < 0.01f) return;
+
+            Vector3 right = transform.right;
+            Vector3 up = transform.up;
+            float nibble = Mathf.Sin(Time.time * 5.5f + GetInstanceID()) * 6f * w;
+            neckBase.rotation = Quaternion.AngleAxis(lookYaw * 0.5f, up) * Quaternion.AngleAxis(GrazeNeckBase * w, right) * neckBase.rotation;
+            if (neckMid != null) neckMid.rotation = Quaternion.AngleAxis(GrazeNeckMid * w, right) * neckMid.rotation;
+            if (headBone != null)
+                headBone.rotation = Quaternion.AngleAxis(lookYaw * 0.5f, up) * Quaternion.AngleAxis(GrazeHead * w + nibble, right) * headBone.rotation;
+            lastNeckWrite = neckBase.localRotation;
+        }
+
         protected void Move(float dt)
         {
             if (currentSpeed > 0.001f)
@@ -276,24 +361,22 @@ namespace Ayni.World.Fauna
             // Si el animal usa un modelo 3D riggeado con Animator, dirigir sus clips y sincronizar velocidad sin deslizamiento
             if (anim != null && anim.runtimeAnimatorController != null)
             {
+                // La velocidad de la animación sigue a la del animal: así las pezuñas apoyadas no patinan
                 string desiredState;
                 float animSpeed = 1f;
                 if (currentSpeed > walkSpeed * 1.45f)
                 {
                     desiredState = "Run";
-                    animSpeed = Mathf.Clamp(currentSpeed / 3.4f, 0.85f, 2.2f);
+                    animSpeed = Mathf.Clamp(currentSpeed / (runGround * modelScale), 0.7f, MaxAnimSpeed);
                 }
                 else if (currentSpeed > 0.08f)
                 {
                     desiredState = "Walk";
-                    animSpeed = Mathf.Clamp(currentSpeed / 0.95f, 0.65f, 2.0f);
-                }
-                else if (state == State.Grazing)
-                {
-                    desiredState = "Graze";
+                    animSpeed = Mathf.Clamp(currentSpeed / (walkGround * modelScale), 0.5f, MaxAnimSpeed);
                 }
                 else
                 {
+                    // Pastar también parte de "Idle": el cuello se baja en LateUpdate
                     desiredState = "Idle";
                 }
 
@@ -392,8 +475,12 @@ namespace Ayni.World.Fauna
             pos.y = (hFront + hBack) * 0.5f;
             transform.position = pos;
 
+            // El modelo 3D se inclina menos y de forma suave: en cuestas fuertes se veía echado hacia atrás y daba tirones
             float pitch = Mathf.Atan2(hBack - hFront, 1.2f) * Mathf.Rad2Deg;
-            transform.rotation = flat * Quaternion.Euler(Mathf.Clamp(pitch, -25f, 25f), 0f, 0f);
+            float limit = anim != null ? 16f : 25f;
+            pitch = Mathf.Clamp(pitch, -limit, limit);
+            groundPitch = anim != null && Time.deltaTime > 0f ? Mathf.MoveTowards(groundPitch, pitch, 45f * Time.deltaTime) : pitch;
+            transform.rotation = flat * Quaternion.Euler(groundPitch, 0f, 0f);
         }
 
         protected static float GroundHeight(Terrain terrain, Vector3 worldPos)
