@@ -47,6 +47,11 @@ namespace Ayni.World.Fauna
         private float nextAlertCheck;
         private Animator anim;
         private string currentAnimState;
+        /// <summary>Duración del clip "Hop" del modelo 3D: un salto completo (despega, sube a la mitad y aterriza).</summary>
+        private const float HopClipLength = 1f;
+        /// <summary>Altura que ya sube el cuerpo dentro del clip "Hop" (a escala 1); el arco del salto la descuenta.</summary>
+        private const float HopClipLift = 0.15f;
+        private float hopAnimSpeed = 1f;
 
         private static Transform cachedPlayer;
         private static float nextPlayerSearch;
@@ -203,6 +208,17 @@ namespace Ayni.World.Fauna
                     float horizontal = Vector3.Distance(new Vector3(hopFrom.x, 0f, hopFrom.z), new Vector3(hopTo.x, 0f, hopTo.z));
                     hopDuration = (fleeing ? 0.22f : 0.3f) + horizontal * 0.06f;
                     hopHeight = 0.2f + horizontal * 0.12f + Mathf.Max(0f, hopTo.y - hopFrom.y);
+                    if (anim != null && anim.runtimeAnimatorController != null)
+                    {
+                        // Con el modelo 3D cada salto reproduce el clip entero, de principio a fin, al ritmo del salto
+                        // (antes el clip seguía su propio ciclo y las patas no coincidían con el despegue ni el aterrizaje)
+                        hopDuration = (fleeing ? 0.36f : 0.45f) + horizontal * 0.08f;
+                        hopHeight = Mathf.Max(0.06f, hopHeight - HopClipLift * anim.transform.lossyScale.y);
+                        hopAnimSpeed = HopClipLength / hopDuration;
+                        currentAnimState = "Hop";
+                        anim.speed = hopAnimSpeed;
+                        anim.Play("Hop", 0, 0f);
+                    }
                     state = State.Hopping;
 
                     Vector3 flat = hopTo - hopFrom;
@@ -265,9 +281,7 @@ namespace Ayni.World.Fauna
                     currentAnimState = desired;
                     anim.CrossFadeInFixedTime(desired, state == State.Hopping ? 0.08f : 0.2f);
                 }
-                anim.speed = state == State.Hopping
-                    ? Mathf.Clamp(0.8f / Mathf.Max(0.18f, hopDuration), 1.0f, 3.0f)
-                    : 1.0f;
+                anim.speed = state == State.Hopping ? hopAnimSpeed : 1.0f;
                 return;
             }
 
