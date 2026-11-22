@@ -112,6 +112,8 @@ namespace Ayni.World
             runner.OnDamaged += HandleRunnerHit;
             origin = runner.transform.position;
             startedAt = Time.time;
+            traveled = 0f;
+            lastRunnerPos = origin;
 
             // Por la salida de la kancha y luego por el camino, hacia la siguiente
             path.Clear();
@@ -164,6 +166,13 @@ namespace Ayni.World
             Vector3 to = target - t.position;
             to.y = 0f;
             if (to.magnitude < 1.5f && pathIndex < path.Count - 1) pathIndex++;
+            // Llegó al final de la ruta (la entrada de la siguiente kancha): ya ha escapado. Antes se quedaba allí
+            // parado corriendo contra el punto hasta que pasaba el tiempo
+            else if (to.magnitude < 2f && pathIndex >= path.Count - 1)
+            {
+                Escape();
+                return;
+            }
             Vector3 dir = Unstick(t.position, to.sqrMagnitude > 0.01f ? to.normalized : t.forward);
             CharacterController mover = runner.Mover;
             verticalSpeed = mover != null && mover.isGrounded ? -2f : verticalSpeed - 18f * Time.deltaTime;
@@ -173,12 +182,18 @@ namespace Ayni.World
             t.rotation = Quaternion.RotateTowards(t.rotation, Quaternion.LookRotation(dir), 360f * Time.deltaTime);
             if (runner.Animator != null && HasFloat(runner.Animator, "Speed")) runner.Animator.SetFloat("Speed", 1f);
 
-            Vector3 flat = t.position - origin;
-            flat.y = 0f;
-            MetersToEscape = Mathf.Max(0f, escapeDistance - flat.magnitude);
+            // Se mide lo que lleva recorrido por el camino, no la línea recta desde donde empezó: el camino tuerce y en
+            // las curvas la distancia en línea recta casi no crecía (el aviso se quedaba en «le faltan 18 m»)
+            Vector3 moved = t.position - lastRunnerPos;
+            moved.y = 0f;
+            traveled += moved.magnitude;
+            lastRunnerPos = t.position;
+            MetersToEscape = Mathf.Max(0f, escapeDistance - traveled);
             if (MetersToEscape <= 0f || Time.time - startedAt > maxSeconds) Escape();
         }
 
+        private float traveled;
+        private Vector3 lastRunnerPos;
         private Vector3 lastCheckPos;
         private float lastCheckTime, sidestepUntil, sidestepSign = 1f;
 
