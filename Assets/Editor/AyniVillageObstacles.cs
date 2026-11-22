@@ -21,7 +21,19 @@ namespace Ayni.Editor
     /// </summary>
     public static partial class AyniVillageBuilder
     {
-        private enum ObstacleKind { Tronco, TroncoDoble, Derrumbe, Empalizada, MuroCaido }
+        private enum ObstacleKind
+        {
+            Tronco,
+            CarretaVolcada,
+            TrincheraCazador,
+            PortadaRuina,
+            MuroCaido,
+            Derrumbe,
+            PilaVigas,
+            Empalizada
+        }
+
+        private const string ObstaclesMeshPath = Folder + "/Obstaculos_Mallas.asset";
 
         private sealed class Obstacle
         {
@@ -33,16 +45,17 @@ namespace Ayni.Editor
             public bool Flip => seed % 2 == 0; // a qué lado cae el paso
         }
 
+        // 8 obstáculos distintos a lo largo del Qhapaq Ñan (sin repetir la misma piedra + cercas)
         private static readonly Obstacle[] Obstacles =
         {
-            new Obstacle { id = "O1", kind = ObstacleKind.Tronco, center = new Vector2(283.0f, 539.7f), yaw = 105.1f, seed = 11 },      // a 592 m de la plaza
-            new Obstacle { id = "O2", kind = ObstacleKind.Derrumbe, center = new Vector2(294.5f, 506.0f), yaw = 145.0f, seed = 18 },    // 550 m
-            new Obstacle { id = "O3", kind = ObstacleKind.Empalizada, center = new Vector2(360.3f, 441.7f), yaw = 155.5f, seed = 25 },  // 450 m
-            new Obstacle { id = "O4", kind = ObstacleKind.TroncoDoble, center = new Vector2(368.7f, 414.5f), yaw = 155.3f, seed = 32 }, // 420 m
-            new Obstacle { id = "O5", kind = ObstacleKind.MuroCaido, center = new Vector2(429.7f, 384.5f), yaw = 76.4f, seed = 39 },    // 335 m
-            new Obstacle { id = "O6", kind = ObstacleKind.Derrumbe, center = new Vector2(450.4f, 386.0f), yaw = 65.4f, seed = 46 },     // 312 m
-            new Obstacle { id = "O7", kind = ObstacleKind.Empalizada, center = new Vector2(484.6f, 475.6f), yaw = 9.9f, seed = 53 },    // 205 m
-            new Obstacle { id = "O8", kind = ObstacleKind.TroncoDoble, center = new Vector2(497.9f, 507.0f), yaw = 37.2f, seed = 60 },  // 168 m
+            new Obstacle { id = "O1", kind = ObstacleKind.Tronco,           center = new Vector2(283.0f, 539.7f), yaw = 105.1f, seed = 11 }, // a 592 m de la plaza
+            new Obstacle { id = "O2", kind = ObstacleKind.CarretaVolcada,   center = new Vector2(294.5f, 506.0f), yaw = 145.0f, seed = 18 }, // 550 m
+            new Obstacle { id = "O3", kind = ObstacleKind.TrincheraCazador, center = new Vector2(360.3f, 441.7f), yaw = 155.5f, seed = 25 }, // 450 m
+            new Obstacle { id = "O4", kind = ObstacleKind.PortadaRuina,     center = new Vector2(368.7f, 414.5f), yaw = 155.3f, seed = 32 }, // 420 m
+            new Obstacle { id = "O5", kind = ObstacleKind.MuroCaido,        center = new Vector2(429.7f, 384.5f), yaw = 76.4f,  seed = 39 }, // 335 m
+            new Obstacle { id = "O6", kind = ObstacleKind.Derrumbe,         center = new Vector2(450.4f, 386.0f), yaw = 65.4f,  seed = 46 }, // 312 m
+            new Obstacle { id = "O7", kind = ObstacleKind.PilaVigas,        center = new Vector2(484.6f, 475.6f), yaw = 9.9f,   seed = 53 }, // 205 m
+            new Obstacle { id = "O8", kind = ObstacleKind.Empalizada,       center = new Vector2(497.9f, 507.0f), yaw = 37.2f,  seed = 60 }, // 168 m
         };
 
         private const float RoadHalf = 7f;   // media anchura del camino que el obstáculo cierra del todo
@@ -53,6 +66,16 @@ namespace Ayni.Editor
         private const float ChicaneGap = 2.5f;
         private const float ChicaneZ = 2.7f;
 
+        private static readonly Vector2[] RoadJarProfile =
+        {
+            new Vector2(0.08f, 0.00f),
+            new Vector2(0.24f, 0.14f),
+            new Vector2(0.28f, 0.36f),
+            new Vector2(0.18f, 0.56f),
+            new Vector2(0.10f, 0.68f),
+            new Vector2(0.14f, 0.78f),
+        };
+
         private sealed class ObstacleBuild
         {
             public Obstacle def;
@@ -60,7 +83,8 @@ namespace Ayni.Editor
             public float y0;
             public System.Random rng;
             public readonly MeshBuf roca = new MeshBuf(), quemado = new MeshBuf(), ramas = new MeshBuf();
-            public readonly MeshBuf madera = new MeshBuf(), pirca = new MeshBuf(), textil = new MeshBuf();
+            public readonly MeshBuf madera = new MeshBuf(), pirca = new MeshBuf(), fina = new MeshBuf();
+            public readonly MeshBuf textil = new MeshBuf(), ceramica = new MeshBuf(), paja = new MeshBuf(), fleco = new MeshBuf();
             public readonly List<(Vector3 center, Vector3 size)> boxes = new List<(Vector3, Vector3)>();
             public readonly List<BurntTree> trees = new List<BurntTree>();
             /// <summary>Azar propio de los rebrotes: así no altera la forma de los obstáculos ya construidos.</summary>
@@ -116,21 +140,29 @@ namespace Ayni.Editor
                 case ObstacleKind.Tronco:
                     Trunk(o, 0f, o.Rand(-0.8f, 0.8f));
                     break;
-                case ObstacleKind.TroncoDoble:
-                    Trunk(o, -2.6f, o.Rand(-0.9f, 0.2f));
-                    Trunk(o, 2.6f, o.Rand(-0.2f, 0.9f));
+                case ObstacleKind.CarretaVolcada:
+                    OverturnedCart(o);
+                    break;
+                case ObstacleKind.TrincheraCazador:
+                    HunterTrench(o);
+                    break;
+                case ObstacleKind.PortadaRuina:
+                    RuinedArch(o);
+                    break;
+                case ObstacleKind.MuroCaido:
+                    BrokenWall(o);
                     break;
                 case ObstacleKind.Derrumbe:
                     RockSlide(o);
                     break;
-                case ObstacleKind.Empalizada:
-                    Chicane(o);
+                case ObstacleKind.PilaVigas:
+                    TimberDepot(o);
                     break;
                 default:
-                    BrokenWall(o);
+                    Chicane(o);
                     break;
             }
-            Snags(o, 7);
+            Snags(o, def.kind == ObstacleKind.Derrumbe ? 5 : 4);
             return o;
         }
 
@@ -201,6 +233,49 @@ namespace Ayni.Editor
             Debug.Log($"<color=green>[Ayni Aldea]</color> Árboles quemados marcados: {standing} en pie y {fallen} caídos, con {shoots} puntos de rebrote.");
         }
 
+        [UnityEditor.MenuItem("Ayni/Entorno/Reconstruir Solo Obstáculos del Camino")]
+        public static void RebuildObstaclesOnly()
+        {
+            if (UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning("[Ayni Aldea] Sal del modo Play antes de reconstruir los obstáculos.");
+                return;
+            }
+            Terrain terrain = Terrain.activeTerrain;
+            GameObject envRoot = AyniEnvironmentBuilder.GetOrCreateRoot();
+            Transform village = envRoot != null ? envRoot.transform.Find(RootName) : null;
+            if (terrain == null || village == null)
+            {
+                Debug.LogError("[Ayni Aldea] No se encontró Aldea_Inca en la escena.");
+                return;
+            }
+
+            Transform old = village.Find("Obstaculos");
+            if (old != null) Object.DestroyImmediate(old.gameObject);
+            if (UnityEditor.AssetDatabase.LoadMainAssetAtPath(ObstaclesMeshPath) != null)
+            {
+                UnityEditor.AssetDatabase.DeleteAsset(ObstaclesMeshPath);
+            }
+
+            EnsureFolder();
+            Materials mats = BuildMaterials();
+            var meshes = new List<Mesh>();
+            BuildObstacles(terrain, village, mats, meshes);
+
+            if (meshes.Count > 0)
+            {
+                UnityEditor.AssetDatabase.CreateAsset(meshes[0], ObstaclesMeshPath);
+                for (int i = 1; i < meshes.Count; i++) UnityEditor.AssetDatabase.AddObjectToAsset(meshes[i], ObstaclesMeshPath);
+            }
+
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+            UnityEditor.AssetDatabase.SaveAssets();
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+            Debug.Log($"<color=green>[Ayni Aldea]</color> {Obstacles.Length} obstáculos variados reconstruidos ({meshes.Count} mallas en {ObstaclesMeshPath}).");
+            CheckObstacles();
+        }
+
         private static void BuildObstacles(Terrain terrain, Transform root, Materials mats, List<Mesh> meshes)
         {
             var parent = new GameObject("Obstaculos");
@@ -216,9 +291,13 @@ namespace Ayni.Editor
                 AddPart(go.transform, "Rocas", o.roca, mats.roca, true, true, def.id, meshes);
                 AddPart(go.transform, "Troncos", o.quemado, mats.quemado, true, true, def.id, meshes);
                 AddPart(go.transform, "Ramas", o.ramas, mats.quemado, false, true, def.id, meshes);
-                AddPart(go.transform, "Estacas", o.madera, mats.madera, false, true, def.id, meshes);
+                AddPart(go.transform, "Madera", o.madera, mats.madera, true, true, def.id, meshes);
                 AddPart(go.transform, "Muro", o.pirca, mats.pirca, true, true, def.id, meshes);
+                AddPart(go.transform, "Tallado", o.fina, mats.fina, true, true, def.id, meshes);
                 AddPart(go.transform, "Tela", o.textil, mats.textil, false, true, def.id, meshes);
+                AddPart(go.transform, "Ceramica", o.ceramica, mats.ceramica, true, true, def.id, meshes);
+                AddPart(go.transform, "Paja", o.paja, mats.paja, false, true, def.id, meshes);
+                AddPart(go.transform, "Fleco", o.fleco, mats.fleco, false, false, def.id, meshes);
                 foreach (var (center, size) in o.boxes)
                 {
                     var box = new GameObject("Bloqueo");
@@ -378,12 +457,210 @@ namespace Ayni.Editor
                 barB + new Vector3(-0.06f, -1.55f, 0f), barA + new Vector3(0.06f, -1.55f, 0f), TextileRect(0), Vector3.back, 0.04f, o.rng);
         }
 
+        /// <summary>Caja o bloque de madera/pirca asentado sobre el terreno (permite saltar o trepar por encima).</summary>
+        private static void Crate(ObstacleBuild o, MeshBuf buf, float cx, float cz, float width, float depth, float height, float yawDeg, bool drapeCloth = false, int clothTex = 0)
+        {
+            float baseY = o.GroundY(cx, cz) - 0.12f;
+            var f = new Frame(new Vector3(cx, baseY, cz), yawDeg);
+            VillageGeo.Frustum(buf, f, 0f, 0f, 0f, height + 0.12f, width * 0.5f, depth * 0.5f, width * 0.48f, depth * 0.48f);
+            if (drapeCloth)
+            {
+                float top = height + 0.14f;
+                Vector3 tl = f.P(-width * 0.44f, top, -depth * 0.44f);
+                Vector3 tr = f.P( width * 0.44f, top, -depth * 0.44f);
+                Vector3 br = f.P( width * 0.44f, top,  depth * 0.44f);
+                Vector3 bl = f.P(-width * 0.44f, top,  depth * 0.44f);
+                VillageGeo.Cloth(o.textil, tl, tr, br, bl, TextileRect(clothTex), Vector3.up, 0.025f, o.rng);
+            }
+        }
+
+        /// <summary>Caballete de estacas cruzadas en aspa (caballo de frisa andino).</summary>
+        private static void CrossStakes(ObstacleBuild o, float x0, float x1, float z, float height)
+        {
+            float width = Mathf.Abs(x1 - x0);
+            int pairs = Mathf.Max(2, Mathf.RoundToInt(width / 0.85f));
+            // Viga central horizontal que une las aspas
+            VillageGeo.Tube(o.madera, o.P(x0, height * 0.48f, z), o.P(x1, height * 0.48f, z), 0.11f, 0.11f, 7, true);
+            for (int i = 0; i <= pairs; i++)
+            {
+                float x = Mathf.Lerp(x0, x1, (float)i / pairs);
+                float h = height + o.Rand(-0.12f, 0.16f);
+                float spread = 0.65f;
+                // Aspa delantera-trasera inclinada hacia el caminante
+                VillageGeo.Tube(o.madera, o.P(x, -0.15f, z + spread), o.P(x + o.Rand(-0.06f, 0.06f), h, z - spread), 0.08f, 0.02f, 6, true);
+                VillageGeo.Tube(o.madera, o.P(x, -0.15f, z - spread), o.P(x + o.Rand(-0.06f, 0.06f), h, z + spread), 0.08f, 0.02f, 6, true);
+            }
+            float mid = (x0 + x1) * 0.5f;
+            o.boxes.Add((o.P(mid, height * 0.5f, z), new Vector3(width + 0.25f, height + 2.0f, 1.1f)));
+        }
+
+        /// <summary>Flancos de muro roto de pirca para obstáculos arquitectónicos (sin repetir rocas genéricas).</summary>
+        private static void WallFlanks(ObstacleBuild o, float z)
+        {
+            for (int side = -1; side <= 1; side += 2)
+            {
+                float x0 = side * (RoadHalf + 0.4f);
+                float x1 = side * (FlankEnd - 1.5f);
+                float ga = o.GroundY(x0, z), gb = o.GroundY(x1, z);
+                var spec = new WallSpec
+                {
+                    a = new Vector3(Mathf.Min(x0, x1), Mathf.Min(ga, gb) - 0.6f, z + 0.35f),
+                    b = new Vector3(Mathf.Max(x0, x1), Mathf.Min(ga, gb) - 0.6f, z + 0.35f),
+                    outward = Vector3.forward,
+                    height = 2.1f + Mathf.Abs(ga - gb),
+                    thick = 0.72f,
+                    batterOut = 0.06f,
+                    batterIn = 0.06f,
+                    capStart = true,
+                    capEnd = true,
+                    uvShift = o.Rand(0f, 25f),
+                };
+                VillageGeo.Wall(o.pirca, o.fina, spec);
+            }
+        }
+
+        /// <summary>
+        /// O2 · Cargamento de tambo volcado: carreta/parihuela de madera atravesada, fardos de aguayo y cántaros rotos.
+        /// Deja un tramo bajo (0.70 m) en el centro para saltar en carrera y fardos altos a los costados.
+        /// </summary>
+        private static void OverturnedCart(ObstacleBuild o)
+        {
+            float s = o.def.Flip ? -1f : 1f;
+            // Costado izquierdo: armazón de carreta volcada con toldo de aguayo y fardos apilados (altos, bloquean)
+            Crate(o, o.madera, -s * 4.9f, -0.4f, 3.6f, 1.8f, 1.55f, s * 12f, true, 1);
+            Crate(o, o.madera, -s * 2.4f,  0.3f, 2.2f, 1.5f, 1.25f, -s * 8f, true, 2);
+            // Varas largas de la carreta sobresaliendo en diagonal
+            VillageGeo.Tube(o.madera, o.P(-s * 6.2f, 0.25f, -1.6f), o.P(-s * 2.8f, 1.45f, 1.2f), 0.09f, 0.07f, 6, true);
+            VillageGeo.Tube(o.madera, o.P(-s * 5.6f, 0.25f,  1.2f), o.P(-s * 2.2f, 1.35f, -1.5f), 0.09f, 0.07f, 6, true);
+            // Tramo central saltable: fardos y cajón bajo de 0.72 m cubierto de tela andina
+            Crate(o, o.madera,  s * 0.2f,  0.0f, 3.4f, 1.0f, 0.72f, s * 4f, true, 0);
+            // Costado derecho: cajones apilados + tinajas de cerámica (aríbalos) derramadas
+            Crate(o, o.madera,  s * 3.8f, -0.3f, 3.2f, 1.7f, 1.45f, -s * 14f, true, 3);
+            Crate(o, o.madera,  s * 6.4f,  0.2f, 2.8f, 1.6f, 1.65f, s * 9f, false);
+            for (int i = 0; i < 6; i++)
+            {
+                float jx = o.Rand(-5.5f, 5.5f);
+                float jz = (i % 2 == 0 ? -1.45f : 1.45f) + o.Rand(-0.45f, 0.45f);
+                float sc = o.Rand(0.85f, 1.35f);
+                VillageGeo.Lathe(o.ceramica, o.P(jx, -0.05f, jz), RoadJarProfile, 10, sc, o.Rand(0f, 1f));
+            }
+            // Cierre lateral con rocas del talud (orgánico, sin bloques negros)
+            Flanks(o, 0f);
+        }
+
+        /// <summary>
+        /// O3 · Trinchera de caza de Amaru: caballos de frisa de estacas cruzadas, pendón de guerra y viga central baja saltable.
+        /// </summary>
+        private static void HunterTrench(ObstacleBuild o)
+        {
+            float s = o.def.Flip ? -1f : 1f;
+            // Caballos de frisa altos a ambos lados
+            CrossStakes(o, -RoadHalf - 1.2f, -2.0f, -0.3f, 1.75f);
+            CrossStakes(o,  2.2f, RoadHalf + 1.2f,   0.3f, 1.75f);
+            // Paso central con travesaño bajo de madera (0.76 m) para saltar apoyando la mano (Vault)
+            VillageGeo.Tube(o.madera, o.P(-2.2f, 0.74f, 0f), o.P(2.4f, 0.74f, 0f), 0.14f, 0.14f, 8, true);
+            VillageGeo.Tube(o.madera, o.P(-2.2f, 0.32f, 0f), o.P(2.4f, 0.32f, 0f), 0.10f, 0.10f, 6, true);
+            o.boxes.Add((o.P(0.1f, 0.38f, 0f), new Vector3(4.6f, 0.76f, 0.48f)));
+            // Dos estandartes de los cazadores flanqueando el paso central
+            foreach (float bx in new[] { -2.1f, 2.3f })
+            {
+                Vector3 foot = o.P(bx, -0.3f, -0.55f);
+                Vector3 top = foot + Vector3.up * 4.1f;
+                VillageGeo.Tube(o.madera, foot, top, 0.08f, 0.05f, 6, true);
+                Vector3 barA = top + new Vector3(-0.55f, -0.2f, 0f), barB = top + new Vector3(0.55f, -0.2f, 0f);
+                VillageGeo.Tube(o.madera, barA, barB, 0.04f, 0.04f, 5, true);
+                VillageGeo.Cloth(o.textil, barA + new Vector3(0.05f, -0.04f, 0f), barB + new Vector3(-0.05f, -0.04f, 0f),
+                    barB + new Vector3(-0.05f, -1.65f, 0f), barA + new Vector3(0.05f, -1.65f, 0f), TextileRect(bx < 0 ? 0 : 2), Vector3.back, 0.05f, o.rng);
+            }
+            // Empalizada de aspas hacia los taludes
+            CrossStakes(o, -FlankEnd, -RoadHalf - 1.0f, -0.5f * s, 1.9f);
+            CrossStakes(o,  RoadHalf + 1.0f, FlankEnd,   0.5f * s, 1.9f);
+        }
+
+        /// <summary>
+        /// O4 · Portada Inca derrumbada: dos pilares trapezoidales altos en pie, dintel tallado caído (0.68 m, saltable)
+        /// y bloques de sillar dispersos.
+        /// </summary>
+        private static void RuinedArch(ObstacleBuild o)
+        {
+            // Dos pilares trapezoidales altos flanqueando el centro del camino
+            foreach (float side in new[] { -1f, 1f })
+            {
+                float px = side * 3.1f;
+                float py = o.GroundY(px, 0f) - 0.5f;
+                var f = new Frame(new Vector3(px, py, 0f), 0f);
+                VillageGeo.Frustum(o.pirca, f, 0f, 0f, 0f, 3.9f, 1.15f, 0.95f, 0.85f, 0.72f);
+                // Cornisa de piedra fina arriba
+                VillageGeo.Frustum(o.fina, f, 0f, 0f, 3.85f, 4.18f, 0.96f, 0.82f, 0.92f, 0.78f);
+                // Muros laterales desde cada pilar hacia afuera
+                float outerX = side * (RoadHalf + 0.9f);
+                float ga = o.GroundY(px + side * 0.9f, 0f), gb = o.GroundY(outerX, 0f);
+                var spec = new WallSpec
+                {
+                    a = new Vector3(Mathf.Min(px + side * 0.9f, outerX), Mathf.Min(ga, gb) - 0.5f, 0.42f),
+                    b = new Vector3(Mathf.Max(px + side * 0.9f, outerX), Mathf.Min(ga, gb) - 0.5f, 0.42f),
+                    outward = Vector3.forward,
+                    height = 2.0f + Mathf.Abs(ga - gb),
+                    thick = 0.84f,
+                    batterOut = 0.06f,
+                    batterIn = 0.06f,
+                    capStart = true,
+                    capEnd = true,
+                    uvShift = o.Rand(0f, 20f),
+                };
+                VillageGeo.Wall(o.pirca, o.fina, spec);
+            }
+
+            // Dintel monumental tallado caído en el vano central: 0.68 m de altura, perfecto para saltar con apoyo de mano
+            Crate(o, o.fina, 0f, 0.15f, 4.4f, 0.95f, 0.68f, 3.5f);
+            // Bloques de sillar caídos delante/detrás del vano como detalle
+            Crate(o, o.fina, -1.6f, -1.5f, 0.85f, 0.65f, 0.36f, 22f);
+            Crate(o, o.fina,  1.8f,  1.6f, 0.95f, 0.7f,  0.34f, -18f);
+            WallFlanks(o, 0f);
+        }
+
+        /// <summary>
+        /// O7 · Depósito incendiado de vigas y fardos: dos obstáculos escalonados seguidos (viga carbonizada 0.62 m +
+        /// plataforma de cajones y techo de ichu derrumbado 0.85 m) para encadenar dos saltos de parkour.
+        /// </summary>
+        private static void TimberDepot(ObstacleBuild o)
+        {
+            // Primera línea (-2.3 m): viga gruesa de cumbrera caída sobre todo el camino (0.62 m, saltable)
+            float half = RoadHalf + 1.2f;
+            VillageGeo.Tube(o.quemado, o.P(-half, 0.30f, -2.5f), o.P(0f, 0.32f, -2.2f), 0.32f, 0.30f, 8, true);
+            VillageGeo.Tube(o.quemado, o.P(0f, 0.32f, -2.2f), o.P(half, 0.30f, -2.6f), 0.30f, 0.28f, 8, true);
+            var burntBeam = new BurntTree { fallen = true, foot = o.P(0f, 0.32f, -2.2f) };
+            o.trees.Add(burntBeam);
+            for (int i = 0; i < 4; i++)
+            {
+                float lx = Mathf.Lerp(-4.5f, 4.5f, i / 3f);
+                burntBeam.Shoot(o.P(lx, 0.55f, -2.35f), new Vector3(o.Life(-0.2f, 0.2f), 1f, o.Life(-0.2f, 0.2f)), o.Life(0.9f, 1.4f), AyniBurntTree.Shoot);
+            }
+
+            // Segunda línea (+2.4 m): bloques de acopio y techo de paja desplomado en un lado
+            Crate(o, o.madera, -4.6f, 2.4f, 4.8f, 1.5f, 1.45f, -5f, true, 1);
+            Crate(o, o.madera,  0.0f, 2.4f, 4.4f, 1.15f, 0.82f, 2f, true, 3); // tramo central saltable/montable
+            Crate(o, o.madera,  4.8f, 2.4f, 4.8f, 1.5f, 1.55f, 7f, false);
+            // Techo de ichu vencido apoyado sobre los cajones de la derecha
+            var roofFrame = new Frame(o.P(4.8f, 1.4f, 2.4f), 8f);
+            VillageGeo.GableRoof(o.paja, o.fleco, o.madera, roofFrame, 4.6f, 2.4f, 0f, 0.9f, 0.1f, 0.35f, 0.2f, o.rng);
+            // Tinajas en los bordes
+            for (int i = 0; i < 4; i++)
+            {
+                float jx = (i < 2 ? -5.8f : 5.8f) + o.Rand(-0.7f, 0.7f);
+                float jz = 0.2f + o.Rand(-1.0f, 1.0f);
+                VillageGeo.Lathe(o.ceramica, o.P(jx, -0.05f, jz), RoadJarProfile, 10, o.Rand(0.9f, 1.25f), o.Rand(0f, 1f));
+            }
+            WallFlanks(o, 2.4f);
+            Flanks(o, -2.4f);
+        }
+
         /// <summary>Muro de pirca a medio caer: cada tramo tiene una altura y uno está casi en el suelo.</summary>
         private static void BrokenWall(ObstacleBuild o)
         {
             float s = o.def.Flip ? -1f : 1f;
             float[] edges = { -8.2f, -5.4f, -2.6f, 0.4f, 2.6f, 4.8f, 8.2f };
-            float[] heights = { 1.25f, 0.95f, 1.15f, 0.8f, 0.5f, 1.2f }; // el quinto tramo está casi caído: es por donde más fácil se salta
+            float[] heights = { 1.45f, 1.15f, 1.35f, 0.95f, 0.55f, 1.35f }; // tramo bajo de 0.55 m para saltar y andén de 1.15 m para trepar
             for (int i = 0; i < heights.Length; i++)
             {
                 if (heights[i] <= 0f) continue;
@@ -396,16 +673,16 @@ namespace Ayni.Editor
                     b = new Vector3(xb, low - 0.5f, 0.38f),
                     outward = Vector3.forward,
                     height = heights[i] + 0.5f + (high - low) * 0.5f + o.Rand(-0.05f, 0.05f),
-                    thick = 0.76f,
-                    batterOut = 0.04f,
-                    batterIn = 0.04f,
+                    thick = 0.85f,
+                    batterOut = 0.05f,
+                    batterIn = 0.05f,
                     capStart = true,
                     capEnd = true,
                     uvShift = o.Rand(0f, 30f),
                 };
-                VillageGeo.Wall(o.pirca, null, spec);
+                VillageGeo.Wall(o.pirca, o.fina, spec);
             }
-            Flanks(o, 0f);
+            WallFlanks(o, 0f);
         }
 
         /// <summary>Árboles quemados aún en pie alrededor: el bosque que arrasó el Cazador.</summary>
@@ -481,10 +758,9 @@ namespace Ayni.Editor
             foreach (Obstacle def in Obstacles)
             {
                 float length = WalkAcross(def, terrain);
-                bool jumpOnly = def.kind == ObstacleKind.Tronco || def.kind == ObstacleKind.TroncoDoble;
+                bool zigzagOnFoot = def.kind == ObstacleKind.Derrumbe || def.kind == ObstacleKind.Empalizada;
                 string verdict;
-                if (jumpOnly) verdict = length < 0f ? "cerrado a pie, hay que saltar (bien)" : $"SE PUEDE RODEAR A PIE ({length:F1} m): revisar";
-                else if (def.kind == ObstacleKind.MuroCaido) verdict = length < 0f ? "cerrado a pie, hay que saltar (bien)" : $"SE PUEDE RODEAR A PIE ({length:F1} m): revisar";
+                if (!zigzagOnFoot) verdict = length < 0f ? "cerrado a pie, hay que saltar/trepar (bien)" : $"SE PUEDE RODEAR A PIE ({length:F1} m): revisar";
                 else if (length < 0f) verdict = "NO SE PUEDE PASAR: revisar";
                 else verdict = $"se pasa a pie recorriendo {length:F1} m (recto serían 20)";
                 sb.Append("\n   ").Append(def.id).Append(' ').Append(def.kind).Append(": ").Append(verdict);
