@@ -53,14 +53,14 @@ namespace Ayni.Enemy
 
         [Header("Jefe: fases (como en Sifu)")]
         [Tooltip("Vida de cada barra del jefe. Al vaciar una (que no sea la última) cae, se levanta con un grito y empieza la siguiente fase.")]
-        [SerializeField] private float[] bossPhaseHealth = { 380f, 460f };
+        [SerializeField] private float[] bossPhaseHealth = { 460f, 560f };
         [Tooltip("Aguante de la postura del jefe (los rivales comunes usan el de su StructureSystem).")]
-        [SerializeField] private float bossStructure = 150f;
+        [SerializeField] private float bossStructure = 195f;
         [Tooltip("En cada fase nueva: ritmo de ataque (menos espera entre golpes), daño y velocidad.")]
-        [SerializeField] private float phaseCooldownMultiplier = 0.72f;
-        [SerializeField] private float phaseDamageMultiplier = 1.2f;
-        [SerializeField] private float phaseWindupMultiplier = 0.9f;
-        [SerializeField] private float phaseSpeedMultiplier = 1.15f;
+        [SerializeField] private float phaseCooldownMultiplier = 0.68f;
+        [SerializeField] private float phaseDamageMultiplier = 1.22f;
+        [SerializeField] private float phaseWindupMultiplier = 0.86f;
+        [SerializeField] private float phaseSpeedMultiplier = 1.2f;
 
         [Header("Jefe: Juicio Ayni")]
         [Tooltip("Fracción de vida por debajo de la cual empieza la fase final del jefe: romperle la postura abre el Juicio Ayni. " +
@@ -112,20 +112,113 @@ namespace Ayni.Enemy
             }
         }
 
+        private struct ComboStep
+        {
+            public AttackAnim anim;
+            public AttackHeight height;
+            public float windupScale;
+            public float damageScale;
+            public float structureScale;
+            public float animSpeedScale;
+
+            public ComboStep(AttackAnim anim, AttackHeight height, float windupScale = 1f,
+                             float damageScale = 1f, float structureScale = 1f, float animSpeedScale = 1f)
+            {
+                this.anim = anim;
+                this.height = height;
+                this.windupScale = windupScale;
+                this.damageScale = damageScale;
+                this.structureScale = structureScale;
+                this.animSpeedScale = animSpeedScale;
+            }
+        }
+
+        private static readonly AttackAnim AtkLight1    = new AttackAnim("Atk_Light1",    "Light_Punch_1_L",    0.26f);
+        private static readonly AttackAnim AtkLight2    = new AttackAnim("Atk_Light2",    "Light_Punch_2_R",    0.28f);
+        private static readonly AttackAnim AtkLight3    = new AttackAnim("Atk_Light3",    "Light_Punch_3_L",    0.34f);
+        private static readonly AttackAnim AtkLight4    = new AttackAnim("Atk_Light4",    "Light_Punch_4_R",    0.36f);
+        private static readonly AttackAnim AtkOverhand  = new AttackAnim("Atk_Overhand",  "Heavy_Overhand",     0.30f);
+        private static readonly AttackAnim AtkElbow     = new AttackAnim("Atk_Elbow",     "Heavy_Elbow",        0.68f);
+        private static readonly AttackAnim AtkUppercut  = new AttackAnim("Atk_Uppercut",  "Heavy_Uppercut",     0.52f);
+        private static readonly AttackAnim AtkHeadbutt  = new AttackAnim("Atk_Headbutt",  "Heavy_Headbutt",     0.44f);
+        private static readonly AttackAnim AtkFrontKick = new AttackAnim("Atk_FrontKick", "Heavy_FrontKick",    0.67f);
+        private static readonly AttackAnim AtkHeavyKick = new AttackAnim("Atk_HeavyKick", "RumiMaki_HeavyKick", 0.52f);
+        private static readonly AttackAnim AtkShove     = new AttackAnim("Atk_Shove",     "Shove_Push",         0.38f);
+
         private static readonly AttackAnim[] HighAttacks =
         {
-            new AttackAnim("Atk_Overhand", "Heavy_Overhand", 0.30f),
-            new AttackAnim("Atk_Elbow", "Heavy_Elbow", 0.68f),
-            new AttackAnim("Atk_Uppercut", "Heavy_Uppercut", 0.52f),
+            AtkOverhand, AtkElbow, AtkUppercut, AtkHeadbutt, AtkLight3, AtkLight4, AtkShove
         };
 
         private static readonly AttackAnim[] LowAttacks =
         {
-            new AttackAnim("Atk_FrontKick", "Heavy_FrontKick", 0.67f),
+            AtkFrontKick, AtkHeavyKick
+        };
+
+        // Combos diferenciados por arquetipo para que cada tipo de rival pelee con su propio estilo
+        private static readonly ComboStep[][] RastreadorCombos =
+        {
+            new[] { new ComboStep(AtkLight1, AttackHeight.High, 0.85f, 0.65f, 0.7f, 1.15f), new ComboStep(AtkLight2, AttackHeight.High, 0.72f, 0.8f, 0.85f, 1.15f) },
+            new[] { new ComboStep(AtkLight1, AttackHeight.High, 0.85f, 0.65f, 0.7f, 1.15f), new ComboStep(AtkFrontKick, AttackHeight.Low, 0.88f, 0.9f, 1f, 1.05f) },
+            new[] { new ComboStep(AtkLight3, AttackHeight.High, 0.9f, 0.7f, 0.75f, 1.1f), new ComboStep(AtkLight4, AttackHeight.High, 0.74f, 0.75f, 0.8f, 1.1f), new ComboStep(AtkElbow, AttackHeight.High, 0.86f, 0.95f, 1f, 1.05f) },
+            new[] { new ComboStep(AtkFrontKick, AttackHeight.Low, 0.95f, 0.85f, 0.9f, 1.05f), new ComboStep(AtkLight2, AttackHeight.High, 0.75f, 0.8f, 0.85f, 1.15f) },
+            new[] { new ComboStep(AtkLight2, AttackHeight.High, 0.88f, 0.75f, 0.8f, 1.1f), new ComboStep(AtkUppercut, AttackHeight.High, 0.92f, 1.0f, 1.05f, 1f) },
+        };
+
+        private static readonly ComboStep[][] SaqueadorCombos =
+        {
+            new[] { new ComboStep(AtkShove, AttackHeight.High, 0.92f, 0.7f, 1.15f, 1.05f), new ComboStep(AtkOverhand, AttackHeight.High, 0.88f, 1.05f, 1.1f, 1f) },
+            new[] { new ComboStep(AtkLight3, AttackHeight.High, 0.9f, 0.75f, 0.8f, 1.05f), new ComboStep(AtkHeadbutt, AttackHeight.High, 0.82f, 0.95f, 1.15f, 1.05f) },
+            new[] { new ComboStep(AtkLight2, AttackHeight.High, 0.88f, 0.7f, 0.75f, 1.1f), new ComboStep(AtkHeavyKick, AttackHeight.Low, 0.95f, 1.0f, 1.1f, 1f) },
+            new[] { new ComboStep(AtkLight1, AttackHeight.High, 0.86f, 0.65f, 0.7f, 1.1f), new ComboStep(AtkLight3, AttackHeight.High, 0.76f, 0.75f, 0.8f, 1.05f), new ComboStep(AtkOverhand, AttackHeight.High, 0.95f, 1.05f, 1.15f, 1f) },
+            new[] { new ComboStep(AtkFrontKick, AttackHeight.Low, 0.95f, 0.85f, 0.95f, 1f), new ComboStep(AtkElbow, AttackHeight.High, 0.84f, 0.95f, 1.05f, 1.05f) },
+        };
+
+        private static readonly ComboStep[][] GuardiaCombos =
+        {
+            new[] { new ComboStep(AtkElbow, AttackHeight.High, 0.95f, 0.85f, 1.0f, 1f), new ComboStep(AtkUppercut, AttackHeight.High, 0.86f, 1.05f, 1.15f, 1f) },
+            new[] { new ComboStep(AtkShove, AttackHeight.High, 0.9f, 0.65f, 1.25f, 1.05f), new ComboStep(AtkHeadbutt, AttackHeight.High, 0.84f, 0.85f, 1.1f, 1f), new ComboStep(AtkOverhand, AttackHeight.High, 0.95f, 1.15f, 1.25f, 0.95f) },
+            new[] { new ComboStep(AtkLight4, AttackHeight.High, 0.92f, 0.75f, 0.85f, 1.05f), new ComboStep(AtkElbow, AttackHeight.High, 0.82f, 0.85f, 1.0f, 1f), new ComboStep(AtkHeavyKick, AttackHeight.Low, 0.96f, 1.1f, 1.2f, 1f) },
+            new[] { new ComboStep(AtkFrontKick, AttackHeight.Low, 0.96f, 0.85f, 1.0f, 1f), new ComboStep(AtkOverhand, AttackHeight.High, 0.9f, 1.1f, 1.2f, 1f) },
+            new[] { new ComboStep(AtkHeadbutt, AttackHeight.High, 0.92f, 0.9f, 1.15f, 1f), new ComboStep(AtkHeavyKick, AttackHeight.Low, 0.9f, 1.05f, 1.15f, 1f) },
+        };
+
+        private static readonly ComboStep[][] CazadorEliteCombos =
+        {
+            new[] { new ComboStep(AtkLight1, AttackHeight.High, 0.84f, 0.65f, 0.75f, 1.15f), new ComboStep(AtkFrontKick, AttackHeight.Low, 0.82f, 0.85f, 0.95f, 1.1f), new ComboStep(AtkUppercut, AttackHeight.High, 0.86f, 1.05f, 1.1f, 1.05f) },
+            new[] { new ComboStep(AtkElbow, AttackHeight.High, 0.88f, 0.8f, 0.95f, 1.1f), new ComboStep(AtkHeavyKick, AttackHeight.Low, 0.86f, 0.9f, 1.05f, 1.05f), new ComboStep(AtkOverhand, AttackHeight.High, 0.92f, 1.1f, 1.2f, 1.05f) },
+            new[] { new ComboStep(AtkHeadbutt, AttackHeight.High, 0.86f, 0.8f, 1.05f, 1.1f), new ComboStep(AtkFrontKick, AttackHeight.Low, 0.82f, 0.85f, 1.0f, 1.05f), new ComboStep(AtkElbow, AttackHeight.High, 0.85f, 1.0f, 1.1f, 1.05f) },
+            new[] { new ComboStep(AtkLight2, AttackHeight.High, 0.82f, 0.65f, 0.75f, 1.15f), new ComboStep(AtkLight3, AttackHeight.High, 0.74f, 0.75f, 0.85f, 1.15f), new ComboStep(AtkHeavyKick, AttackHeight.Low, 0.88f, 1.05f, 1.15f, 1.05f) },
+            new[] { new ComboStep(AtkShove, AttackHeight.High, 0.85f, 0.65f, 1.15f, 1.1f), new ComboStep(AtkUppercut, AttackHeight.High, 0.82f, 0.95f, 1.05f, 1.05f) },
+        };
+
+        private static readonly ComboStep[][] BossPhase1Combos =
+        {
+            new[] { new ComboStep(AtkLight1, AttackHeight.High, 0.86f, 0.7f, 0.8f, 1.15f), new ComboStep(AtkLight2, AttackHeight.High, 0.72f, 0.75f, 0.85f, 1.15f), new ComboStep(AtkHeavyKick, AttackHeight.Low, 0.9f, 1.05f, 1.15f, 1.05f) },
+            new[] { new ComboStep(AtkElbow, AttackHeight.High, 0.9f, 0.85f, 1.0f, 1.08f), new ComboStep(AtkHeadbutt, AttackHeight.High, 0.8f, 0.9f, 1.1f, 1.08f), new ComboStep(AtkOverhand, AttackHeight.High, 0.94f, 1.15f, 1.25f, 1.02f) },
+            new[] { new ComboStep(AtkFrontKick, AttackHeight.Low, 0.92f, 0.85f, 0.95f, 1.08f), new ComboStep(AtkUppercut, AttackHeight.High, 0.82f, 1.0f, 1.1f, 1.08f) },
+            new[] { new ComboStep(AtkShove, AttackHeight.High, 0.86f, 0.7f, 1.2f, 1.1f), new ComboStep(AtkLight4, AttackHeight.High, 0.74f, 0.8f, 0.9f, 1.12f), new ComboStep(AtkFrontKick, AttackHeight.Low, 0.88f, 1.0f, 1.15f, 1.05f) },
+            new[] { new ComboStep(AtkLight3, AttackHeight.High, 0.88f, 0.75f, 0.85f, 1.12f), new ComboStep(AtkElbow, AttackHeight.High, 0.8f, 0.9f, 1.0f, 1.08f), new ComboStep(AtkUppercut, AttackHeight.High, 0.9f, 1.1f, 1.2f, 1.05f) },
+        };
+
+        private static readonly ComboStep[][] BossPhase2Combos =
+        {
+            new[] { new ComboStep(AtkLight1, AttackHeight.High, 0.8f, 0.65f, 0.8f, 1.2f), new ComboStep(AtkLight2, AttackHeight.High, 0.68f, 0.7f, 0.85f, 1.2f), new ComboStep(AtkFrontKick, AttackHeight.Low, 0.8f, 0.9f, 1.05f, 1.12f), new ComboStep(AtkOverhand, AttackHeight.High, 0.9f, 1.15f, 1.3f, 1.08f) },
+            new[] { new ComboStep(AtkShove, AttackHeight.High, 0.82f, 0.7f, 1.25f, 1.15f), new ComboStep(AtkElbow, AttackHeight.High, 0.74f, 0.85f, 1.0f, 1.15f), new ComboStep(AtkHeavyKick, AttackHeight.Low, 0.84f, 1.0f, 1.2f, 1.1f), new ComboStep(AtkUppercut, AttackHeight.High, 0.86f, 1.1f, 1.25f, 1.1f) },
+            new[] { new ComboStep(AtkFrontKick, AttackHeight.Low, 0.86f, 0.8f, 1.0f, 1.15f), new ComboStep(AtkHeadbutt, AttackHeight.High, 0.76f, 0.85f, 1.15f, 1.12f), new ComboStep(AtkHeavyKick, AttackHeight.Low, 0.86f, 1.05f, 1.2f, 1.1f) },
+            new[] { new ComboStep(AtkLight3, AttackHeight.High, 0.82f, 0.7f, 0.85f, 1.18f), new ComboStep(AtkLight4, AttackHeight.High, 0.7f, 0.75f, 0.9f, 1.18f), new ComboStep(AtkHeadbutt, AttackHeight.High, 0.78f, 0.9f, 1.1f, 1.12f), new ComboStep(AtkOverhand, AttackHeight.High, 0.88f, 1.15f, 1.3f, 1.08f) },
+            new[] { new ComboStep(AtkElbow, AttackHeight.High, 0.84f, 0.85f, 1.0f, 1.15f), new ComboStep(AtkFrontKick, AttackHeight.Low, 0.8f, 0.9f, 1.05f, 1.12f), new ComboStep(AtkUppercut, AttackHeight.High, 0.84f, 1.1f, 1.2f, 1.1f) },
         };
 
         private AttackTimingTable attackTimings;
         private int highAttackIndex;
+        private ComboStep[] activeCombo;
+        private int comboStepIndex;
+        private int lastComboIndex = -1;
+        private float currentStepWindup;
+        private float currentStepDamageScale = 1f;
+        private float currentStepStructureScale = 1f;
+        private float currentStepAnimSpeedScale = 1f;
         private bool attackAnimPending;
         private bool attackAnimPlaying;
         private float attackAnimStartTime;
@@ -452,7 +545,7 @@ namespace Ayni.Enemy
 
                 case EnemyState.Windup:
                     // Sigue a Yari con la mirada al principio y luego se compromete con el golpe
-                    if (stateTimer > windupTime * 0.4f) FacePlayer(turnSpeed * 0.5f);
+                    if (stateTimer > currentStepWindup * 0.35f) FacePlayer(turnSpeed * (comboStepIndex > 0 ? 1.35f : 0.6f));
                     UpdateAttackAnimation();
                     stateTimer -= Time.deltaTime;
                     if (stateTimer <= 0f) Strike();
@@ -522,34 +615,88 @@ namespace Ayni.Enemy
             OnSecondWind?.Invoke(this);
         }
 
+        private ComboStep[][] GetComboPool()
+        {
+            if (isBoss) return Phase >= 2 ? BossPhase2Combos : BossPhase1Combos;
+            string low = (characterName ?? "").ToLowerInvariant();
+            if (low.Contains("rastreador") || low.Contains("explorador")) return RastreadorCombos;
+            if (low.Contains("saqueador")) return SaqueadorCombos;
+            if (low.Contains("guardia") || low.Contains("capit")) return GuardiaCombos;
+            if (low.Contains("cazador") || low.Contains("elite") || low.Contains("élite")) return CazadorEliteCombos;
+            return SaqueadorCombos;
+        }
+
         private void BeginWindup()
         {
             if (!isBoss) nextGroupAttackAt = Time.time + Random.Range(GroupAttackGapMin, GroupAttackGapMax);
+
+            // Solo los rivales humanoides encadenan combos variados; la fauna (pumas) mantiene su golpe único
+            bool canCombo = !Unkillable && animator != null && animator.isHuman;
+            if (canCombo)
+            {
+                ComboStep[][] pool = GetComboPool();
+                int idx = Random.Range(0, pool.Length);
+                if (pool.Length > 1 && idx == lastComboIndex) idx = (idx + 1 + Random.Range(0, pool.Length - 1)) % pool.Length;
+                lastComboIndex = idx;
+                activeCombo = pool[idx];
+                comboStepIndex = 0;
+                BeginComboStep(0);
+                return;
+            }
+
+            activeCombo = null;
+            comboStepIndex = 0;
+            currentStepWindup = windupTime;
+            currentStepDamageScale = 1f;
+            currentStepStructureScale = 1f;
+            currentStepAnimSpeedScale = 1f;
             state = EnemyState.Windup;
-            stateTimer = windupTime;
+            stateTimer = currentStepWindup;
             pendingHeight = Random.value < lowAttackChance ? AttackHeight.Low : AttackHeight.High;
             SetAnimSpeed(0f);
-            PrepareAttackAnimation();
+            PrepareAttackAnimation(null);
+        }
+
+        private void BeginComboStep(int index)
+        {
+            ComboStep step = activeCombo[index];
+            comboStepIndex = index;
+            float enragedBoost = Enraged ? 0.88f : 1f;
+            currentStepWindup = Mathf.Max(0.32f, windupTime * step.windupScale * enragedBoost);
+            currentStepDamageScale = step.damageScale;
+            currentStepStructureScale = step.structureScale;
+            currentStepAnimSpeedScale = step.animSpeedScale * (Enraged ? 1.1f : 1f);
+            pendingHeight = step.height;
+            state = EnemyState.Windup;
+            stateTimer = currentStepWindup;
+            SetAnimSpeed(0f);
+            PrepareAttackAnimation(step.anim);
         }
 
         /// <summary>
-        /// Elige la animación del ataque (los bajos son patadas, los altos alternan puñetazo, codazo y gancho) y calcula
-        /// cuándo y desde qué punto del clip reproducirla para que el miembro llegue a su extensión justo cuando el golpe conecta.
+        /// Elige la animación del ataque (respetando el paso del combo si existe) y calcula cuándo y desde qué punto
+        /// del clip reproducirla para que el miembro llegue a su extensión justo cuando el golpe conecta.
         /// </summary>
-        private void PrepareAttackAnimation()
+        private void PrepareAttackAnimation(AttackAnim? forcedAnim)
         {
             attackAnimPending = false;
             if (animator == null) return;
 
             AttackAnim anim;
-            if (pendingHeight == AttackHeight.Low)
+            if (forcedAnim.HasValue && HasAnimState(forcedAnim.Value.state))
+            {
+                anim = forcedAnim.Value;
+            }
+            else if (pendingHeight == AttackHeight.Low)
             {
                 anim = LowAttacks[Random.Range(0, LowAttacks.Length)];
+                if (!HasAnimState(anim.state)) anim = AtkFrontKick;
             }
             else
             {
                 anim = HighAttacks[highAttackIndex % HighAttacks.Length];
                 highAttackIndex++;
+                if (!HasAnimState(anim.state)) anim = AtkOverhand;
             }
 
             if (!HasAnimState(anim.state))
@@ -562,20 +709,20 @@ namespace Ayni.Enemy
             float contact = anim.fallbackContact;
             if (attackTimings != null && attackTimings.TryGetContact(anim.clip, out float measured)) contact = measured;
 
-            float speed = Mathf.Max(0.1f, attackAnimSpeed);
+            float speed = Mathf.Max(0.1f, attackAnimSpeed * currentStepAnimSpeedScale);
             float timeToContact = contact / speed; // segundos reales que tarda el clip en llegar al impacto
 
             attackAnimState = anim.state;
-            if (timeToContact <= windupTime)
+            if (timeToContact <= currentStepWindup)
             {
                 // El clip es más corto que la anticipación: se espera y se lanza a tiempo
                 attackAnimOffset = 0f;
-                attackAnimStartTime = Time.time + (windupTime - timeToContact);
+                attackAnimStartTime = Time.time + (currentStepWindup - timeToContact);
             }
             else
             {
                 // El clip es más largo: se entra con la preparación ya avanzada
-                attackAnimOffset = contact - windupTime * speed;
+                attackAnimOffset = contact - currentStepWindup * speed;
                 attackAnimStartTime = Time.time;
             }
             attackAnimPending = true;
@@ -597,48 +744,77 @@ namespace Ayni.Enemy
         /// <summary>Instante en que el golpe conecta: Yari lo esquiva, desvía, bloquea o lo recibe.</summary>
         private void Strike()
         {
-            // Un poco de azar en la espera: dos rivales con la misma pausa acabarían sincronizados
-            nextAttackTime = Time.time + attackCooldown * Random.Range(0.85f, 1.25f);
-            state = EnemyState.Recover;
-            stateTimer = recoverTime;
+            bool hasNextStep = activeCombo != null && comboStepIndex + 1 < activeCombo.Length;
+            bool parried = false;
+            bool dodged = false;
 
-            if (player == null || playerTarget == null) return;
-
-            // El golpe falla si Yari salió del alcance o se colocó a la espalda
-            Vector3 toPlayer = playerTarget.position - transform.position;
-            toPlayer.y = 0f;
-            Vector3 forward = transform.forward;
-            forward.y = 0f;
-            bool inReach = toPlayer.magnitude <= attackRange + 0.3f &&
-                           (toPlayer.sqrMagnitude < 0.0001f || Vector3.Angle(forward, toPlayer) <= 70f);
-            if (!inReach) return;
-
-            AttackResult result = player.ReceiveAttack(attackDamage, structureDamageOnPlayer, pendingHeight);
-            switch (result)
+            if (player != null && playerTarget != null)
             {
-                case AttackResult.Parried:
-                    Debug.Log($"[Parry Exitoso] ¡Yari desvió el golpe de {characterName}!");
-                    structure.AddStructureDamage(parryStructureDamage);
-                    if (!structure.IsBroken)
+                // El golpe falla si Yari salió del alcance o se colocó a la espalda
+                Vector3 toPlayer = playerTarget.position - transform.position;
+                toPlayer.y = 0f;
+                Vector3 forward = transform.forward;
+                forward.y = 0f;
+                bool inReach = toPlayer.magnitude <= attackRange + 0.35f &&
+                               (toPlayer.sqrMagnitude < 0.0001f || Vector3.Angle(forward, toPlayer) <= 75f);
+                if (inReach)
+                {
+                    float dmg = attackDamage * currentStepDamageScale;
+                    float sdmg = structureDamageOnPlayer * currentStepStructureScale;
+                    AttackResult result = player.ReceiveAttack(dmg, sdmg, pendingHeight);
+                    switch (result)
                     {
-                        // Queda expuesto: ventana de contraataque
-                        state = EnemyState.Stagger;
-                        stateTimer = parryStaggerTime;
-                        PlayHitReaction(HitReaction.Heavy);
+                        case AttackResult.Parried:
+                            parried = true;
+                            Debug.Log($"[Parry Exitoso] ¡Yari desvió el golpe de {characterName}!");
+                            structure.AddStructureDamage(parryStructureDamage);
+                            if (!structure.IsBroken)
+                            {
+                                // Queda expuesto: el parry corta el combo al instante
+                                activeCombo = null;
+                                state = EnemyState.Stagger;
+                                stateTimer = parryStaggerTime;
+                                PlayHitReaction(HitReaction.Heavy);
+                            }
+                            break;
+                        case AttackResult.Dodged:
+                            dodged = true;
+                            Debug.Log($"[Esquiva] Yari esquivó el golpe {(pendingHeight == AttackHeight.High ? "alto" : "bajo")} de {characterName}.");
+                            break;
+                        case AttackResult.Blocked:
+                            Debug.Log($"[Bloqueo] Yari bloqueó el golpe de {characterName}.");
+                            break;
+                        case AttackResult.Hit:
+                            Debug.Log($"[Impacto] {characterName} conectó un golpe directo a Yari.");
+                            break;
                     }
-                    break;
-                case AttackResult.Dodged:
-                    // El golpe al aire lo deja descolocado: es el momento de contraatacar
-                    stateTimer = recoverTime + dodgedExtraRecover;
-                    Debug.Log($"[Esquiva] Yari esquivó el golpe {(pendingHeight == AttackHeight.High ? "alto" : "bajo")} de {characterName}.");
-                    break;
-                case AttackResult.Blocked:
-                    Debug.Log($"[Bloqueo] Yari bloqueó el golpe de {characterName}.");
-                    break;
-                case AttackResult.Hit:
-                    Debug.Log($"[Impacto] {characterName} conectó un golpe directo a Yari.");
-                    break;
+                }
             }
+
+            if (parried || state == EnemyState.Stunned || state == EnemyState.Stagger || isDead)
+            {
+                activeCombo = null;
+                nextAttackTime = Time.time + attackCooldown * Random.Range(0.85f, 1.25f);
+                return;
+            }
+
+            // Encadenar el siguiente golpe del combo si Yari sigue cerca y vivo
+            bool playerAlive = playerTarget != null && (player == null || !player.IsDead);
+            if (hasNextStep && playerAlive && FlatDistanceToPlayer() <= attackRange + 1.35f)
+            {
+                // En combos de rivales comunes no siempre completan el último golpe si Yari ya esquivó; Amaru y furiosos sí insisten
+                if (!dodged || isBoss || Enraged || Random.value < 0.72f)
+                {
+                    BeginComboStep(comboStepIndex + 1);
+                    return;
+                }
+            }
+
+            // Fin del combo: entra en recuperación (más larga si Yari esquivó el último golpe)
+            activeCombo = null;
+            nextAttackTime = Time.time + attackCooldown * Random.Range(0.85f, 1.2f);
+            state = EnemyState.Recover;
+            stateTimer = dodged ? recoverTime + dodgedExtraRecover : recoverTime;
         }
 
         /// <summary>
@@ -711,6 +887,7 @@ namespace Ayni.Enemy
 
             attackAnimPending = false;
             attackAnimPlaying = false;
+            activeCombo = null;
 
             // Retroceso en la dirección del golpe, frenando solo (v = √(2·a·d))
             Vector3 away = transform.position - attackerPos;
@@ -814,6 +991,7 @@ namespace Ayni.Enemy
             if (isDead) return;
             attackAnimPending = false;
             attackAnimPlaying = false;
+            activeCombo = null;
             state = EnemyState.Stunned;
             SetAnimSpeed(0f);
             SetAnimBool("IsStunned", true);
@@ -987,6 +1165,7 @@ namespace Ayni.Enemy
             ExternalControl = true;
             attackAnimPending = false;
             attackAnimPlaying = false;
+            activeCombo = null;
             knockbackVelocity = Vector3.zero;
             state = EnemyState.Stagger;
             structure.HoldBroken = false;

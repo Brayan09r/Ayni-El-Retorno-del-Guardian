@@ -63,6 +63,30 @@ namespace Ayni.Editor
             ReplaceCapsuleInScene(amaruFbxPath, amaruAvatar, animController);
         }
 
+        private static readonly string[] AllEnemyControllers =
+        {
+            "Assets/Art/Characters/Amaru_AnimatorController.controller",
+            "Assets/Art/Characters/Rastreador_AnimatorController.controller",
+            "Assets/Art/Characters/Saqueador_AnimatorController.controller",
+            "Assets/Art/Characters/Guardia_AnimatorController.controller",
+            "Assets/Art/Characters/CazadorElite_AnimatorController.controller",
+        };
+
+        private static readonly string[,] VariedEnemyAttacks =
+        {
+            { "Atk_Light1",    "Light_Punch_1_L" },
+            { "Atk_Light2",    "Light_Punch_2_R" },
+            { "Atk_Light3",    "Light_Punch_3_L" },
+            { "Atk_Light4",    "Light_Punch_4_R" },
+            { "Atk_Overhand",  "Heavy_Overhand" },
+            { "Atk_Elbow",     "Heavy_Elbow" },
+            { "Atk_Uppercut",  "Heavy_Uppercut" },
+            { "Atk_Headbutt",  "Heavy_Headbutt" },
+            { "Atk_FrontKick", "Heavy_FrontKick" },
+            { "Atk_HeavyKick", "RumiMaki_HeavyKick" },
+            { "Atk_Shove",     "Shove_Push" },
+        };
+
         [MenuItem("Ayni/Jefes/Actualizar Animaciones de Amaru (sin tocar la escena)")]
         public static void UpdateAmaruAnimations()
         {
@@ -71,8 +95,128 @@ namespace Ayni.Editor
                 Debug.LogWarning("[AyniAmaru] Sal del modo Play antes de actualizar las animaciones.");
                 return;
             }
+            UpdateAllEnemyAnimators();
+        }
+
+        [MenuItem("Ayni/Rivales/Actualizar Animaciones de Combate (Todos los Enemigos)")]
+        public static void UpdateAllEnemyAnimators()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning("[AyniAmaru] Sal del modo Play antes de actualizar las animaciones.");
+                return;
+            }
             CreateOrGetAmaruAnimatorController();
-            Debug.Log("<color=green>[AyniAmaru]</color> Animator Controller de Amaru actualizado (ataques variados, reacciones y cadencia del trote).");
+            AnimationClip fallbackAttack = LoadClip("Assets/Art/Characters/Animations/Heavy_Elbow.fbx");
+            int updated = 0;
+            foreach (string path in AllEnemyControllers)
+            {
+                AnimatorController ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+                if (ctrl == null) continue;
+                EnsureParam(ctrl, "AttackSpeed", AnimatorControllerParameterType.Float);
+                SetFloatDefault(ctrl, "AttackSpeed", 1f);
+                var sm = ctrl.layers[0].stateMachine;
+                AnimatorState idle = FindState(sm, "Idle");
+                if (idle == null) continue;
+                EnsureVariedAttackStates(sm, idle, fallbackAttack);
+                EditorUtility.SetDirty(ctrl);
+                updated++;
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log($"<color=green>[AyniAmaru]</color> {updated} Animator Controllers de enemigos actualizados con {VariedEnemyAttacks.GetLength(0)} golpes variados.");
+        }
+
+        [MenuItem("Ayni/Jefes/Ajustar Dificultad de Amaru en Escena")]
+        public static void ApplyAmaruDifficultyToScene()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            GameObject bossGo = GameObject.Find("Jefe_Amaru_ElCazador");
+            if (bossGo == null)
+            {
+                foreach (var ec in UnityEngine.Object.FindObjectsByType<EnemyController>(FindObjectsSortMode.None))
+                {
+                    if (ec.IsBoss) { bossGo = ec.gameObject; break; }
+                }
+            }
+            if (bossGo == null)
+            {
+                Debug.LogWarning("[AyniAmaru] No se encontró el jefe Amaru en la escena activa.");
+                return;
+            }
+
+            var ctrl = bossGo.GetComponent<EnemyController>();
+            if (ctrl != null)
+            {
+                var so = new SerializedObject(ctrl);
+                so.FindProperty("attackDamage").floatValue = 21f;
+                so.FindProperty("structureDamageOnPlayer").floatValue = 26f;
+                so.FindProperty("attackCooldown").floatValue = 1.55f;
+                so.FindProperty("windupTime").floatValue = 0.56f;
+                so.FindProperty("recoverTime").floatValue = 0.60f;
+                so.FindProperty("lowAttackChance").floatValue = 0.38f;
+                so.FindProperty("parryStructureDamage").floatValue = 30f;
+                so.FindProperty("bossStructure").floatValue = 195f;
+                so.FindProperty("phaseCooldownMultiplier").floatValue = 0.68f;
+                so.FindProperty("phaseDamageMultiplier").floatValue = 1.22f;
+                so.FindProperty("phaseWindupMultiplier").floatValue = 0.86f;
+                so.FindProperty("phaseSpeedMultiplier").floatValue = 1.20f;
+                so.FindProperty("moveSpeed").floatValue = 3.85f;
+                SerializedProperty phases = so.FindProperty("bossPhaseHealth");
+                phases.arraySize = 2;
+                phases.GetArrayElementAtIndex(0).floatValue = 460f;
+                phases.GetArrayElementAtIndex(1).floatValue = 560f;
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(ctrl);
+            }
+
+            var hunter = bossGo.GetComponent<AmaruHunter>();
+            if (hunter != null)
+            {
+                var soH = new SerializedObject(hunter);
+                soH.FindProperty("cooldown").vector2Value = new Vector2(6.5f, 9.5f);
+                soH.FindProperty("leapTime").floatValue = 0.50f;
+                soH.FindProperty("dartsPerVolley").intValue = 4;
+                soH.FindProperty("telegraphTime").floatValue = 0.45f;
+                soH.FindProperty("dartInterval").floatValue = 0.30f;
+                soH.FindProperty("dartSpeed").floatValue = 23f;
+                soH.FindProperty("dartDamage").floatValue = 10f;
+                soH.FindProperty("dartStructureDamage").floatValue = 15f;
+                soH.FindProperty("poisonSeconds").floatValue = 3.2f;
+                soH.FindProperty("poisonDamagePerSecond").floatValue = 3.2f;
+                soH.ApplyModifiedProperties();
+                EditorUtility.SetDirty(hunter);
+            }
+
+            var scene = EditorSceneManager.GetActiveScene();
+            if (scene.IsValid())
+            {
+                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.SaveScene(scene);
+            }
+            Debug.Log("<color=green>[AyniAmaru]</color> Dificultad de Amaru actualizada en escena (460/560 vida, postura 195, combos de 3-4 golpes, 4 dardos en fase 2).");
+        }
+
+        private static AnimatorState FindState(AnimatorStateMachine sm, string name)
+        {
+            foreach (var child in sm.states)
+            {
+                if (child.state.name == name) return child.state;
+            }
+            return null;
+        }
+
+        private static void EnsureVariedAttackStates(AnimatorStateMachine sm, AnimatorState idleState, AnimationClip fallbackClip)
+        {
+            for (int i = 0; i < VariedEnemyAttacks.GetLength(0); i++)
+            {
+                AnimationClip atkClip = LoadClip($"Assets/Art/Characters/Animations/{VariedEnemyAttacks[i, 1]}.fbx");
+                if (atkClip == null) atkClip = fallbackClip;
+                var atkState = GetOrCreateState(sm, VariedEnemyAttacks[i, 0], atkClip);
+                atkState.speed = 1f;
+                atkState.speedParameterActive = true;
+                atkState.speedParameter = "AttackSpeed";
+                EnsureExitToIdle(atkState, idleState, 0.85f);
+            }
         }
 
         public static AnimatorController CreateOrGetAmaruAnimatorController()
@@ -125,25 +269,8 @@ namespace Ayni.Editor
 
             rootSm.defaultState = idleState;
 
-            // Ataques variados que EnemyController lanza por código, sincronizados con el instante del golpe:
-            // altos = puñetazo descendente, codazo y gancho; bajo = patada frontal.
-            string[,] attackStates =
-            {
-                { "Atk_Overhand", "Heavy_Overhand" },
-                { "Atk_Elbow", "Heavy_Elbow" },
-                { "Atk_Uppercut", "Heavy_Uppercut" },
-                { "Atk_FrontKick", "Heavy_FrontKick" },
-            };
-            for (int i = 0; i < attackStates.GetLength(0); i++)
-            {
-                AnimationClip atkClip = LoadClip($"Assets/Art/Characters/Animations/{attackStates[i, 1]}.fbx");
-                if (atkClip == null) atkClip = attackClip;
-                var atkState = GetOrCreateState(rootSm, attackStates[i, 0], atkClip);
-                atkState.speed = 1f;
-                atkState.speedParameterActive = true;
-                atkState.speedParameter = "AttackSpeed";
-                EnsureExitToIdle(atkState, idleState, 0.85f);
-            }
+            // Ataques variados que EnemyController encadena en combos por arquetipo
+            EnsureVariedAttackStates(rootSm, idleState, attackClip);
 
             // Reacciones a los golpes: cabeza, cuerpo (estado "Hit") y golpe fuerte
             var hitHeadState = GetOrCreateState(rootSm, "Hit_Head", LoadClip("Assets/Art/Characters/Animations/Hit_Head.fbx") ?? hitClip);
