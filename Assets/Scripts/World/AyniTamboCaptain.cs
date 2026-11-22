@@ -321,6 +321,7 @@ namespace Ayni.World
             AyniAudio.Play2D("titulo_golpe", 0.8f, 0.85f);
             AyniScreenFX.Title(CaptainName.ToUpperInvariant(), "Rompe su postura y decide su destino", 2.8f);
             Say(line, 3.6f);
+            AyniVoice.Reply(this, "YARI: «Entonces defiéndelo de mí.»", 3.6f, 2.6f);
             Debug.Log($"[Ayni Capitán] Entra en la pelea");
         }
 
@@ -409,18 +410,20 @@ namespace Ayni.World
             Talking = true;
             yield return new WaitForSecondsRealtime(2.2f);
             Say("«Servía a Sayri por miedo, no por lealtad. Nadie me había tendido la mano.»", 4.4f);
-            yield return new WaitForSecondsRealtime(4.6f);
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(4.6f));
+            AyniScreenFX.Caption("YARI: «El miedo se acaba hoy. Levántate, capitán.»", 3f);
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(3f));
             Say(DeserterName != null
                 ? "«Uno de los Cazadores de la Portada es mi hermano. Me lo llevaré lejos: tendrás uno menos.»"
                 : "«Me iré lejos de Amaru. No volveré a levantar la champi contra el pueblo.»", 4.6f);
-            yield return new WaitForSecondsRealtime(4.8f);
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(4.8f));
             if (yari != null)
             {
                 float healed = yari.Heal(9999f);
                 if (healed > 0f) AyniAudio.Play2D("illa_brillo", 0.5f, 1.2f);
             }
             Say("«Bebe la chicha del tambo, guardián. Y deja una piedra en la apacheta del camino: el Apu escucha a quien camina con Ayni.»", 5.4f);
-            yield return new WaitForSecondsRealtime(5.2f);
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(5.2f));
             Talking = false;
         }
 
@@ -429,9 +432,9 @@ namespace Ayni.World
             Talking = true;
             yield return new WaitForSecondsRealtime(2f);
             AyniScreenFX.Caption("El capitán cae. Yari recoge su champi de bronce: pesa, y golpea fuerte.", 4f);
-            yield return new WaitForSecondsRealtime(4.2f);
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(4.2f));
             AyniScreenFX.Caption("Con ella dolerán más tus golpes contra Amaru. Pero la Hucha se pega a quien la empuña.", 4.4f);
-            yield return new WaitForSecondsRealtime(4.4f);
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(4.4f));
             Talking = false;
         }
 

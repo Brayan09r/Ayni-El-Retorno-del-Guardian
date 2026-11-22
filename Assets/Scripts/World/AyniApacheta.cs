@@ -260,6 +260,7 @@ namespace Ayni.World
             Offered = true;
             progress = 0f;
             bool accepted = !AyniPathRewards.CaptainSlain;
+            AyniScreenFX.Caption("YARI: «Apu, cuida mi camino.»", 2f);
 
             // La piedra va de la mano de Yari a la punta del montículo
             Material mat = AyniFaunaPrimitives.Mat(new Color(0.6f, 0.58f, 0.53f), 0.05f);
@@ -274,6 +275,8 @@ namespace Ayni.World
             stone.position = top;
             AyniAudio.Play("aterrizaje", top, 0.35f, 0.05f, 1.6f);
             yield return new WaitForSeconds(0.35f);
+            // Que Yari termine su oración antes de la respuesta del Apu
+            for (float waited = 0f; AyniVoice.Speaking && waited < 4f; waited += Time.unscaledDeltaTime) yield return null;
 
             if (accepted)
             {
@@ -343,6 +346,7 @@ namespace Ayni.World
             {
                 figureSpoke = true;
                 AyniScreenFX.Caption("CAPITÁN DEL TAMBO: «Mi piedra ya está puesta. Pon la tuya, guardián: el Apu cuida a quien camina con Ayni.»", 5f);
+                AyniVoice.Reply(this, "YARI: «Gracias, capitán. Que el Apu te acompañe.»", 5f, 3f);
             }
         }
 

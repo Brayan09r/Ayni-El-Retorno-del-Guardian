@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using Ayni.Core;
 using Ayni.Enemy;
 using Ayni.UI;
 using Ayni.World;
@@ -96,6 +97,8 @@ namespace Ayni.Story
             {
                 weakSaid = true;
                 Say("No... Sayri me prometió que ningún guardián volvería.", 3.2f, true);
+                AyniVoice.Reply(this, "YARI: «Sayri te mintió, como nos mintió a todos.»", 3.2f);
+                quietUntil = Time.time + 8f;
                 return;
             }
 

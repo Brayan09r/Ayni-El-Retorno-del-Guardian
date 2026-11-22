@@ -152,7 +152,7 @@ namespace Ayni.Story
             if (!FindPerch(goal, out Vector3 perch))
             {
                 // Sin un cerro a la vista: solo su voz, desde lejos
-                AyniBossIntro.Say(LineFor(index), 4f);
+                StartCoroutine(Exchange(index));
                 Debug.Log($"[Ayni Acecho] Aparición {index}: sin sitio a la vista, solo la voz");
                 return;
             }
@@ -171,7 +171,7 @@ namespace Ayni.Story
         {
             if (!EnsureFigure())
             {
-                AyniBossIntro.Say(LineFor(index), 4f);
+                StartCoroutine(Exchange(index));
                 yield break;
             }
             Showing = true;
@@ -188,7 +188,7 @@ namespace Ayni.Story
             AyniAudio.Play2D("postura_rota", 0.4f, 0.7f);
             yield return new WaitForSeconds(0.35f);
             Play("Phase_Roar", 0.15f);
-            AyniBossIntro.Say(LineFor(index), 4.2f);
+            StartCoroutine(Exchange(index));
 
             // Mira a Yari mientras habla; si Yari se le echa encima, se va antes
             float until = Time.time + watchSeconds;
@@ -223,8 +223,32 @@ namespace Ayni.Story
             AyniAudio.Play("aterrizaje", t.position, 0.6f);
             figure.SetActive(false);
             Showing = false;
+        }
 
-            if (index == 0) AyniScreenFX.Caption("Amaru te está cazando. Sigue el Qhapaq Ñan.", 3.2f);
+        /// <summary>Amaru habla, Yari le contesta y, en la primera aparición, la narradora recuerda el camino.</summary>
+        private IEnumerator Exchange(int index)
+        {
+            AyniBossIntro.Say(LineFor(index), 4.2f);
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(4.2f));
+            AyniScreenFX.Caption("YARI: «" + ReplyFor(index) + "»", 3f);
+            if (index != 0) yield break;
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(3f) + 0.4f);
+            AyniScreenFX.Caption("Amaru te está cazando. Sigue el Qhapaq Ñan.", 3.2f);
+        }
+
+        /// <summary>Lo que le contesta Yari a cada aparición.</summary>
+        private static string ReplyFor(int index)
+        {
+            switch (index)
+            {
+                case 0: return "No huyo de ti, Amaru. Voy hacia ti.";
+                case 1: return "Que vengan todos. El ayllu no está solo.";
+                case 2: return "Lo oigo. Por eso no voy a detenerme.";
+                default:
+                    if (AyniPathRewards.CaptainSlain) return "Elegí mi camino. En el puente elegirás tú el tuyo.";
+                    if (AyniPathRewards.CaptainSpared) return "No era un cobarde. Tenía miedo. Como tú.";
+                    return "Esta vez no caeré. Esta vez me acompaña la Illa.";
+            }
         }
 
         /// <summary>

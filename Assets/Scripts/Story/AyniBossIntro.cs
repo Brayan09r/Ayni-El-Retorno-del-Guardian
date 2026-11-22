@@ -138,6 +138,7 @@ namespace Ayni.Story
                 spottedAt = Time.time;
                 StopPacing();
                 Say("Huelo la Illa en ti, Yari. Sayri dijo que volverías.", 4f);
+                AyniVoice.Reply(this, "YARI: «Y yo huelo en ti el humo de mi bosque, Amaru.»", 4f);
                 if (bossAnim != null && bossAnim.HasState(0, Animator.StringToHash("Phase_Roar"))) bossAnim.CrossFadeInFixedTime("Phase_Roar", 0.2f);
             }
             if (spotted)

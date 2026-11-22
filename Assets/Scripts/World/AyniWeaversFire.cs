@@ -370,7 +370,9 @@ namespace Ayni.World
         private IEnumerator Thanks()
         {
             AyniScreenFX.Caption("TEJEDORA: «¡Gracias, guardián! Toma este chumpi: lo tejimos con lana de vicuña para el Inca.»", 4.2f);
-            yield return new WaitForSeconds(4.6f);
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(4.6f));
+            AyniScreenFX.Caption("YARI: «Lo llevaré con honor. Vuelvan a tejer, hermanas.»", 3f);
+            yield return new WaitForSecondsRealtime(AyniVoice.HoldFor(3f));
             AyniAudio.Play2D("illa_brillo", 0.5f, 1.25f);
             AyniScreenFX.Caption("El chumpi te protege: el veneno de los dardos de Amaru te durará la mitad.", 3.8f);
         }
