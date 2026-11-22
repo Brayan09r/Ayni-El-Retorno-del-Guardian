@@ -84,7 +84,9 @@ namespace Ayni.World.Fauna
         private float grazeWeight;
         private float lookYaw;
         private float groundPitch;
-        private const float GrazeNeckBase = 70f, GrazeNeckMid = 45f, GrazeHead = 30f;
+        // Al pastar: el cuello apunta recto hacia el suelo, por delante de las patas, y la cabeza baja el hocico hacia el
+        // ichu sin seguir el giro del cuello (si lo siguiera, se "muerde" el cuello). Ángulos bajo la horizontal.
+        private const float GrazeNeckDown = 58f, GrazeHeadDown = 72f;
 
         private static Transform cachedPlayer;
         private static float nextPlayerSearch;
@@ -337,12 +339,34 @@ namespace Ayni.World.Fauna
 
             Vector3 right = transform.right;
             Vector3 up = transform.up;
-            float nibble = Mathf.Sin(Time.time * 5.5f + GetInstanceID()) * 6f * w;
-            neckBase.rotation = Quaternion.AngleAxis(lookYaw * 0.5f, up) * Quaternion.AngleAxis(GrazeNeckBase * w, right) * neckBase.rotation;
-            if (neckMid != null) neckMid.rotation = Quaternion.AngleAxis(GrazeNeckMid * w, right) * neckMid.rotation;
+            Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+            float nibble = Mathf.Sin(Time.time * 5.5f + GetInstanceID()) * 5f * w;
+            // Orientación de la cabeza en el mundo según la animación (hocico al frente), antes de mover el cuello
+            Quaternion headPose = headBone != null ? headBone.rotation : Quaternion.identity;
+
+            // Cuello: casi todo el giro en la base y el resto en el medio, para que quede recto y no se doble sobre sí mismo
             if (headBone != null)
-                headBone.rotation = Quaternion.AngleAxis(lookYaw * 0.5f, up) * Quaternion.AngleAxis(GrazeHead * w + nibble, right) * headBone.rotation;
+            {
+                Vector3 down = Quaternion.AngleAxis(GrazeNeckDown, right) * forward;
+                AimBone(neckBase, headBone.position, down, w * 0.85f);
+                if (neckMid != null) AimBone(neckMid, headBone.position, Quaternion.AngleAxis(GrazeNeckDown + 6f, right) * forward, w);
+            }
+            if (Mathf.Abs(lookYaw) > 0.01f) neckBase.rotation = Quaternion.AngleAxis(lookYaw * 0.5f, up) * neckBase.rotation;
+
+            // Cabeza: la de la animación, girada hacia abajo hasta el pasto (y hacia el lado al mirar)
+            if (headBone != null)
+            {
+                headBone.rotation = Quaternion.AngleAxis(lookYaw, up) * Quaternion.AngleAxis((GrazeHeadDown + nibble) * w, right) * headPose;
+            }
             lastNeckWrite = neckBase.localRotation;
+        }
+
+        /// <summary>Gira <paramref name="bone"/> para que apunte hacia <paramref name="dir"/> el tramo hasta <paramref name="childPos"/>.</summary>
+        private static void AimBone(Transform bone, Vector3 childPos, Vector3 dir, float weight)
+        {
+            Vector3 now = childPos - bone.position;
+            if (now.sqrMagnitude < 1e-6f || weight <= 0f) return;
+            bone.rotation = Quaternion.Slerp(Quaternion.identity, Quaternion.FromToRotation(now, dir), weight) * bone.rotation;
         }
 
         protected void Move(float dt)
