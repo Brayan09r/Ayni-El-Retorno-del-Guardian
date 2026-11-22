@@ -294,7 +294,7 @@ namespace Ayni.Editor
             log.Append("\n   huesos:");
             for (int i = 0; i < bones.Length; i++)
                 log.Append($" {bones[i].name}{(bones[i].parent != null && bones[i].parent != go.transform ? "<" + bones[i].parent.name : "")} {rest[i].eulerAngles:F0};");
-            Debug.Log(log.ToString());
+            Out(log.ToString());
 
             tex.Apply();
             string dir = System.IO.Path.Combine(System.IO.Directory.GetParent(Application.dataPath).FullName, "DebugCaptures");
@@ -344,7 +344,7 @@ namespace Ayni.Editor
                     }
                 }
             }
-            Debug.Log(log.ToString());
+            Out(log.ToString());
             Object.DestroyImmediate(go);
         }
 
@@ -423,7 +423,7 @@ namespace Ayni.Editor
                 float natural = count > 0 ? sum / count : 0f;
                 log.Append($"\n   {clip.name}: {clip.length:F2} s · suelo a {natural:F2} m/s (negativo = marcha al revés) · pata sube {lift:F2} m");
             }
-            Debug.Log(log.ToString());
+            Out(log.ToString());
             Object.DestroyImmediate(go);
         }
 
@@ -461,8 +461,32 @@ namespace Ayni.Editor
                     }
                 }
             }
-            Debug.Log(log.ToString());
+            Out(log.ToString());
             Object.DestroyImmediate(go);
+        }
+
+        /// <summary>
+        /// Escribe en la consola y además directamente en el registro del puente de agentes (por si la consola no le
+        /// llega: tras reiniciar Unity a veces el registro no recibe los mensajes).
+        /// </summary>
+        private static void Out(string text)
+        {
+            Debug.Log(text);
+            try
+            {
+                string path = System.IO.Path.Combine(System.IO.Directory.GetParent(Application.dataPath).FullName, "UserSettings", "AyniAgent", "log.txt");
+                System.IO.File.AppendAllText(path, $"{System.DateTime.Now:HH:mm:ss.fff} [Sonda] {text}\n", new UTF8Encoding(false));
+            }
+            catch (System.Exception) { }
+        }
+
+        /// <summary>¿Está encendido el registro de Unity? Si alguien lo apagó, lo vuelve a encender.</summary>
+        public static void LoggerStatus()
+        {
+            Out($"[Ayni Fauna Prueba] logEnabled={Debug.unityLogger.logEnabled} filtro={Debug.unityLogger.filterLogType}");
+            Debug.unityLogger.logEnabled = true;
+            Debug.unityLogger.filterLogType = LogType.Log;
+            Debug.Log("[Ayni Fauna Prueba] registro encendido");
         }
 
         private static Vector3 Flat(Vector3 v)
