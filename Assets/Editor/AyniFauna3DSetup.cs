@@ -30,6 +30,7 @@ namespace Ayni.Editor
             public string defaultState; // Idle / Idle_Perch
             public string[] states;
             public float smoothness;
+            public bool reversedGait;   // los clips de marcha del FBX avanzan hacia atrás
         }
 
         private static readonly SpeciesConfig[] Species =
@@ -41,7 +42,8 @@ namespace Ayni.Editor
                 texPrefix = "Llama_Andina",
                 defaultState = "Idle",
                 states = new[] { "Idle", "Walk", "Run", "Graze" },
-                smoothness = 0.22f
+                smoothness = 0.22f,
+                reversedGait = true
             },
             new SpeciesConfig
             {
@@ -50,7 +52,8 @@ namespace Ayni.Editor
                 texPrefix = "Vicuna_Andina",
                 defaultState = "Idle",
                 states = new[] { "Idle", "Walk", "Run", "Graze" },
-                smoothness = 0.25f
+                smoothness = 0.25f,
+                reversedGait = true
             },
             new SpeciesConfig
             {
@@ -240,6 +243,10 @@ namespace Ayni.Editor
 
                 AnimatorState st = sm.AddState(stateName);
                 st.motion = match;
+                // En los FBX de llama y vicuña las patas apoyadas van hacia delante en Walk y Run (el animal "patina"
+                // hacia atrás). Reproducir esos estados al revés deja la pisada en el sentido de la marcha.
+                // Medido con Ayni.Editor.AyniFaunaProbe.GaitSpeed.
+                if (sp.reversedGait && (stateName == "Walk" || stateName == "Run")) st.speed = -1f;
                 if (stateName == sp.defaultState) defaultSt = st;
             }
 
