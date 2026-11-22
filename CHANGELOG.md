@@ -10,6 +10,19 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.14.1 — Fauna: galope, pastar y alas del cóndor · 21 de noviembre de 2026
+
+- **Llamas y vicuñas galopan:** en el "Run" del FBX las dos patas delanteras iban juntas y las dos traseras también, como troncos.
+  `AyniFauna3DSetup.BuildGallop` crea `Assets/Art/Fauna/Clips/{Llama,Vicuna}_Run_Galope.anim` con las patas derechas adelantadas un
+  22 % del ciclo, y el estado "Run" lo usa (se rehace con *Ayni > Fauna Andina > Rehacer galopes* o regenerando la fauna).
+- **Pastar sin morderse el cuello:** antes la cabeza seguía todo el giro del cuello y quedaba doblada hacia el pecho. Ahora el cuello
+  baja recto, por delante de las patas, y la cabeza mantiene su orientación y solo inclina el hocico hacia el ichu.
+- **Cóndor posado con las alas recogidas** (`AyniCondorWings`): el FBX solo trae poses de alas abiertas; en la jaula se pliegan pegadas
+  al lomo y se abren al despegar.
+- **El cóndor aletea más:** tandas de 3 aletazos cada 3,5 a 8 s (antes 2 cada 9 a 18 s, y casi no se veía).
+
+---
+
 ## v0.14.0 — El Capitán del Tambo y la apacheta · 21 de noviembre de 2026
 
 Cuarto paso del gancho del Nivel 1: en el Tambo del Camino hay que decidir el destino de un capitán, y la decisión se nota en el camino
