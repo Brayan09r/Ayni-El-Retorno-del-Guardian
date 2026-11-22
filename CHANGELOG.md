@@ -10,6 +10,28 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.13.1 — Fauna 3D: patas que pisan bien · 21 de noviembre de 2026
+
+Arreglos de movimiento en los animales riggeados (llama, alpaca, vicuña, vizcacha y cóndor de `Assets/Art/Fauna`).
+
+- **Llamas, alpacas y vicuñas caminaban "patinando":** en los clips `Walk` y `Run` del FBX las patas apoyadas avanzan hacia delante
+  (medido con `AyniFaunaProbe.GaitSpeed`). Esos dos estados se reproducen ahora al revés (`speed = -1` en `AC_Fauna_Llama` y
+  `AC_Fauna_Vicuna`, y `AyniFauna3DSetup` lo deja así si se regeneran).
+- **La velocidad de la animación sigue a la del animal** según lo que avanza cada clip (escalado por el tamaño del modelo), y un animal
+  no corre más de lo que dan sus patas (vicuñas y llamas huyen algo más despacio, sin deslizarse).
+- **Pastar:** el clip `Graze` doblaba el cuello hacia atrás, sobre el lomo. Ahora parte de `Idle` y el cuello baja por código hasta el
+  ichu, con un pequeño mordisqueo; al mirar alrededor giran la cabeza.
+- **Ya no dan vueltas en círculo:** si el destino queda de lado, primero giran casi en el sitio y luego aceleran.
+- En cuestas fuertes se inclinan menos (16°) y de forma suave: antes se veían echados hacia atrás.
+- **Cóndor:** el modelo está posado, con el cuerpo vertical, y volaba "de pie". En vuelo se tiende 50° hacia delante
+  (`AyniCondorModel.SetPitch`). El cóndor de la jaula se va tendiendo al despegar y entra en su giro sobre la plaza sin saltar 100 m.
+- **Vizcachas:** cada salto reproduce el clip `Hop` completo al ritmo del salto (despegue y aterrizaje coinciden).
+- **Animales de las jaulas:** las vicuñas liberadas corren al ritmo de sus patas y la cría de puma ajusta su carrera a su tamaño.
+- Herramienta: `AyniFaunaProbe` (editor) graba animales en Play (`Watch`), mide la marcha de los clips (`GaitSpeed`) y la posición de
+  los huesos (`ClipBones`).
+
+---
+
 ## v0.13.0 — El quipu de los chasquis, las tejedoras y las trampas de Amaru · 21 de noviembre de 2026
 
 Tercer paso del gancho del Nivel 1: lo que pasa en las dos primeras kanchas también cambia el duelo contra Amaru.

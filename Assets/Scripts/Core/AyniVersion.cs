@@ -9,7 +9,7 @@ namespace Ayni.Core
     /// </summary>
     public static class AyniVersion
     {
-        public const string Number = "0.13.0";
+        public const string Number = "0.13.1";
         public const string Title = "El quipu de los chasquis, las tejedoras y las trampas de Amaru";
 
         public static string Label => "v" + Number;
