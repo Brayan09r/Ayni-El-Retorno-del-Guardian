@@ -1865,8 +1865,6 @@ namespace Ayni.Player
 
             if (def.impact >= 1) StartAttackTrail(def);
             AyniAudio.Play(def.heavy ? "swing_fuerte" : "swing_ligero", transform.position + Vector3.up * 1.2f, def.heavy ? 0.7f : 0.55f, 0.08f);
-            // Yari suelta el aire con los golpes fuertes (no siempre)
-            if (def.heavy) CombatFeedback.Grunt("esfuerzo_yari", transform.position + Vector3.up * 1.5f, 0.7f, 0.65f);
 
             if (animator)
             {

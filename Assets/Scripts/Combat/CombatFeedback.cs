@@ -45,6 +45,12 @@ namespace Ayni.Combat
         private static Material spriteMaterial;
         private static Texture2D softDot;
         private static readonly Dictionary<string, float> lastGrunt = new Dictionary<string, float>();
+
+        /// <summary>
+        /// Gritos de esfuerzo y de dolor desactivados por ahora: los sintéticos sonaban mal. Para volver a probarlos,
+        /// ponerlo a true (y volver a llamar a <see cref="Grunt"/> donde se quiera).
+        /// </summary>
+        public static bool GruntsEnabled = false;
         private ParticleSystem debris;
 
         private readonly List<FlashInstance> flashes = new List<FlashInstance>();
@@ -168,6 +174,7 @@ namespace Ayni.Combat
         /// </summary>
         public static void Grunt(string clip, Vector3 point, float volume, float chance = 1f, float gap = 0.35f)
         {
+            if (!GruntsEnabled) return;
             if (lastGrunt.TryGetValue(clip, out float last) && Time.unscaledTime - last < gap) return;
             if (UnityEngine.Random.value > chance) return;
             lastGrunt[clip] = Time.unscaledTime;
