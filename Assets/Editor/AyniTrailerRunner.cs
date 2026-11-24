@@ -4,9 +4,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using Unity.Collections;
 using UnityEditor;
 using UnityEditor.Media;
 using UnityEngine;
+using Ayni.Combat;
 using Ayni.Core;
 using Ayni.Enemy;
 using Ayni.Player;
@@ -18,13 +20,16 @@ namespace Ayni.Editor
 {
     /// <summary>
     /// Graba las tomas del tráiler directamente desde la vista de juego (con HUD y efectos de pantalla), a 30 fps
-    /// exactos, en la carpeta Trailer/tomas del proyecto (fuera de Assets). Cada toma se dirige sola: coloca a Yari,
+    /// exactos y con el sonido del juego (música y efectos, por AudioRenderer), en la carpeta Trailer/tomas del
+    /// proyecto (fuera de Assets). Cada toma se dirige sola: coloca a Yari,
     /// mueve la cámara y simula las teclas. Desde el puente de agentes:
     ///   call Ayni.Editor.AyniTrailer.GameViewHD            pone la vista de juego a 1920 x 1080 (antes de dar Play)
     ///   call Ayni.Editor.AyniTrailer.Arm prologo           la toma empieza sola al entrar en Play (para el prólogo)
     ///   call Ayni.Editor.AyniTrailer.Shot nombre           en Play: graba la toma
     ///   call Ayni.Editor.AyniTrailer.GameViewRestore       devuelve la vista de juego a como estaba
     /// Cuando una toma termina escribe en la consola "[Ayni Trailer] TOMA LISTA: nombre".
+    /// Tomas del video pitch de la v0.10.0 (en este orden, tras el prólogo): pitch_camino, pitch_kancha, pitch_patrulla,
+    /// pitch_pumas, pitch_illa y pitch_jefe. Herramientas/Video/montar_pitch.py las junta con las placas.
     /// </summary>
     [InitializeOnLoad]
     public static class AyniTrailer
@@ -185,7 +190,8 @@ namespace Ayni.Editor
         };
 
         private MediaEncoder encoder;
-        private bool recording;
+        private bool recording, withAudio, wasMuted;
+        private int audioChannels;
         private int generation, frames, recWidth, recHeight;
         private double realStart;
         private string clipName;
@@ -273,6 +279,12 @@ namespace Ayni.Editor
                 case "jefe": body = Jefe(); break;
                 case "renacer": body = Renacer(); break;
                 case "renacer_pie": body = RenacerEnPie(); break;
+                case "pitch_camino": body = PitchCamino(); break;
+                case "pitch_kancha": body = PitchKancha(); break;
+                case "pitch_patrulla": body = PitchPatrulla(); break;
+                case "pitch_pumas": body = PitchPumas(); break;
+                case "pitch_illa": body = PitchIlla(); break;
+                case "pitch_jefe": body = PitchJefe(); break;
             }
             if (body == null)
             {
@@ -305,7 +317,21 @@ namespace Ayni.Editor
                 includeAlpha = false,
                 bitRateMode = VideoBitrateMode.High
             };
-            encoder = new MediaEncoder(path, attributes);
+            // Sonido: AudioRenderer entrega, fotograma a fotograma, lo que se oiría en ese 1/30 s (sigue al tiempo del juego)
+            audioChannels = AudioSettings.speakerMode == AudioSpeakerMode.Mono ? 1 : 2;
+            var audio = new AudioTrackAttributes
+            {
+                sampleRate = new MediaRational(AudioSettings.outputSampleRate),
+                channelCount = (ushort)audioChannels,
+                language = "es"
+            };
+            // El puente de agentes silencia el editor en sus pruebas; con el silencio puesto el AudioRenderer graba ceros
+            wasMuted = EditorUtility.audioMasterMute;
+            EditorUtility.audioMasterMute = false;
+            // Si una toma anterior se cortó (recompilación en pleno Play), el AudioRenderer se queda grabando y Start falla
+            AudioRenderer.Stop();
+            withAudio = AudioRenderer.Start();
+            encoder = withAudio ? new MediaEncoder(path, attributes, audio) : new MediaEncoder(path, attributes);
             clipName = clip;
             frames = 0;
             realStart = EditorApplication.timeSinceStartup;
@@ -346,6 +372,15 @@ namespace Ayni.Editor
                     frame.Apply(false);
                 }
                 encoder.AddFrame(frame);
+                if (withAudio)
+                {
+                    int count = AudioRenderer.GetSampleCountForCaptureFrame();
+                    using (var samples = new NativeArray<float>(count * audioChannels, Allocator.Temp))
+                    {
+                        AudioRenderer.Render(samples);
+                        encoder.AddSamples(samples);
+                    }
+                }
                 frames++;
                 if (frame != shot) Destroy(frame);
                 Destroy(shot);
@@ -357,6 +392,9 @@ namespace Ayni.Editor
             if (!recording) return;
             recording = false;
             generation++;
+            if (withAudio) AudioRenderer.Stop();
+            withAudio = false;
+            EditorUtility.audioMasterMute = wasMuted;
             try { encoder?.Dispose(); } catch (Exception e) { Debug.LogWarning("[Ayni Trailer] Al cerrar el video: " + e.Message); }
             encoder = null;
             Time.captureFramerate = 0;
@@ -888,6 +926,296 @@ namespace Ayni.Editor
             End();
             ReleaseCamera();
         }
+        // ───────────────────────── Tomas del video pitch (v0.10.0) ─────────────────────────
+
+        private bool god, pitchPrepared;
+
+        /// <summary>
+        /// Para el pitch: el tutorial no tapa la primera pelea (se cancela su espera) y no se tocan los paneles del HUD
+        /// (desde la v0.9 el de controles ya empieza recogido).
+        /// </summary>
+        private IEnumerator PreparePitch()
+        {
+            // Independiente de "prepared": la toma del prólogo lo marca y el tutorial seguía esperando la primera pelea
+            if (!pitchPrepared)
+            {
+                pitchPrepared = true;
+                var tutorial = UnityEngine.Object.FindFirstObjectByType<AyniTutorial>();
+                if (tutorial != null)
+                {
+                    typeof(AyniTutorial).GetField("waitingForFight", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(tutorial, false);
+                }
+                AyniScreenFX.Hint(null);
+            }
+            CloseTutorialIfOpen();
+            yield return Wait(0.3f);
+        }
+
+        /// <summary>Si el tutorial está abierto (pausa el juego con timeScale 0), lo cierra como si el jugador lo saltara.</summary>
+        private static void CloseTutorialIfOpen()
+        {
+            var tutorial = UnityEngine.Object.FindFirstObjectByType<AyniTutorial>();
+            if (tutorial == null) return;
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            if (!(bool)(typeof(AyniTutorial).GetField("open", flags)?.GetValue(tutorial) ?? false)) return;
+            typeof(AyniTutorial).GetMethod("Close", flags)?.Invoke(tutorial, null);
+        }
+
+        /// <summary>Yari no muere mientras se graba una pelea (vida y postura llenas cada fotograma).</summary>
+        private void God(bool on)
+        {
+            if (god == on) return;
+            god = on;
+            if (on) StartCoroutine(GodLoop());
+        }
+
+        private IEnumerator GodLoop()
+        {
+            FieldInfo health = typeof(YariCombatController).GetField("currentHealth", BindingFlags.Instance | BindingFlags.NonPublic);
+            var structure = player != null ? player.GetComponent<StructureSystem>() : null;
+            while (god && yari != null)
+            {
+                if (!yari.IsDead) health?.SetValue(yari, yari.MaxHealth);
+                if (structure != null && structure.StructureRatio < 0.5f) structure.ResetStructure();
+                yield return null;
+            }
+        }
+
+        /// <summary>Pelea automática que de vez en cuando remata el golpe de Yari con un poco más de daño, para que la
+        /// toma no se alargue (el golpe extra cae a la vez que su puñetazo).</summary>
+        private float nextBoost;
+        private EnemyController FightFast(bool mercy, float boostEvery, bool allowJudge = true, bool bossOnly = false)
+        {
+            EnemyController target = Fight(mercy, allowJudge, bossOnly);
+            if (target == null || target.IsBoss) return target;
+            Vector3 d = target.transform.position - player.position;
+            d.y = 0f;
+            if (d.magnitude < 2.4f && Time.unscaledTime >= nextBoost && !target.CanBeJudged)
+            {
+                nextBoost = Time.unscaledTime + boostEvery;
+                AyniInput.Simulate("LightAttack", 0.08f);
+                AyniPlaytestProbe.HitNearest(18f, 14f);
+            }
+            return target;
+        }
+
+        /// <summary>Yari corre por el Qhapaq Ñan y salta solo el árbol quemado (parkour automático al ir lanzado).</summary>
+        private IEnumerator PitchCamino()
+        {
+            yield return PreparePitch();
+            SetHud(true);
+            ReleaseCamera();
+            God(true);
+            Teleport(OnGround("O1", 0f, -24f), Anchors["O1"].yaw);
+            yield return Wait(0.8f);
+            Begin("pitch_camino");
+            int limit = Frames(9f);
+            while (limit-- > 0)
+            {
+                Vector2 local = Local("O1", player.position);
+                MoveTowards(OnGround("O1", 0f, local.y + 6f) - player.position, true, 0.15f);
+                if (local.y > 16f) break;
+                yield return null;
+            }
+            End();
+
+            // Llamas animadas junto al camino del Puesto de Chasquis
+            Teleport(new Vector3(300f, Ground(300f, 470f), 470f), 120f);
+            yield return Wait(0.5f);
+            Begin("pitch_llamas");
+            TakeCamera();
+            StartCoroutine(Fly(7f, new Vector3(298f, Ground(298f, 446f) + 3.2f, 446f), new Vector3(311f, Ground(311f, 452f) + 0.8f, 452f),
+                                    new Vector3(303f, Ground(303f, 441f) + 2.2f, 441f), new Vector3(312f, Ground(312f, 455f) + 0.8f, 455f), 46f, 42f));
+            yield return Wait(7f);
+            End();
+            ReleaseCamera();
+        }
+
+        /// <summary>Puesto de Chasquis: los rivales en lo suyo, lo descubren, pelea, llega el refuerzo y uno se levanta furioso.</summary>
+        private IEnumerator PitchKancha()
+        {
+            yield return PreparePitch();
+            SetHud(true);
+            ReleaseCamera();
+            God(true);
+            AyniEncounterSite site = Site(1);
+            Anchor a = Anchors["K1"];
+            Teleport(OnGround("K1", 0f, -(a.length * 0.5f + 12f)), a.yaw);
+            yield return Wait(0.8f);
+            Begin("pitch_kancha");
+            int limit = Frames(9f);
+            while (limit-- > 0 && (site == null || !site.PlayerEntered))
+            {
+                Vector2 local = Local("K1", player.position);
+                MoveTowards(OnGround("K1", 0f, local.y + 6f) - player.position, false, 0.15f);
+                yield return null;
+            }
+            limit = Frames(55f);
+            int idle = 0;
+            while (limit-- > 0)
+            {
+                EnemyController target = FightFast(true, 3.2f);
+                if (target == null && ++idle > Frames(2f)) break;
+                if (target != null) idle = 0;
+                if (site != null && site.Cleared) break;
+                yield return null;
+            }
+            yield return Wait(1.5f);
+            End();
+        }
+
+        /// <summary>Una pareja de guardias patrulla el camino entre kanchas y embosca a Yari.</summary>
+        private IEnumerator PitchPatrulla()
+        {
+            yield return PreparePitch();
+            SetHud(true);
+            ReleaseCamera();
+            God(true);
+            Teleport(new Vector3(419f, Ground(419f, 383f), 383f), 90f);
+            yield return Wait(0.6f);
+            Begin("pitch_patrulla");
+            int limit = Frames(16f);
+            while (limit-- > 0)
+            {
+                if (Nearest(9f) == null) MoveTowards(new Vector3(1f, 0f, 0.05f), false, 0.15f);
+                else FightFast(true, 2.6f);
+                yield return null;
+            }
+            End();
+        }
+
+        /// <summary>Yari golpea a un puma y la manada responde (ODS 15).</summary>
+        private IEnumerator PitchPumas()
+        {
+            yield return PreparePitch();
+            SetHud(true);
+            ReleaseCamera();
+            God(true);
+            Teleport(new Vector3(485f, Ground(485f, 392f), 392f), 50f);
+            yield return Wait(0.6f);
+            Begin("pitch_pumas");
+            int limit = Frames(1.6f);
+            while (limit-- > 0)
+            {
+                MoveTowards(new Vector3(0.75f, 0f, 0.65f), false, 0.15f);
+                yield return null;
+            }
+            AyniInput.Simulate("LightAttack", 0.08f);
+            AyniPlaytestProbe.HitNearest(20f, 0f);
+            limit = Frames(9f);
+            while (limit-- > 0)
+            {
+                Fight(true, false);
+                yield return null;
+            }
+            End();
+        }
+
+        /// <summary>Yari cae y la Illa cuenta los años que le cobra.</summary>
+        private IEnumerator PitchIlla()
+        {
+            yield return PreparePitch();
+            SetHud(true);
+            ReleaseCamera();
+            God(false);
+            Teleport(new Vector3(578f, Ground(578f, 503f), 503f), 120f);
+            yield return Wait(0.8f);
+            Begin("pitch_illa");
+            yield return Wait(0.6f);
+            AyniPlaytestProbe.HurtYari(999f);
+            yield return Wait(7.5f);
+            End();
+            yield return Wait(2f);
+        }
+
+        /// <summary>Amaru pasea por el puente, ve llegar a Yari, su presentación, el duelo, la segunda fase con sus
+        /// cazadores, el Juicio Ayni, el perdón y el bosque que renace.</summary>
+        private IEnumerator PitchJefe()
+        {
+            yield return PreparePitch();
+            SetHud(true);
+            EnemyController boss = null;
+            foreach (EnemyController enemy in EnemyController.All)
+            {
+                if (enemy != null && enemy.IsBoss) boss = enemy;
+            }
+            if (boss == null) { Debug.LogWarning("[Ayni Trailer] No está el jefe."); yield break; }
+
+            // Amaru espera en el puente (Yari lejos, fuera de plano)
+            God(true);
+            Teleport(new Vector3(572f, Ground(572f, 507f), 507f), 110f);
+            yield return Wait(0.5f);
+            Begin("pitch_jefe_espera");
+            TakeCamera();
+            Vector3 bossPos = boss.transform.position;
+            StartCoroutine(Fly(6f, bossPos + new Vector3(-9f, 2.4f, 6.5f), bossPos + Vector3.up * 1.4f,
+                                    bossPos + new Vector3(-7f, 1.8f, 4.5f), bossPos + Vector3.up * 1.5f, 42f, 38f));
+            yield return Wait(6f);
+            End();
+            ReleaseCamera();
+
+            // Yari llega por la plaza: Amaru lo ve, le habla y empieza la presentación al acercarse
+            Vector3 start = new Vector3(601f, Ground(601f, 478f), 478f);
+            Vector3 toBoss = boss.transform.position - start;
+            toBoss.y = 0f;
+            Teleport(start, Quaternion.LookRotation(toBoss).eulerAngles.y);
+            yield return Wait(0.5f);
+            Begin("pitch_jefe");
+            int limit = Frames(14f);
+            while (limit-- > 0 && !AyniBossIntro.Running)
+            {
+                Vector3 d = boss.transform.position - player.position;
+                d.y = 0f;
+                MoveTowards(d, false, 0.15f);
+                yield return null;
+            }
+            limit = Frames(14f);
+            while (limit-- > 0 && AyniBossIntro.Running) yield return null;
+
+            // Duelo
+            limit = Frames(12f);
+            while (limit-- > 0)
+            {
+                Fight(true, false, true);
+                yield return null;
+            }
+            // Segunda fase: caída, grito, «¡Cazadores, a mí!» y dos cazadores por la espalda
+            if (boss.Phase < boss.PhaseCount)
+            {
+                AyniPlaytestProbe.HitBoss(boss.CurrentHealth + 1f, 0f);
+                yield return null;
+                while (boss.InPhaseTransition) yield return null;
+            }
+            limit = Frames(12f);
+            while (limit-- > 0)
+            {
+                FightFast(true, 2.4f, false);
+                yield return null;
+            }
+            // Juicio Ayni: postura rota en la última fase
+            for (int tries = 0; tries < 4 && !boss.CanBeJudged; tries++)
+            {
+                while (boss.InPhaseTransition) yield return null;
+                Vector3 d = boss.transform.position - player.position;
+                d.y = 0f;
+                int approach = Frames(2.5f);
+                while (approach-- > 0 && d.magnitude > 3f)
+                {
+                    MoveTowards(d, true);
+                    yield return null;
+                    d = boss.transform.position - player.position;
+                    d.y = 0f;
+                }
+                AyniPlaytestProbe.HitBoss(Mathf.Max(1f, boss.CurrentHealth - boss.MaxHealth * 0.3f), 999f);
+                yield return Wait(0.3f);
+            }
+            yield return Wait(3.2f);
+            AyniInput.Simulate("Mercy", 0.15f);
+            yield return Wait(25f);
+            End();
+            God(false);
+        }
+
     }
 }
 #endif
