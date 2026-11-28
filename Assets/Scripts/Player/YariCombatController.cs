@@ -1553,7 +1553,7 @@ namespace Ayni.Player
                 EnterCombatStance();
 
                 Ayni.UI.AyniScreenFX.FadeTo(Color.black, 0f, 1.1f);
-                Ayni.UI.AyniScreenFX.Caption("El Illa te devuelve al camino.  <color=#ffcf6a>Ahora tienes " + talisman.CurrentAge + " años.</color>", 3.2f);
+                Ayni.UI.AyniScreenFX.Caption("La Illa te devuelve al camino.  <color=#ffcf6a>Ahora tienes " + talisman.CurrentAge + " años.</color>", 3.2f);
             }
             else
             {
