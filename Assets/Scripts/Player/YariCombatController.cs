@@ -392,6 +392,8 @@ namespace Ayni.Player
         public bool IsDead => isDead;
         public bool IsGameOver => isGameOver;
         public bool IsStunned => Time.time < stunnedUntil;
+        /// <summary>Segundos que le quedan aturdida (tras un golpe, un bloqueo roto o una caída); 0 si puede actuar.</summary>
+        public float StunRemaining => Mathf.Max(0f, stunnedUntil - Time.time);
         /// <summary>Rival fijado con Lock-On (null si no hay ninguno).</summary>
         public EnemyController LockTarget => lockTarget;
 

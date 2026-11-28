@@ -321,6 +321,16 @@ namespace Ayni.Enemy
         /// </summary>
         private static float nextGroupAttackAt;
         private const float GroupAttackGapMin = 0.7f, GroupAttackGapMax = 1.15f;
+        /// <summary>
+        /// Mientras un rival encadena su combo, los demás no empiezan el suyo: el turno se reserva en cada golpe del combo
+        /// hasta este margen después de su impacto (antes solo se reservaba al empezar y un segundo rival se colaba a mitad).
+        /// </summary>
+        private const float ComboTurnTail = 0.4f;
+        /// <summary>
+        /// Tiempo mínimo para reaccionar al siguiente golpe del combo cuando Yari sigue aturdida por el anterior. Sin esto,
+        /// con preparaciones de 0,32 s y 0,35 s de aturdimiento, recibir el primer golpe significaba recibir el combo entero.
+        /// </summary>
+        private const float ComboReactionWindow = 0.42f;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetAttackTurns() => nextGroupAttackAt = 0f;
@@ -663,6 +673,12 @@ namespace Ayni.Enemy
             comboStepIndex = index;
             float enragedBoost = Enraged ? 0.88f : 1f;
             currentStepWindup = Mathf.Max(0.32f, windupTime * step.windupScale * enragedBoost);
+            // Si el golpe anterior la dejó aturdida, el siguiente espera a que pueda esquivarlo o desviarlo
+            if (index > 0 && player != null && player.StunRemaining > 0f)
+            {
+                currentStepWindup = Mathf.Max(currentStepWindup, player.StunRemaining + ComboReactionWindow);
+            }
+            if (!isBoss) nextGroupAttackAt = Mathf.Max(nextGroupAttackAt, Time.time + currentStepWindup + ComboTurnTail);
             currentStepDamageScale = step.damageScale;
             currentStepStructureScale = step.structureScale;
             currentStepAnimSpeedScale = step.animSpeedScale * (Enraged ? 1.1f : 1f);
