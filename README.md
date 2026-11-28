@@ -91,8 +91,9 @@ El Nivel 1 completo (**Valle de las Sombras / El Camino del Antisuyo**) se encue
 | 📦 **[CATALOGO_RECURSOS_Y_LICENCIAS.md](CATALOGO_RECURSOS_Y_LICENCIAS.md)** | **Catálogo de Recursos y Auditoría de Licencias:** Inventario verificado de modelos 3D (`GeneralSayri_Rigged.fbx`, Yari, Amaru y fauna), fuentes OFL, animaciones y 42 efectos de sonido en Python. |
 | 🏘️ **[ALDEA_INCA.md](ALDEA_INCA.md)** · **[ENTORNO_ACANTILADOS.md](ENTORNO_ACANTILADOS.md)** | Diseño técnico y arquitectónico de las 4 *Kanchas* incas, 8 obstáculos, árboles renacientes y relieve del cañón. |
 | 🕹️ **[CONTROLES.md](CONTROLES.md)** · **[NIVEL_1_PROLOGO_Y_JUGABILIDAD.md](NIVEL_1_PROLOGO_Y_JUGABILIDAD.md)** | Guía ilustrada de controles (Teclado/Ratón y Xbox) y notas técnicas de jugabilidad del Nivel 1. |
+| 🦙 **[MISIONES_Y_RECOMPENSAS_NIVEL_1.md](MISIONES_Y_RECOMPENSAS_NIVEL_1.md)** | **El camino del Nivel 1 (`v0.11.0` a `v0.18.1`):** misiones de cada kancha (quipu, llamas, tejedoras, capitán, jaulas), apacheta, quipus de Amaru, ofrendas a la Pachamama, cómo cambia el duelo con Amaru, voces, fundamento cultural y comandos de prueba. |
 | 🎨 **[ConceptArt/Rivales/prompts.md](ConceptArt/Rivales/prompts.md)** · **[ConceptArt/Jefes_y_Prologo/prompts.md](ConceptArt/Jefes_y_Prologo/prompts.md)** | Prompts técnicos en A-pose simétrica (frente y espalda) y estado de producción 3D de rivales, el General Sayri y jefes. |
-| 📋 **[CHANGELOG.md](CHANGELOG.md)** · **[COLLABORATORS.md](COLLABORATORS.md)** | Historial detallado de versiones (`v0.3.0` a `v0.8.0`) y normas de contribución en Git. |
+| 📋 **[CHANGELOG.md](CHANGELOG.md)** · **[COLLABORATORS.md](COLLABORATORS.md)** | Historial detallado de versiones (`v0.3.0` a `v0.18.1`) y normas de contribución en Git. |
 
 ---
 

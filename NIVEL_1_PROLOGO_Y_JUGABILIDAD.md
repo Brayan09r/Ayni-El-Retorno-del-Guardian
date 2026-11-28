@@ -98,6 +98,16 @@ call Ayni.World.AyniApacheta.TestOffer                            deja la piedra
 call Ayni.World.AyniTamboCaptain.Report / AyniApacheta.Report     estado en la consola
 ```
 
+## Arreglos tras una partida completa (v0.18.1)
+
+- Combos: `EnemyController.BeginComboStep` alarga la preparación del siguiente golpe si Yari sigue aturdida
+  (`YariCombatController.StunRemaining` + 0,42 s) y reserva el turno del grupo en cada golpe del combo (`ComboTurnTail`).
+- Desenlace: `AyniLevelOutcome.StandDown` rinde a los rivales que quedan en pie en cuanto Amaru queda a merced de Yari
+  (`EnemyController.OnJudgmentReady`) y otra vez al resolverse el Juicio.
+- Voces: `AyniVoice.Normalize` y `generar_voces.py` ignoran lo que va entre corchetes, así que `[V]` y `[LT]` comparten voz.
+
+La guía completa de lo que se puede hacer en el camino está en `MISIONES_Y_RECOMPENSAS_NIVEL_1.md`.
+
 ## Llamas del chasqui y ofrendas del camino (v0.18.0)
 
 - Corral de llamas en el Puesto de Chasquis (K1): se construye por código al empezar (`AyniLlamaCorral`, en el patio a
@@ -437,8 +447,10 @@ un clip generado debe llevar esa etiqueta.
 ## Pendiente / ideas
 
 - Modelo de Sayri para el prólogo (ahora el golpe llega desde fuera de cuadro).
-- Vibración del mando (necesita el paquete Input System) y voces (gritos de golpe y de dolor).
-- Trampas de red con estacas de Amaru (Biblia 4.3) y entorno de selva quemada del Antisuyo.
+- Tejedoras: probar a mano si 55 s alcanzan con los refuerzos; quizá que los golpes pausen el progreso en vez de cortarlo.
+- Decidir si el puente de Amaru se cierra hasta liberar la Portada del Cazador (ahora basta con acercarse).
+- Hecho desde la lista anterior: vibración del mando, voces (v0.15), trampas de lazo de Amaru (v0.13) y selva quemada (v0.17).
+  Los gritos de golpe y de dolor se probaron y quedaron desactivados.
 
 ## El tráiler
 
