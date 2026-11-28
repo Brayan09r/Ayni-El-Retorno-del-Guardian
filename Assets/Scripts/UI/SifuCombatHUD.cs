@@ -65,6 +65,9 @@ namespace Ayni.UI
             // Jaulas de la Portada del Cazador y los animales liberados que ayudan contra Amaru
             if (GetComponent<Ayni.World.AyniCaptiveCages>() == null) gameObject.AddComponent<Ayni.World.AyniCaptiveCages>();
             if (GetComponent<AyniFreedAllies>() == null) gameObject.AddComponent<AyniFreedAllies>();
+            // Las llamas del chasqui amarradas en el Puesto de Chasquis (K1) y las ofrendas escondidas a los lados del camino
+            if (GetComponent<Ayni.World.AyniLlamaCorral>() == null) gameObject.AddComponent<Ayni.World.AyniLlamaCorral>();
+            if (GetComponent<Ayni.World.AyniOfferings>() == null) gameObject.AddComponent<Ayni.World.AyniOfferings>();
             // Lo que se gana o se pierde en el camino y cambia el duelo: el quipu (K1), las tejedoras (K2) y las trampas
             if (GetComponent<Ayni.World.AyniQuipuChase>() == null) gameObject.AddComponent<Ayni.World.AyniQuipuChase>();
             if (GetComponent<Ayni.World.AyniWeaversFire>() == null) gameObject.AddComponent<Ayni.World.AyniWeaversFire>();

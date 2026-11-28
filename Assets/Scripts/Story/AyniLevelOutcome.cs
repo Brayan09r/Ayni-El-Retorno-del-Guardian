@@ -242,10 +242,16 @@ namespace Ayni.Story
                           $"Quipus de Amaru leídos: <b>{Ayni.World.AyniAmaruQuipus.Read} / {Ayni.World.AyniAmaruQuipus.Total}</b>{story}", cardText);
                 y += 36f;
             }
-            if (Ayni.World.AyniCaptiveCages.Total > 0)
+            if (Ayni.World.AyniCaptiveCages.Total > 0 || Ayni.World.AyniLlamaCorral.Exists || Ayni.World.AyniOfferings.Total > 0)
             {
-                GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f),
-                          $"Animales liberados de las jaulas de Amaru: <b>{Ayni.World.AyniCaptiveCages.Opened} / {Ayni.World.AyniCaptiveCages.Total}</b>", cardText);
+                var row = new System.Collections.Generic.List<string>();
+                if (Ayni.World.AyniCaptiveCages.Total > 0)
+                    row.Add($"Jaulas de Amaru: <b>{Ayni.World.AyniCaptiveCages.Opened} / {Ayni.World.AyniCaptiveCages.Total}</b>");
+                if (Ayni.World.AyniLlamaCorral.Exists)
+                    row.Add($"Llamas del chasqui: <b>{(Ayni.World.AyniLlamaCorral.Freed ? "libres" : "amarradas")}</b>");
+                if (Ayni.World.AyniOfferings.Total > 0)
+                    row.Add($"Ofrendas: <b>{Ayni.World.AyniOfferings.Collected} / {Ayni.World.AyniOfferings.Total}</b>");
+                GUI.Label(new Rect(w * 0.1f, y, w * 0.8f, 30f), string.Join("   ·   ", row), cardText);
                 y += 36f;
             }
             GUI.Label(new Rect(w * 0.15f, y, w * 0.7f, 30f), mercy

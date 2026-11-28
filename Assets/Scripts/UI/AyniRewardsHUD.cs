@@ -46,6 +46,7 @@ namespace Ayni.UI
             if (AyniPathRewards.CaptainSlain) chips.Add(new Chip { key = "champi", text = "Champi · +20 % de daño a Amaru", good = true });
             if (AyniAmaruQuipus.KnowsStory) chips.Add(new Chip { key = "killa", text = "Killa · Amaru dudará", good = true });
             else if (AyniAmaruQuipus.Read > 0) chips.Add(new Chip { key = "quipus" + AyniAmaruQuipus.Read, text = $"Quipus de Amaru · {AyniAmaruQuipus.Read} / {AyniAmaruQuipus.Total}", good = true });
+            if (AyniOfferings.Collected > 0) chips.Add(new Chip { key = "ofrendas" + AyniOfferings.Collected, text = $"Ofrendas · {AyniOfferings.Collected} / {AyniOfferings.Total}", good = true });
             if (talisman != null && talisman.ProtectedFalls > 0) chips.Add(new Chip { key = "apu", text = "Apu · tu próxima caída no cuesta años", good = true });
             if (AyniPathRewards.AmaruWarned) chips.Add(new Chip { key = "avisado", text = "Amaru avisado · trampas", good = false });
         }

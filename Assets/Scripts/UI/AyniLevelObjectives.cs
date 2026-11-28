@@ -176,6 +176,7 @@ namespace Ayni.UI
                     : "Derrota a los que quedan";
                 if (captainWatching) detail += " · <color=#e0604a>el capitán observa</color>";
                 detail += CagesNote(fighting);
+                detail += LlamasNote(fighting);
                 waypoint = null;
             }
             else if (next != null)
@@ -183,6 +184,10 @@ namespace Ayni.UI
                 Vector3 target = next.Entry != null ? next.Entry.position : next.transform.position;
                 objective = "Ve " + ToArticle(next) + NameOf(next);
                 detail = $"Sigue el camino · a {Mathf.RoundToInt(Flat(yari.transform.position, target))} m";
+                if (next.Order == 2 && AyniLlamaCorral.Exists && !AyniLlamaCorral.Freed && Flat(yari.transform.position, AyniLlamaCorral.GatePoint) < 45f)
+                {
+                    detail += " · <color=#5cc7a8>las llamas siguen amarradas</color>";
+                }
                 if (next.Order == 4 && AyniApacheta.Exists && !AyniApacheta.Offered) detail += " · <color=#d9c08c>deja una piedra en la apacheta</color>";
                 waypoint = target;
             }
@@ -237,6 +242,13 @@ namespace Ayni.UI
             return AyniCaptiveCages.Opened < AyniCaptiveCages.Total
                 ? $" · <color=#5cc7a8>jaulas {AyniCaptiveCages.Opened}/{AyniCaptiveCages.Total}</color>"
                 : " · <color=#5cc7a8>animales libres</color>";
+        }
+
+        /// <summary>En el Puesto de Chasquis, si las llamas del corral siguen amarradas (opcional: sanan y traen una ofrenda).</summary>
+        private static string LlamasNote(AyniEncounterSite site)
+        {
+            if (!AyniLlamaCorral.Exists || site == null || site.Order != 1) return "";
+            return AyniLlamaCorral.Freed ? " · <color=#5cc7a8>llamas libres</color>" : " · <color=#5cc7a8>llamas amarradas</color>";
         }
 
         /// <summary>Rivales de la kancha que siguen en pie (cuentan los refuerzos que ya llegaron).</summary>
