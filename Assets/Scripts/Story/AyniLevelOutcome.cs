@@ -44,6 +44,13 @@ namespace Ayni.Story
             cam = Camera.main;
             if (cam != null) gameplayCamera = cam.GetComponent<ThirdPersonSifuCamera>();
             if (AyniPurificationManager.Instance != null) AyniPurificationManager.Instance.OnCombatResolved += HandleResolved;
+            EnemyController.OnJudgmentReady += HandleJudgmentReady;
+        }
+
+        /// <summary>Amaru cae a merced de Yari: los suyos se rinden ya, para que nadie la golpee mientras decide.</summary>
+        private static void HandleJudgmentReady(EnemyController enemy)
+        {
+            if (enemy != null && enemy.IsBoss) StandDown(enemy);
         }
 
         private int ambienceLoop = -1;
@@ -51,6 +58,7 @@ namespace Ayni.Story
         private void OnDestroy()
         {
             if (AyniPurificationManager.Instance != null) AyniPurificationManager.Instance.OnCombatResolved -= HandleResolved;
+            EnemyController.OnJudgmentReady -= HandleJudgmentReady;
             AyniAudio.StopLoop(ambienceLoop, 0.4f);
         }
 
@@ -61,7 +69,25 @@ namespace Ayni.Story
             mercy = spared;
             bossName = enemy.CharacterName;
             AyniAudio.Play2D(spared ? "ayni_perdon" : "venganza", 0.9f);
+            StandDown(enemy);
             StartCoroutine(Ending(enemy));
+        }
+
+        /// <summary>
+        /// Caído el Cazador (en cuanto queda a merced de Yari), los suyos que quedaban en pie (de una kancha que Yari se saltó, o los que lo siguieron al
+        /// puente) se rinden y se arrodillan: antes seguían golpeando a Yari durante el desenlace y la tarjeta final.
+        /// </summary>
+        private static void StandDown(EnemyController boss)
+        {
+            var rivals = new System.Collections.Generic.List<EnemyController>(EnemyController.All);
+            int count = 0;
+            foreach (EnemyController e in rivals)
+            {
+                if (e == null || e == boss || e.IsDead || e.IsBoss || e.Unkillable || e.ExternalControl) continue;
+                e.Defeat(false, 0.3f + 0.25f * count);
+                count++;
+            }
+            if (count > 0) Debug.Log($"[Ayni Desenlace] {count} rivales que quedaban se rinden");
         }
 
         private IEnumerator Ending(EnemyController boss)
