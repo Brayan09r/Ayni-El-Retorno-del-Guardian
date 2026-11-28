@@ -77,6 +77,15 @@ NARRADORA | 0 | El cóndor te avisa desde lo alto: tienes más tiempo para esqui
 NARRADORA | 0 | ¡La puma madre baja del cerro! Devuelve el Ayni a quien liberó a su cría.
 NARRADORA | 0 | La Pachamama defiende a sus hijos: no dañes al puma, guardián del Kay Pacha (ODS 15). | La Pachamama defiende a sus hijos: no dañes al puma, guardián del Kay Pacha.
 
+# ── Puesto de Chasquis: las llamas del corral ──
+NARRADORA | 0 | Las llamas vuelven a su ayllu. La Pachamama te sana.
+NARRADORA | 0 | Entre su carga había una ofrenda para la Pachamama.
+
+# ── Ofrendas a la Pachamama escondidas en el camino ──
+NARRADORA | 0 | Una ofrenda a la Pachamama: hojas de coca y mullu. La tierra te devuelve fuerzas.
+NARRADORA | 0 | La Pachamama acepta la ofrenda y te devuelve fuerzas.
+NARRADORA | 0 | La Pachamama agradece tus ofrendas: la Illa te devuelve un año.
+
 # ── Amaru en el puente ──
 AMARU | 0 | Huelo la Illa en ti, Yari. Sayri dijo que volverías.
 YARI | 0 | Y yo huelo en ti el humo de mi bosque, Amaru.
