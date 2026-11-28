@@ -66,13 +66,13 @@ def clave(texto: str) -> int:
 
 
 def normalizar(texto: str) -> str:
-    """Igual que AyniVoice.Normalize: sin etiquetas, sin "NOMBRE:" inicial, solo letras/números, en minúsculas."""
+    """Igual que AyniVoice.Normalize: sin etiquetas ni teclas [...], sin "NOMBRE:" inicial, solo letras/números, en minúsculas."""
     sin_etiquetas, dentro = [], False
     for c in texto:
-        if c == "<":
+        if c in "<[":
             dentro = True
             continue
-        if c == ">" and dentro:
+        if c in ">]" and dentro:
             dentro = False
             continue
         if not dentro:

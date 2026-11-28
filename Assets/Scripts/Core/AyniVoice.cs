@@ -121,7 +121,7 @@ namespace Ayni.Core
         }
 
         /// <summary>
-        /// Texto normalizado: sin etiquetas &lt;...&gt;, sin el "NOMBRE:" del principio (mayúsculas), solo letras, números y
+        /// Texto normalizado: sin etiquetas &lt;...&gt; ni teclas [...] (cambian con el teclado o el mando), sin el "NOMBRE:" del principio (mayúsculas), solo letras, números y
         /// espacios, en minúsculas y con los espacios colapsados.
         /// </summary>
         public static string Normalize(string caption)
@@ -131,8 +131,8 @@ namespace Ayni.Core
             bool inTag = false;
             foreach (char c in caption)
             {
-                if (c == '<') { inTag = true; continue; }
-                if (c == '>' && inTag) { inTag = false; continue; }
+                if (c == '<' || c == '[') { inTag = true; continue; }
+                if ((c == '>' || c == ']') && inTag) { inTag = false; continue; }
                 if (!inTag) noTags.Append(c);
             }
             string text = noTags.ToString().Trim();

@@ -4,6 +4,7 @@
 #  - El texto debe ser el mismo que sale en pantalla (sin el "NOMBRE:" del principio ni las comillas « »): el juego busca
 #    la voz por ese texto (ver Assets/Scripts/Core/AyniVoice.cs). Mayúsculas, signos y etiquetas de color no importan.
 #  - "segundos máx." es lo que cabe en la escena: si la voz dura más, se acelera un poco (hasta un 30 %). 0 = sin límite.
+#  - Las teclas entre corchetes ([V], [LT]) no cuentan para la clave: la misma voz sirve con teclado y con mando.
 #  - El texto hablado es opcional: lo que se pronuncia si no es igual a lo escrito (números, siglas).
 # Generar o regenerar:  python Herramientas/Audio/generar_voces.py
 # Personajes: NARRADORA, AMARU, CAPITAN, YARI, TEJEDORA (voces en generar_voces.py)
@@ -40,6 +41,7 @@ NARRADORA | 0 | ¡Un Rastreador huye con el quipu de los chasquis para avisar a 
 NARRADORA | 0 | ¡Lo alcanzaste! Derrótalo para recuperar el quipu.
 NARRADORA | 0 | Recuperas el quipu de los chasquis. Sus nudos dicen: «El Cazador se tiñe de verde antes de soplar». Ya sabes leer sus dardos.
 NARRADORA | 0 | El Rastreador escapó con el quipu: Amaru sabrá que vienes y te tenderá trampas.
+NARRADORA | 0 | ¡Las tejedoras están atrapadas en la casa en llamas! Rompe la tranca de la puerta: mantén [V]. | ¡Las tejedoras están atrapadas en la casa en llamas! Rompe la tranca de la puerta.
 TEJEDORA | 0 | ¡Gracias, guardián! Toma este chumpi: lo tejimos con lana de vicuña para el Inca.
 YARI | 0 | Lo llevaré con honor. Vuelvan a tejer, hermanas.
 NARRADORA | 0 | El chumpi te protege: el veneno de los dardos de Amaru te durará la mitad.
@@ -67,6 +69,7 @@ NARRADORA | 0 | La piedra rueda cuesta abajo. La apacheta no acepta la ofrenda d
 NARRADORA | 0 | El Apu te levanta: esta vez la Illa no te cobra años.
 
 # ── Portada del Cazador: jaulas y animales ──
+NARRADORA | 0 | Los trofeos vivos de Amaru, enjaulados. Mantén [V] junto a una puerta para abrirla. | Los trofeos vivos de Amaru, enjaulados. Abre sus puertas.
 NARRADORA | 0 | La cría de puma corre hacia el cerro. Su madre no olvidará a quien la liberó.
 NARRADORA | 0 | El cóndor vuelve al cielo. Desde lo alto vigilará a Amaru.
 NARRADORA | 0 | Las vicuñas vuelven a la puna. La Pachamama te sana y la Illa te devuelve un año.
@@ -78,6 +81,7 @@ NARRADORA | 0 | ¡La puma madre baja del cerro! Devuelve el Ayni a quien liberó
 NARRADORA | 0 | La Pachamama defiende a sus hijos: no dañes al puma, guardián del Kay Pacha (ODS 15). | La Pachamama defiende a sus hijos: no dañes al puma, guardián del Kay Pacha.
 
 # ── Puesto de Chasquis: las llamas del corral ──
+NARRADORA | 0 | Las llamas del chasqui, amarradas por los Rastreadores. Mantén [V] junto a la tranca para soltarlas. | Las llamas del chasqui, amarradas por los Rastreadores. Suelta la tranca para liberarlas.
 NARRADORA | 0 | Las llamas vuelven a su ayllu. La Pachamama te sana.
 NARRADORA | 0 | Entre su carga había una ofrenda para la Pachamama.
 
