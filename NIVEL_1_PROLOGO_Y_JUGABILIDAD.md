@@ -98,6 +98,22 @@ call Ayni.World.AyniApacheta.TestOffer                            deja la piedra
 call Ayni.World.AyniTamboCaptain.Report / AyniApacheta.Report     estado en la consola
 ```
 
+## Llamas del chasqui y ofrendas del camino (v0.18.0)
+
+- Corral de llamas en el Puesto de Chasquis (K1): se construye por código al empezar (`AyniLlamaCorral`, en el patio a
+  la izquierda, con la tranca hacia el centro). Soltar a las llamas sana a Yari y da una ofrenda.
+- Ofrendas a la Pachamama (`AyniOfferings`): seis, colocadas solas siguiendo el eje del camino (a 14-18 m, fuera del
+  empedrado, en suelo llano, a más de 55 m entre sí y lejos de las kanchas). Cada una sana un 30 %; cada tres, un año menos.
+
+```
+call Ayni.World.AyniLlamaCorral.TestGoTo        Yari junto a la tranca
+call Ayni.World.AyniLlamaCorral.TestFree        suelta a las llamas
+call Ayni.World.AyniOfferings.TestGoTo 1        Yari junto a la ofrenda 1 (1 a 6)
+call Ayni.World.AyniOfferings.TestFromRoad 1    Yari en el camino, frente a la ofrenda (cómo se ve al pasar)
+call Ayni.World.AyniOfferings.TestTake 1        acepta la ofrenda
+call Ayni.World.AyniLlamaCorral.Report / AyniOfferings.Report     estado en la consola
+```
+
 ## Cámara, combate y selva quemada (v0.17.0)
 
 - Cámara: `ThirdPersonSifuCamera.Unblocked` resuelve cada fotograma el punto libre entre la cabeza de Yari y la cámara
@@ -337,6 +353,8 @@ Menús en `Ayni > Animaciones`:
 | `Editor/AyniVillageBuilder.cs` · `AyniVillageGeometry.cs` · `AyniVillageTextures.cs` · `AyniVillageObstacles.cs` | La aldea inca del camino y sus obstáculos, generados por código (`ALDEA_INCA.md`) |
 | `Editor/AyniRivalSetup.cs` | Importa y coloca los cuatro rivales del camino (de Antigravity) |
 | `Scripts/World/AyniEncounterSite.cs` | Cada conjunto de casas: puntos de rival, aparición al entrar Yari y aviso al despejarlo |
+| `Scripts/World/AyniLlamaCorral.cs` | Corral de las llamas del chasqui en K1: soltarlas sana y da una ofrenda |
+| `Scripts/World/AyniOfferings.cs` | Ofrendas a la Pachamama escondidas a los lados del camino |
 | `Shaders/AyniMuroInca.shader` | Mampostería inca (pirca, sillería y piedra de una pieza) dibujada en el shader |
 
 Todo se añade solo en Play desde `SifuCombatHUD`: prólogo, tutorial, Juicio, desenlace, panel del mando y el Cazador de Amaru.

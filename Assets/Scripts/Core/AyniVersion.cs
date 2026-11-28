@@ -9,8 +9,8 @@ namespace Ayni.Core
     /// </summary>
     public static class AyniVersion
     {
-        public const string Number = "0.17.0";
-        public const string Title = "Cámara, combate y selva quemada";
+        public const string Number = "0.18.0";
+        public const string Title = "Llamas del chasqui y ofrendas del camino";
 
         public static string Label => "v" + Number;
     }

@@ -10,6 +10,28 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.18.0 — Llamas del chasqui y ofrendas del camino · 27 de noviembre de 2026
+
+Más cosas que hacer en la primera kancha y entre kancha y kancha.
+
+**Las llamas del chasqui** (`AyniLlamaCorral`, Puesto de Chasquis)
+- Los Rastreadores amarraron a tres llamas de carga a una estaca, dentro de un corral de palos junto al fogón. Yari suelta
+  la tranca manteniendo `V` / `LT` (1,3 s); se puede hacer en plena pelea, pero si le golpean el nudo se le escapa a medias.
+- Al soltarlas, la tranca se abre y las llamas salen al galope por la entrada de la kancha, de vuelta a su ayllu. La
+  Pachamama sana a Yari del todo y, entre la carga de las llamas, hay una ofrenda que cuenta para las del camino.
+- El objetivo de la kancha dice «llamas amarradas» / «llamas libres»; si Yari se va sin soltarlas, se le recuerda.
+
+**Ofrendas a la Pachamama** (`AyniOfferings`)
+- Seis ofrendas escondidas a los lados del Qhapaq Ñan, fuera del empedrado y lejos de las kanchas: un atado rojo con
+  hojas de coca, mullu y flores sobre una laja, junto a una pirca con una tira de tela, con brillo y motas doradas.
+  Un rombo «Ofrenda» las marca a menos de 28 m. Se aceptan manteniendo `V` / `LT` (0,7 s) cuando no hay rivales cerca.
+- Cada ofrenda sana un 30 % de la vida. Cada tres, la Illa devuelve un año a Yari.
+- Contador «Ofrendas · n / 7» en el HUD de recompensas y fila en la tarjeta final (jaulas, llamas y ofrendas).
+- 5 voces nuevas de la narradora (93 en total).
+
+**Arreglos**
+- Los gritos sintéticos de esfuerzo y dolor del combate quedan desactivados (`CombatFeedback.GruntsEnabled`).
+
 ## v0.17.0 — Cámara, combate y selva quemada · 22 de noviembre de 2026
 
 Mejoras salidas de una partida de revisión completa del Nivel 1.
