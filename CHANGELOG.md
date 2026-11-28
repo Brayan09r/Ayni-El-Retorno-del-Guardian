@@ -10,6 +10,17 @@ Al publicar una versión en `main` se marca con un tag: `git tag -a v0.6.0 -m ".
 
 ---
 
+## v0.18.1 — Arreglos tras una partida completa · 27 de noviembre de 2026
+
+- **Combos justos:** si un golpe deja a Yari aturdida, el siguiente del combo espera a que se recupere y le deja 0,42 s
+  para esquivar o desviar (antes, recibir el primero era recibir el combo entero). Mientras un rival encadena su combo,
+  los demás esperan su turno en vez de colarse a mitad. Afecta también a Amaru.
+- **Desenlace limpio:** cuando Amaru queda a merced de Yari, los rivales que seguían en pie (de una kancha que se saltó o
+  que la siguieron al puente) se rinden y se arrodillan. Antes seguían golpeándola durante el Juicio y la tarjeta final.
+- **Voces con teclas:** las teclas entre corchetes ([V], [LT]) ya no cuentan para la clave de la voz, así que los avisos
+  de las tejedoras, las jaulas y las llamas tienen voz con teclado y con mando (3 voces nuevas, 96 en total).
+- «La Illa te devuelve al camino» (decía «El Illa»).
+
 ## v0.18.0 — Llamas del chasqui y ofrendas del camino · 27 de noviembre de 2026
 
 Más cosas que hacer en la primera kancha y entre kancha y kancha.
